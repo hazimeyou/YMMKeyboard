@@ -361,3 +361,27 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# --- KiCad ---
+*.kicad_prl
+*.kicad_pcb-bak
+*.kicad_sch-bak
+*_autosave-*
+*.lck
+fp-info-cache
+python-float-format-rects
+
+# --- Python (RP2040 / App) ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# --- Visual Studio / .NET (YMM Plugin) ---
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
