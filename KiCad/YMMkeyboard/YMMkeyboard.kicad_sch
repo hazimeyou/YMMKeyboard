@@ -2053,6 +2053,12 @@
 		(uuid "c97ac37d-1665-4100-8fc7-1eaabe7140e9")
 	)
 	(junction
+		(at 160.02 125.73)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d78dc2b3-a53c-4f21-a2d0-b7187e9c0710")
+	)
+	(junction
 		(at 109.22 59.69)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2233,6 +2239,16 @@
 			(type default)
 		)
 		(uuid "0facb643-1be4-4099-8824-a35ed14302a0")
+	)
+	(wire
+		(pts
+			(xy 160.02 125.73) (xy 162.56 125.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "11799979-cac1-491f-b136-595ad46dc0a9")
 	)
 	(wire
 		(pts
@@ -3616,7 +3632,7 @@
 	)
 	(wire
 		(pts
-			(xy 151.13 125.73) (xy 162.56 125.73)
+			(xy 151.13 125.73) (xy 160.02 125.73)
 		)
 		(stroke
 			(width 0)
@@ -3760,7 +3776,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "RP2040-ZeroSocket:RP2040-ZeroSocket"
 			(at 214.63 88.9 0)
 			(effects
 				(font
@@ -6378,7 +6394,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x05_P2.54mm_Vertical"
 			(at 167.64 128.27 0)
 			(effects
 				(font
@@ -7829,7 +7845,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical"
 			(at 167.64 157.48 0)
 			(effects
 				(font
