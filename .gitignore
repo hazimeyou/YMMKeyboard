@@ -385,3 +385,5 @@ venv/
 *.user
 *.userosscache
 *.sln.docstates
+KiCad/YMMkeyboard/YMMkeyboard-backups/
+KiCad/YMMkeyboardMX/YMMkeyboardMX-backups/
