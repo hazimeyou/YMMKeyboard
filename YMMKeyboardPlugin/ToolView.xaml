@@ -6,6 +6,10 @@
              mc:Ignorable="d"
              Height="350" Width="400">
     <StackPanel Margin="10" VerticalAlignment="Top">
-        <Button Content="aテスト用ボタン絶対消せ" Command="{Binding kese}" Margin="0,0,0,5"/>
+        <Button Content="テスト用a" Command="{Binding a}" Margin="0,0,0,5"/>
+		<Button Content="テスト用b" Command="{Binding b}" Margin="0,0,0,5"/>
+		<Button Content="テスト用c" Command="{Binding c}" Margin="0,0,0,5"/>
+		<Button Content="テスト用d" Command="{Binding d}" Margin="0,0,0,5"/>
+		<Button Content="テスト用e" Command="{Binding e}" Margin="0,0,0,5"/>
     </StackPanel>
 </UserControl>

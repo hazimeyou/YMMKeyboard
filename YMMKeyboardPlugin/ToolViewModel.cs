@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using static System.Net.Mime.MediaTypeNames;
+using System.IO.Ports;
 using System.Windows;
 namespace YMMKeyboardPlugin
 {
@@ -9,11 +8,30 @@ namespace YMMKeyboardPlugin
     {
         private string selectedDevice;
         public string SelectedDevice { get => selectedDevice; set { selectedDevice = value; OnPropertyChanged(nameof(SelectedDevice)); } }
-        public ICommand kese { get; }
+        public ICommand a { get; }
+        public ICommand b { get; }
+        public ICommand c { get; }
+        public ICommand d { get; }
+        public ICommand e { get; }
         public ToolViewModel()
         {
-            kese = new RelayCommand(test);
+            a = new RelayCommand(a1);
+            b = new RelayCommand(b2);
+            c = new RelayCommand(c3);
+            d = new RelayCommand(d4);
+            e = new RelayCommand(e5);
+
         }
-        public void test() => MessageBox.Show("test");
+
+
+
+
+
+
+        public void a1() => MessageBox.Show("a");
+        public void b2() => MessageBox.Show("b");
+        public void c3() => MessageBox.Show("c");
+        public void d4() => MessageBox.Show("d");
+        public void e5() => MessageBox.Show("e");
     }
 }

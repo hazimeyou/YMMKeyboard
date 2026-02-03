@@ -23,5 +23,13 @@ namespace YMMKeyboardPlugin
         public string Name => "キーボードプラグイン";
         public Type ViewModelType => typeof(ToolViewModel);
         public Type ViewType => typeof(ToolView);
+        private Keymacro _keymacro;
+
+        public MyToolPlugin()
+        {
+            // ★ YMM起動時に必ず呼ばれる
+            _keymacro = new Keymacro();
+            _keymacro.Initialize(); // ← ここであなたのコードが動く
+        }
     }
 }
