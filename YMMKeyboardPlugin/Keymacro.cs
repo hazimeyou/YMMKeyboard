@@ -9,15 +9,15 @@ namespace YMMKeyboardPlugin
     {
         private SerialKeyboardLink? _link;
 
-        // UIDごとの割り当てテーブル
-        // UID → (SW番号 → Action)
         private readonly Dictionary<string, Dictionary<int, Action>> _macros
             = new();
 
+        private readonly Mp3InsertViewModel _mp3Vm = new();
+
         public void Initialize()
         {
-            // ★ 実際に使うCOMポートを指定
-            // ※ 固定が嫌なら後で設定化
+            Debug.WriteLine("[Keymacro] Initialize START");
+
             _link = new SerialKeyboardLink("COM5");
 
             _link.DeviceDetected += OnDeviceDetected;
@@ -25,184 +25,69 @@ namespace YMMKeyboardPlugin
 
             _link.Start();
 
-            Debug.WriteLine("[Keymacro] Initialized");
+            Debug.WriteLine("[Keymacro] Initialize END");
+            MessageBox.Show("Keymacro Initialize 完了");
         }
 
         private void OnDeviceDetected(SerialKeyboardDevice device)
         {
-            Debug.WriteLine($"[Keymacro] Device detected: {device.Uid}");
+            Debug.WriteLine($"[Keymacro] DeviceDetected UID={device.Uid}");
+            MessageBox.Show($"DeviceDetected\nUID={device.Uid}");
 
-            // 初回検出時に割り当てテーブルを用意
             if (!_macros.ContainsKey(device.Uid))
             {
-                _macros[device.Uid] = CreateDefaultMapping(device.Uid);
+                Debug.WriteLine("[Keymacro] Create mapping");
+                _macros[device.Uid] =
+                    CreateDefaultMapping.Mapping(device.Uid, _mp3Vm);
             }
-
-            // UI通知（確認用）
-
-                MessageBox.Show($"デバイス接続: {device.Uid}");
-           
+            else
+            {
+                Debug.WriteLine("[Keymacro] Mapping already exists");
+            }
         }
 
         private void OnKeyEventReceived(SerialKeyboardDevice device, KeyEvent e)
         {
-            // 押下のみ反応（必要ならRも処理）
+            Debug.WriteLine(
+                $"[Keymacro] KeyEventReceived UID={device.Uid} SW={e.SwitchId} Pressed={e.IsPressed}");
+
             if (!e.IsPressed)
+            {
+                Debug.WriteLine("[Keymacro] Released → ignored");
                 return;
+            }
 
             if (!_macros.TryGetValue(device.Uid, out var deviceMap))
+            {
+                Debug.WriteLine("[Keymacro] No mapping for UID");
                 return;
+            }
 
             if (!deviceMap.TryGetValue(e.SwitchId, out var action))
+            {
+                Debug.WriteLine("[Keymacro] No action for this switch");
                 return;
+            }
 
-            Debug.WriteLine(
-                $"[Keymacro] {device.Uid} SW_{e.SwitchId} pressed");
+            Debug.WriteLine("[Keymacro] Action FOUND → Invoke");
 
-            // ★ マクロ実行
-            action.Invoke();
+            try
+            {
+                action.Invoke();
+                Debug.WriteLine("[Keymacro] Action Invoke DONE");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("[Keymacro] Action Invoke ERROR");
+                Debug.WriteLine(ex.ToString());
+                MessageBox.Show(ex.ToString());
+            }
         }
 
-        private Dictionary<int, Action> CreateDefaultMapping(string uid)
+        public static void ShowToast(string message)
         {
-            var map = new Dictionary<int, Action>();
+            Debug.WriteLine("[Toast] " + message);
 
-            // ====== サンプル割り当て ======
-
-            map[0] = () =>
-            {
-                ShowToast("SW_0実行");
-            };
-
-            map[1] = () =>
-            {
-                ShowToast("SW_1実行");
-            };
-            map[2] = () =>
-            {
-                ShowToast("SW_2実行");
-            };
-            map[3] = () =>
-            {
-                ShowToast("SW_3実行");
-            };
-            map[4] = () =>
-            {
-                ShowToast("SW_4実行");
-            };
-            map[5] = () =>
-            {
-                ShowToast("SW_5実行");
-            };
-            map[6] = () =>
-            {
-                ShowToast("SW_6実行");
-            };
-            map[7] = () =>
-            {
-                ShowToast("SW_7実行");
-            };
-            map[8] = () =>
-            {
-                ShowToast("SW_8実行");
-            };
-            map[9] = () =>
-            {
-                ShowToast("SW_9実行");
-            };
-            map[10] = () =>
-            {
-                ShowToast("SW_10実行");
-            };
-            map[11] = () =>
-            {
-                ShowToast("SW_11実行");
-            };
-            map[12] = () =>
-            {
-                ShowToast("SW_12実行");
-            };
-            map[13] = () =>
-            {
-                ShowToast("SW_13実行");
-            };
-
-            map[14] = () =>
-            {
-                ShowToast("SW_14実行");
-            };
-            map[15] = () =>
-            {
-                ShowToast("SW_15実行");
-            };
-            map[16] = () =>
-            {
-                ShowToast("SW_16実行");
-            };
-            map[17] = () =>
-            {
-                ShowToast("SW_17実行");
-            };
-            map[18] = () =>
-            {
-                ShowToast("SW_18実行");
-            };
-            map[19] = () =>
-            {
-                ShowToast("SW_19実行");
-            };
-            map[20] = () =>
-            {
-                ShowToast("SW_20実行");
-            };
-            map[21] = () =>
-            {
-                ShowToast("SW_21実行");
-            };
-            map[22] = () =>
-            {
-                ShowToast("SW_22実行");
-            };
-            map[23] = () =>
-            {
-                ShowToast("SW_23実行");
-            };
-            map[24] = () =>
-            {
-                ShowToast("SW_24実行");
-            };
-            map[25] = () =>
-            {
-                ShowToast("SW_25実行");
-            };
-            map[26] = () =>
-            {
-                ShowToast("SW_26実行");
-            };
-            map[27] = () =>
-            {
-                ShowToast("SW_27実行");
-            };
-            map[28] = () =>
-            {
-                ShowToast("SW_28実行");
-            };
-            map[29] = () =>
-            {
-                ShowToast("SW_29実行");
-            };
-            map[41] = () =>
-            {
-                ShowToast("SW_41実行");
-            };
-
-            // ==============================
-
-            return map;
-        }
-
-        private void ShowToast(string message)
-        {
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 MessageBox.Show(message);
@@ -211,6 +96,7 @@ namespace YMMKeyboardPlugin
 
         public void Dispose()
         {
+            Debug.WriteLine("[Keymacro] Dispose");
             _link?.Dispose();
             _link = null;
         }

@@ -21,8 +21,9 @@ namespace YMMKeyboardPlugin
     public class MyToolPlugin : IToolPlugin
     {
         public string Name => "キーボードプラグイン";
-        public Type ViewModelType => typeof(ToolViewModel);
-        public Type ViewType => typeof(ToolView);
+        public Type ViewModelType => typeof(Mp3InsertViewModel);
+        public Type ViewType => typeof(Mp3InsertView);
+
         private Keymacro _keymacro;
 
         public MyToolPlugin()
