@@ -1,125 +1,88 @@
 import board
 import microcontroller
 import binascii
-import time
-import supervisor
 
 from kmk.kmk_keyboard import KMKKeyboard
-from kmk.keys import KC
+from kmk.keys import KC, make_key
 from kmk.scanners import DiodeOrientation
-from kmk.modules.layers import Layers
 from kmk.modules import Module
 from kmk.modules.encoder import EncoderHandler
-from kmk.extensions.media_keys import MediaKeys
-from kmk.extensions.rgb import RGB  # LED用に追加
+from kmk.modules.layers import Layers
 
 # =====================================================
-# デバイス固有 UID
+# 1. UID取得 (PC側で識別するため)
 # =====================================================
 DEVICE_UID = binascii.hexlify(
     microcontroller.cpu.uid
 ).decode("utf-8")
 
 # =====================================================
-# Serial UID Broadcaster
+# 2. シリアル通信モジュール
+# (キーが押されたら PC に UID:P:SW_xx を送信)
 # =====================================================
-class SerialCommunication(Module):
-    def __init__(self):
-        self.last_send = 0
-        self.first = True
-
+class SerialKeys(Module):
     def during_bootup(self, keyboard): pass
-    def before_hid_send(self, keyboard): pass
-    def after_hid_send(self, keyboard): pass
     def before_matrix_scan(self, keyboard): pass
     def after_matrix_scan(self, keyboard): pass
-
-    def on_runtime_loop(self, keyboard):
-        now = time.monotonic()
-        # 接続直後の送信
-        if supervisor.runtime.serial_connected and self.first:
-            self.first = False
-            for _ in range(3):
-                print(f"UID:{DEVICE_UID}")
-                time.sleep(0.1)
-
-        # 1秒ごとの生存確認
-        if now - self.last_send >= 1.0:
-            print(f"UID:{DEVICE_UID}")
-            self.last_send = now
+    def before_hid_send(self, keyboard): pass
+    def after_hid_send(self, keyboard): pass
 
     def process_key(self, keyboard, key, is_pressed, int_coord):
-        # キー入力イベントを送信
-        if key:
-            state = "P" if is_pressed else "R"
+        # 押された(P) / 離された(R)
+        state = "P" if is_pressed else "R"
+        
+        # マトリックス上のキーの場合
+        if int_coord is not None:
             print(f"{DEVICE_UID}:{state}:SW_{int_coord:02d}")
         return key
 
 # =====================================================
-# KMK Keyboard setup
+# 3. キーボード設定
 # =====================================================
 keyboard = KMKKeyboard()
-encoder_handler = EncoderHandler()
+keyboard.debug_enabled = False
 
-keyboard.modules = [
-    Layers(),
-    encoder_handler,
-    SerialCommunication(),
-]
-
-keyboard.extensions.append(MediaKeys())
-
-# ---- RGB LED (GP9) ----
-# ピン9にRGBがつながっているとのことなので追加しておきます
-rgb = RGB(pixel_pin=board.GP9, num_pixels=1, val_limit=255, hue_default=0, sat_default=255, val_default=100)
-keyboard.extensions.append(rgb)
-
-# ---- Matrix (キースイッチ) ----
-# 配線情報に基づいて修正
-# ダイオードなし側（列）: GP2(エンコーダーSW), GP8, 7, 6, 5, 4, 3
-keyboard.col_pins = (
-    board.GP2,  # Col 0: エンコーダーのスイッチ
-    board.GP8,  # Col 1
-    board.GP7,  # Col 2
-    board.GP6,  # Col 3
-    board.GP5,  # Col 4
-    board.GP4,  # Col 5
-    board.GP3   # Col 6
-)
-
-# ダイオードあり側（行）: GP28, 27, 26, 15, 14, GP29(エンコーダーSW)
-keyboard.row_pins = (
-    board.GP28, # Row 0
-    board.GP27, # Row 1
-    board.GP26, # Row 2
-    board.GP15, # Row 3
-    board.GP14, # Row 4
-    board.GP29  # Row 5: エンコーダーのスイッチ
-)
-
+# ピン設定 (RP2040-Zero)
+keyboard.col_pins = (board.GP2, board.GP8, board.GP7, board.GP6, board.GP5, board.GP4, board.GP3)
+keyboard.row_pins = (board.GP28, board.GP27, board.GP26, board.GP15, board.GP14, board.GP29)
 keyboard.diode_orientation = DiodeOrientation.COL2ROW
 
-# ---- Encoder (つまみ回転) ----
-# GP0 と GP1 が回転検知
-encoder_handler.pins = (
-    (board.GP0, board.GP1, None, False),
-)
-
-# 回転時の動作（左回転=左矢印, 右回転=右矢印）
-encoder_handler.map = [
-    ((KC.LEFT, KC.RIGHT),),
+# キー座標の割り当て (01〜35)
+keyboard.coord_mapping = [
+     1,  2,  3,  4,  5,  6,
+     8,  9, 10, 11, 12, 13,
+    15, 16, 17, 18, 19, 20,
+    22, 23, 24, 25, 26, 27,
+    29, 30, 31, 32, 33, 34,
+    35
 ]
 
-# ---- Keymap ----
-# 7列 x 6行 = 42キー分のマップ
-# とりあえず全て「A」にしていますが、あとで好きなキーに変えてください
+# =====================================================
+# 4. エンコーダー設定
+# =====================================================
+# 回転時のシリアル出力 (SW_36, SW_37)
+ENC_CW = make_key(names=('ENC_CW',), on_press=lambda *args: print(f"{DEVICE_UID}:P:SW_36"))
+ENC_CCW = make_key(names=('ENC_CCW',), on_press=lambda *args: print(f"{DEVICE_UID}:P:SW_37"))
+
+encoder_handler = EncoderHandler()
+encoder_handler.pins = ((board.GP0, board.GP1, None, False),)
+encoder_handler.map = [((ENC_CW, ENC_CCW),),]
+
+# =====================================================
+# 5. モジュール登録
+# =====================================================
+serial_keys = SerialKeys()
+keyboard.modules = [Layers(), serial_keys, encoder_handler]
+
+# =====================================================
+# 6. キーマップ (必要に応じて書き換えてください)
+# =====================================================
+# シリアル通信で制御する場合は、全て KC.NO でも動作します
 keyboard.keymap = [
-    [KC.A] * 42
+    [KC.NO] * 35, # レイヤー0
 ]
 
-# =====================================================
-# Main
-# =====================================================
 if __name__ == "__main__":
-    keyboard.debug_enabled = False
+    # 起動時にUIDを表示
+    print(f"UID:{DEVICE_UID}")
     keyboard.go()
