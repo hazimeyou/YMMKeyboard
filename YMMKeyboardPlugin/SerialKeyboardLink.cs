@@ -83,7 +83,8 @@ namespace YMMKeyboardPlugin
                     {
                         device = new SerialKeyboardDevice(uid);
                         _devices[uid] = device;
-                        MessageBox.Show("デバイス検出: " + uid);
+                        //
+                        //MessageBox.Show("デバイス検出: " + uid);
                         DeviceDetected?.Invoke(device);
                     }
 

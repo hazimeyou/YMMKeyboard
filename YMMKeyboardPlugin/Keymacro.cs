@@ -26,13 +26,13 @@ namespace YMMKeyboardPlugin
             _link.Start();
 
             Debug.WriteLine("[Keymacro] Initialize END");
-            MessageBox.Show("Keymacro Initialize 完了");
+            //MessageBox.Show("Keymacro Initialize 完了");
         }
 
         private void OnDeviceDetected(SerialKeyboardDevice device)
         {
             Debug.WriteLine($"[Keymacro] DeviceDetected UID={device.Uid}");
-            MessageBox.Show($"DeviceDetected\nUID={device.Uid}");
+           // MessageBox.Show($"DeviceDetected\nUID={device.Uid}");
 
             if (!_macros.ContainsKey(device.Uid))
             {
@@ -90,7 +90,7 @@ namespace YMMKeyboardPlugin
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                MessageBox.Show(message);
+                //MessageBox.Show(message);
             });
         }
 

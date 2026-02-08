@@ -13,72 +13,48 @@ namespace YMMKeyboardPlugin
     {
         public static Mp3InsertViewModel? Instance { get; private set; }
 
-        private Timeline? _timeline;
+        public static Timeline? _timeline;
         private UndoRedoManager? _undoRedoManager;
-
+        public Timeline Timeline { get; set; }
         public Mp3InsertViewModel()
         {
             Instance = this;
             Debug.WriteLine("[Mp3Insert] Constructor");
         }
 
-        public void InsertMp3()
+        public async void InsertMp3()
         {
+            Debug.WriteLine("[Mp3Insert] Insert START");
+
+            if (_timeline == null || _undoRedoManager == null)
+            {
+                Debug.WriteLine("[Mp3Insert] Timeline or UndoRedo is NULL");
+                return;
+            }
+
+            var path = @"C:\Users\yu-za-hazimeyou\Desktop\S06test.wav";
+            if (!File.Exists(path))
+            {
+                Debug.WriteLine("[Mp3Insert] File not found");
+                return;
+            }
+
+            // ★ UIスレッドで追加
+            AudioItem item = null!;
+
             Application.Current.Dispatcher.Invoke(() =>
             {
-                Debug.WriteLine("[Mp3Insert] InsertMp3 START");
-
-                if (_timeline == null || _undoRedoManager == null)
-                {
-                    Debug.WriteLine("[Mp3Insert] Timeline or UndoRedoManager is NULL");
-                    return;
-                }
-
-                var path = @"C:\Users\yu-za-hazimeyou\Desktop\S06test.wav";
-                if (!File.Exists(path))
-                {
-                    Debug.WriteLine("[Mp3Insert] File not found");
-                    return;
-                }
-
-                var item = new AudioItem(path)
+                item = new AudioItem(path)
                 {
                     Frame = _timeline.CurrentFrame,
                     Layer = 0,
+                    Length = 90,
                 };
 
                 Debug.WriteLine("[Mp3Insert] TryAddItems");
-
-                var ok = _timeline.TryAddItems(
-                    new IItem[] { item },
-                    item.Frame,
-                    item.Layer);
-
-                Debug.WriteLine($"[Mp3Insert] TryAddItems Result = {ok}");
-                Debug.WriteLine($"[Mp3Insert] Length(before) = {item.Length}");
-
-                // ★★★ ここが本命 ★★★
-                ForceTimelineRefresh(item);
-
-                Debug.WriteLine($"[Mp3Insert] Length(after) = {item.Length}");
-
-                _undoRedoManager.Record();
-                Debug.WriteLine("[Mp3Insert] UndoRedo Record DONE");
+                _timeline.TryAddItems(new IItem[] { item }, item.Frame, item.Layer);
             });
-        }
-
-        /// <summary>
-        /// タイムラインを強制再構築させる
-        /// </summary>
-        private void ForceTimelineRefresh(AudioItem item)
-        {
-            Debug.WriteLine("[Mp3Insert] ForceTimelineRefresh");
-
-            // 一旦削除
-            _timeline!.Items.Remove(item);
-
-            // すぐ戻す
-            _timeline.Items.Add(item);
+            Debug.WriteLine("[Mp3Insert] Insert END");
         }
 
         // ===== YMMから自動で呼ばれる =====
@@ -88,7 +64,14 @@ namespace YMMKeyboardPlugin
             _timeline = info.Timeline;
             _undoRedoManager = info.UndoRedoManager;
         }
-
+        public static void purasu()
+        {
+            _timeline.CurrentFrame = _timeline.CurrentFrame + 1;
+        }
+        public static void mainasu()
+        {
+            _timeline.CurrentFrame = _timeline.CurrentFrame - 1;
+        }
         public event PropertyChangedEventHandler? PropertyChanged;
     }
 }
