@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
-
+using YMMKeyboardPlugin.MainView;
+using YMMKeyboardPlugin.TimelineTool;
 namespace YMMKeyboardPlugin
 {
     public class Keymacro : IDisposable
@@ -12,7 +13,7 @@ namespace YMMKeyboardPlugin
         private readonly Dictionary<string, Dictionary<int, Action>> _macros
             = new();
 
-        private readonly Mp3InsertViewModel _mp3Vm = new();
+        private readonly TimelineImport _mp3Vm = new();
 
         public void Initialize()
         {
