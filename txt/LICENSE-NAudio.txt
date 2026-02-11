@@ -1,0 +1,4 @@
+NAudio
+Copyright (c) Mark Heath
+Licensed under the Microsoft Public License (Ms-PL)
+https://github.com/naudio/NAudio
