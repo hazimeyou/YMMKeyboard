@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using YMMKeyboardPlugin.MainView;
 using YukkuriMovieMaker.UndoRedo;
-using YMMKeyboardPlugin.TimelineTool;
+
 namespace YMMKeyboardPlugin
 {
     public static class CreateDefaultMapping
@@ -11,7 +10,7 @@ namespace YMMKeyboardPlugin
 
         public static Dictionary<int, Action> Mapping(
             string uid,
-            TimelineImport mp3Vm)
+            Mp3InsertViewModel mp3Vm)
         {
             Debug.WriteLine($"[Mapping] Create for UID={uid}");
 
@@ -23,7 +22,7 @@ namespace YMMKeyboardPlugin
 
                 Keymacro.ShowToast("SW-01 実行");
 
-                var vm = TimelineImport.Instance;
+                var vm = Mp3InsertViewModel.Instance;
                 if (vm == null)
                 {
                     Debug.WriteLine("[SW_01] Mp3InsertViewModel.Instance is NULL");
@@ -40,12 +39,12 @@ namespace YMMKeyboardPlugin
 
             map[36] = () =>
             {
-                TimelineSeek.purasu();
+                Mp3InsertViewModel.purasu();
             };
 
             map[37] = () =>
             {
-                TimelineSeek.mainasu();
+                Mp3InsertViewModel.mainasu();
             };
 
 

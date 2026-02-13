@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -8,16 +6,22 @@ using System.Windows;
 using YukkuriMovieMaker.Project;
 using YukkuriMovieMaker.Project.Items;
 using YukkuriMovieMaker.UndoRedo;
-using NAudio.Wave;
-namespace YMMKeyboardPlugin.TimelineTool
+
+namespace YMMKeyboardPlugin
 {
-    public class TimelineImport: ITimelineToolViewModel
+    public class Mp3InsertViewModel : ITimelineToolViewModel, INotifyPropertyChanged
     {
-        public static TimelineImport? Instance { get; private set; }
+        public static Mp3InsertViewModel? Instance { get; private set; }
 
         public static Timeline? _timeline;
         private UndoRedoManager? _undoRedoManager;
         public Timeline Timeline { get; set; }
+        public Mp3InsertViewModel()
+        {
+            Instance = this;
+            Debug.WriteLine("[Mp3Insert] Constructor");
+        }
+
         public async void InsertMp3()
         {
             Debug.WriteLine("[Mp3Insert] Insert START");
@@ -34,7 +38,6 @@ namespace YMMKeyboardPlugin.TimelineTool
                 Debug.WriteLine("[Mp3Insert] File not found");
                 return;
             }
-
 
             // ★ UIスレッドで追加
             AudioItem item = null!;
@@ -53,11 +56,22 @@ namespace YMMKeyboardPlugin.TimelineTool
             });
             Debug.WriteLine("[Mp3Insert] Insert END");
         }
+
+        // ===== YMMから自動で呼ばれる =====
         public void SetTimelineToolInfo(TimelineToolInfo info)
         {
             Debug.WriteLine("[Mp3Insert] SetTimelineToolInfo");
             _timeline = info.Timeline;
             _undoRedoManager = info.UndoRedoManager;
         }
+        public static void purasu()
+        {
+            _timeline.CurrentFrame = _timeline.CurrentFrame + 1;
+        }
+        public static void mainasu()
+        {
+            _timeline.CurrentFrame = _timeline.CurrentFrame - 1;
+        }
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
 }

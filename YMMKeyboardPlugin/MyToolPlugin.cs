@@ -16,14 +16,13 @@ global using System.Reflection;
 global using System.Diagnostics.CodeAnalysis;
 global using YukkuriMovieMaker.Commons;
 global using YukkuriMovieMaker.Plugin;
-using YMMKeyboardPlugin.MainView;
 namespace YMMKeyboardPlugin
 {
     public class MyToolPlugin : IToolPlugin
     {
         public string Name => "キーボードプラグイン";
-        public Type ViewModelType => typeof(YmmKeyboardViewModel);
-        public Type ViewType => typeof(YmmKeyboardView);
+        public Type ViewModelType => typeof(Mp3InsertViewModel);
+        public Type ViewType => typeof(Mp3InsertView);
 
         private Keymacro _keymacro;
 
