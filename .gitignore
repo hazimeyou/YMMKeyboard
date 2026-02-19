@@ -387,3 +387,4 @@ venv/
 *.sln.docstates
 KiCad/YMMkeyboard/YMMkeyboard-backups/
 KiCad/YMMkeyboardMX/YMMkeyboardMX-backups/
+/KiCad/testboard/testboard/testboard-backups
