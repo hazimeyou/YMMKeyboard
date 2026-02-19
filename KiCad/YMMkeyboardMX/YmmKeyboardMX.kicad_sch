@@ -5,213 +5,6 @@
 	(uuid "c1bea99d-754f-4f79-b605-51c9ee663fdf")
 	(paper "A4")
 	(lib_symbols
-		(symbol "Connector:Conn_01x03_Socket"
-			(pin_names
-				(offset 1.016)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 0 5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "Conn_01x03_Socket"
-				(at 0 -5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Generic connector, single row, 01x03, script generated"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_locked" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "connector"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "Connector*:*_1x??_*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "Conn_01x03_Socket_1_1"
-				(polyline
-					(pts
-						(xy -1.27 2.54) (xy -0.508 2.54)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 0) (xy -0.508 0)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 -2.54) (xy -0.508 -2.54)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start 0 2.032)
-					(mid -0.5058 2.54)
-					(end 0 3.048)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start 0 -0.508)
-					(mid -0.5058 0)
-					(end 0 0.508)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start 0 -3.048)
-					(mid -0.5058 -2.54)
-					(end 0 -2.032)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin passive line
-					(at -5.08 2.54 0)
-					(length 3.81)
-					(name "Pin_1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 0 0)
-					(length 3.81)
-					(name "Pin_2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -2.54 0)
-					(length 3.81)
-					(name "Pin_3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Device:C_Small"
 			(pin_numbers
 				(hide yes)
@@ -1790,6 +1583,131 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "power:+5V"
+			(power)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "#PWR"
+				(at 0 -3.81 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Value" "+5V"
+				(at 0 3.556 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Power symbol creates a global label with name \"+5V\""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "global power"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "+5V_0_1"
+				(polyline
+					(pts
+						(xy -0.762 1.27) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 2.54) (xy 0.762 1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "+5V_1_1"
+				(pin power_in line
+					(at 0 0 90)
+					(length 0)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "power:GND"
 			(power)
 			(pin_numbers
@@ -2253,12 +2171,6 @@
 		(uuid "64d6f73d-1aeb-408c-b3b2-40781c4ddac3")
 	)
 	(junction
-		(at 201.93 88.9)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "68564476-d0cd-4a64-8dc6-93c9d76f8890")
-	)
-	(junction
 		(at 160.02 165.1)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2673,6 +2585,12 @@
 		(uuid "cec2d8d9-2ad0-47cc-8356-d3a3774ea05a")
 	)
 	(junction
+		(at 201.93 88.9)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d00fd217-8a77-4a7b-8a71-29a53bb1253a")
+	)
+	(junction
 		(at 177.8 104.14)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2949,16 +2867,6 @@
 			(type default)
 		)
 		(uuid "07f5c214-2d63-4bb3-ac2e-bd7d7e2b2ed7")
-	)
-	(wire
-		(pts
-			(xy 251.46 154.94) (xy 262.89 154.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0857e0a8-0fc8-44a9-8ce0-7e1e5dda5490")
 	)
 	(wire
 		(pts
@@ -3669,16 +3577,6 @@
 			(type default)
 		)
 		(uuid "419659a6-e1ad-4a48-81a5-502b81424392")
-	)
-	(wire
-		(pts
-			(xy 201.93 88.9) (xy 201.93 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "41de11d4-f874-496d-a4f2-7bd3fdd921e6")
 	)
 	(wire
 		(pts
@@ -4622,6 +4520,16 @@
 	)
 	(wire
 		(pts
+			(xy 201.93 88.9) (xy 203.2 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7fcad075-5fa7-47a9-9d15-efbc7b467270")
+	)
+	(wire
+		(pts
 			(xy 177.8 88.9) (xy 185.42 88.9)
 		)
 		(stroke
@@ -4832,16 +4740,6 @@
 	)
 	(wire
 		(pts
-			(xy 262.89 157.48) (xy 237.49 157.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8a743a60-e297-429d-8e91-2c803887a585")
-	)
-	(wire
-		(pts
 			(xy 134.62 67.31) (xy 144.78 67.31)
 		)
 		(stroke
@@ -4959,26 +4857,6 @@
 			(type default)
 		)
 		(uuid "903c0f4d-07bd-4820-865b-730d83cb6604")
-	)
-	(wire
-		(pts
-			(xy 219.71 119.38) (xy 219.71 160.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "90860a96-eccc-437d-a711-e4acf8d9e34c")
-	)
-	(wire
-		(pts
-			(xy 237.49 157.48) (xy 237.49 132.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "90a33218-b68f-4587-b843-88ce9ab78c40")
 	)
 	(wire
 		(pts
@@ -5582,16 +5460,6 @@
 	)
 	(wire
 		(pts
-			(xy 219.71 160.02) (xy 262.89 160.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c3495d7f-6618-4304-8e7b-abd58e90d73c")
-	)
-	(wire
-		(pts
 			(xy 205.74 77.47) (xy 205.74 58.42)
 		)
 		(stroke
@@ -5629,6 +5497,16 @@
 			(type default)
 		)
 		(uuid "c69b71d6-b75f-4345-babb-97e0e7797793")
+	)
+	(wire
+		(pts
+			(xy 201.93 88.9) (xy 201.93 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c798d578-838d-4419-9194-2f7f4e3cd197")
 	)
 	(wire
 		(pts
@@ -6988,7 +6866,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 177.8 81.28 0)
 			(effects
 				(font
@@ -7646,7 +7524,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 177.8 114.3 0)
 			(effects
 				(font
@@ -7791,7 +7669,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 177.8 24.13 0)
 			(effects
 				(font
@@ -8262,7 +8140,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 127 52.07 0)
 			(effects
 				(font
@@ -9194,7 +9072,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 101.6 24.13 0)
 			(effects
 				(font
@@ -9262,7 +9140,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 127 114.3 0)
 			(effects
 				(font
@@ -9399,7 +9277,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 76.2 24.13 0)
 			(effects
 				(font
@@ -9619,7 +9497,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 50.8 143.51 0)
 			(effects
 				(font
@@ -9687,7 +9565,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 50.8 24.13 0)
 			(effects
 				(font
@@ -9909,7 +9787,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 101.6 81.28 0)
 			(effects
 				(font
@@ -10298,7 +10176,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 101.6 52.07 0)
 			(effects
 				(font
@@ -10366,7 +10244,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 152.4 81.28 0)
 			(effects
 				(font
@@ -10802,7 +10680,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 76.2 114.3 0)
 			(effects
 				(font
@@ -10945,7 +10823,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 177.8 52.07 0)
 			(effects
 				(font
@@ -11491,7 +11369,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 127 24.13 0)
 			(effects
 				(font
@@ -11635,7 +11513,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 152.4 52.07 0)
 			(effects
 				(font
@@ -12081,7 +11959,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 76.2 52.07 0)
 			(effects
 				(font
@@ -12282,72 +12160,6 @@
 			(project "YmmKeyboardMX"
 				(path "/c1bea99d-754f-4f79-b605-51c9ee663fdf"
 					(reference "D44")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 237.49 132.08 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "90341964-6656-481f-a9da-a53975b544ea")
-		(property "Reference" "#PWR02"
-			(at 237.49 138.43 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 237.49 137.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 237.49 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 237.49 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 237.49 132.08 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "b8532c8c-ed97-412b-98bb-7ddee5cfe9c9")
-		)
-		(instances
-			(project ""
-				(path "/c1bea99d-754f-4f79-b605-51c9ee663fdf"
-					(reference "#PWR02")
 					(unit 1)
 				)
 			)
@@ -12696,7 +12508,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 127 81.28 0)
 			(effects
 				(font
@@ -12802,6 +12614,72 @@
 			(project "YmmKeyboardMX"
 				(path "/c1bea99d-754f-4f79-b605-51c9ee663fdf"
 					(reference "C29")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+5V")
+		(at 203.2 88.9 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "9b931b05-89c9-4283-9b30-2a15297c4a14")
+		(property "Reference" "#PWR02"
+			(at 203.2 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+5V"
+			(at 203.2 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 203.2 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 203.2 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+5V\""
+			(at 203.2 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "e9afc9a1-8bfa-470f-afcb-82b0ec38c7d5")
+		)
+		(instances
+			(project ""
+				(path "/c1bea99d-754f-4f79-b605-51c9ee663fdf"
+					(reference "#PWR02")
 					(unit 1)
 				)
 			)
@@ -13865,7 +13743,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 101.6 143.51 0)
 			(effects
 				(font
@@ -14173,7 +14051,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 50.8 114.3 0)
 			(effects
 				(font
@@ -14279,79 +14157,6 @@
 			(project "YmmKeyboardMX"
 				(path "/c1bea99d-754f-4f79-b605-51c9ee663fdf"
 					(reference "C12")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:Conn_01x03_Socket")
-		(at 267.97 157.48 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c9e69dc5-26c1-43b6-9d7a-cea43fdc562e")
-		(property "Reference" "J3"
-			(at 269.24 156.2099 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "RGB"
-			(at 269.24 158.7499 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical"
-			(at 267.97 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 267.97 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x03, script generated"
-			(at 267.97 157.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "5b4f7946-b72e-4208-a4af-70275d87213c")
-		)
-		(pin "3"
-			(uuid "7559efc1-dad1-4cf8-8d06-b1c9b8a963ef")
-		)
-		(pin "1"
-			(uuid "7ad62adb-1017-410f-bc31-3c9f78071fb6")
-		)
-		(instances
-			(project ""
-				(path "/c1bea99d-754f-4f79-b605-51c9ee663fdf"
-					(reference "J3")
 					(unit 1)
 				)
 			)
@@ -14747,7 +14552,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 50.8 52.07 0)
 			(effects
 				(font
@@ -14890,7 +14695,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 152.4 143.51 0)
 			(effects
 				(font
@@ -15027,7 +14832,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 76.2 81.28 0)
 			(effects
 				(font
@@ -15095,7 +14900,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 152.4 114.3 0)
 			(effects
 				(font
@@ -15163,7 +14968,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 177.8 143.51 0)
 			(effects
 				(font
@@ -15533,7 +15338,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 152.4 24.13 0)
 			(effects
 				(font
@@ -15677,7 +15482,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 127 143.51 0)
 			(effects
 				(font
@@ -15745,7 +15550,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 76.2 143.51 0)
 			(effects
 				(font
@@ -15889,7 +15694,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 50.8 81.28 0)
 			(effects
 				(font
@@ -16366,7 +16171,7 @@
 				)
 			)
 		)
-		(property "Footprint" "isw-kbd:CherryMX_Hotswap_1u"
+		(property "Footprint" "Button_Switch_THT:SW_PUSH_6mm"
 			(at 101.6 114.3 0)
 			(effects
 				(font
