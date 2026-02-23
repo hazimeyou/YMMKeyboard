@@ -7166,7 +7166,7 @@
 	(footprint "LED_SMD:LED_SK6812_PLCC4_5.0x5.0mm_P3.2mm"
 		(layer "F.Cu")
 		(uuid "a67a500d-2ec2-4566-8bbc-2d4b6a28a890")
-		(at 24.415 85.515)
+		(at 137.25 42.85)
 		(descr "5.0mm x 5.0mm Addressable RGB LED NeoPixel, https://cdn-shop.adafruit.com/product-files/1138/SK6812+LED+datasheet+.pdf")
 		(tags "LED RGB NeoPixel PLCC-4 5050")
 		(property "Reference" "D2"
