@@ -487,10 +487,10 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "../../gerber/3/",
+      "plot": "../../jww/dxf/",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "YmmKeyboardMX.step",
       "svg": "",
       "vrml": ""
     },
