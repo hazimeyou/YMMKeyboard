@@ -7,30 +7,24 @@ using YukkuriMovieMaker.Project;
 using YukkuriMovieMaker.Project.Items;
 using YukkuriMovieMaker.UndoRedo;
 
-namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Mapping
 {
-    public class Mp3InsertViewModel : ITimelineToolViewModel, INotifyPropertyChanged
+    public class keyboardViewModel : ITimelineToolViewModel, INotifyPropertyChanged
     {
-        public static Mp3InsertViewModel? Instance { get; private set; }
+        public static keyboardViewModel? Instance { get; private set; }
 
         public static Timeline? _timeline;
         private UndoRedoManager? _undoRedoManager;
         public Timeline Timeline { get; set; }
-        public Mp3InsertViewModel()
+        public keyboardViewModel()
         {
             Instance = this;
             Debug.WriteLine("[Mp3Insert] Constructor");
         }
 
-        public async void InsertMp3()
+        public static void InsertMp3()
         {
             Debug.WriteLine("[Mp3Insert] Insert START");
-
-            if (_timeline == null || _undoRedoManager == null)
-            {
-                Debug.WriteLine("[Mp3Insert] Timeline or UndoRedo is NULL");
-                return;
-            }
 
             var path = @"C:\Users\yu-za-hazimeyou\Desktop\S06test.wav";
             if (!File.Exists(path))

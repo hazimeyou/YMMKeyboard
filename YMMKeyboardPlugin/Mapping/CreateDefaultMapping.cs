@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using YMMKeyboardPlugin.Key;
 using YukkuriMovieMaker.UndoRedo;
 
-namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Mapping
 {
     public static class CreateDefaultMapping
     {
 
         public static Dictionary<int, Action> Mapping(
-            string uid,
-            Mp3InsertViewModel mp3Vm)
+            string uid)
         {
             Debug.WriteLine($"[Mapping] Create for UID={uid}");
 
@@ -18,19 +18,7 @@ namespace YMMKeyboardPlugin
 
             map[01] = () =>
             {
-                Debug.WriteLine("[SW_01] Action START");
-
-                Keymacro.ShowToast("SW-01 実行");
-
-                var vm = Mp3InsertViewModel.Instance;
-                if (vm == null)
-                {
-                    Debug.WriteLine("[SW_01] Mp3InsertViewModel.Instance is NULL");
-                    return;
-                }
-
-                Debug.WriteLine("[SW_01] Call InsertMp3()");
-                vm.InsertMp3();
+                keyboardViewModel.InsertMp3();
             };
             map[02] = () =>
             {
@@ -39,12 +27,12 @@ namespace YMMKeyboardPlugin
 
             map[36] = () =>
             {
-                Mp3InsertViewModel.purasu();
+                keyboardViewModel.purasu();
             };
 
             map[37] = () =>
             {
-                Mp3InsertViewModel.mainasu();
+                keyboardViewModel.mainasu();
             };
 
 

@@ -1,4 +1,4 @@
-﻿namespace YMMKeyboardPlugin;
+﻿namespace YMMKeyboardPlugin.Key;
 
 public class KeyEvent
 {

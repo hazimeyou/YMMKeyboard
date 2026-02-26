@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
-
+using YMMKeyboardPlugin.Key;
+using YMMKeyboardPlugin.Mapping;
 namespace YMMKeyboardPlugin
 {
     public class Keymacro : IDisposable
@@ -12,7 +13,7 @@ namespace YMMKeyboardPlugin
         private readonly Dictionary<string, Dictionary<int, Action>> _macros
             = new();
 
-        private readonly Mp3InsertViewModel _mp3Vm = new();
+        private readonly keyboardViewModel _mp3Vm = new();
 
         public void Initialize()
         {
@@ -38,7 +39,7 @@ namespace YMMKeyboardPlugin
             {
                 Debug.WriteLine("[Keymacro] Create mapping");
                 _macros[device.Uid] =
-                    CreateDefaultMapping.Mapping(device.Uid, _mp3Vm);
+                    CreateDefaultMapping.Mapping(device.Uid);
             }
             else
             {

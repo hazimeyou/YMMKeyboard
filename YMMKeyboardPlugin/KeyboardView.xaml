@@ -1,0 +1,94 @@
+<UserControl
+    x:Class="YMMKeyboardPlugin.KeyboardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    MinWidth="520"
+    MinHeight="260">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- タイトル -->
+        <TextBlock
+            Grid.Row="0"
+            Text="YMM4キーボード"
+            FontWeight="Bold"
+            Margin="0,0,0,10"/>
+
+        <!-- 本体 -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="180"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左：通常キー（SW01〜SW30） -->
+            <UniformGrid Grid.Column="0" Columns="6">
+
+            <!-- 1段目 -->
+            <Button Content="SW01" Height="35" Width="35" Margin="4" Click="SW01"/>
+            <Button Content="SW02" Height="35" Width="35" Margin="4" Click="SW02"/>
+            <Button Content="SW03" Height="35" Width="35" Margin="4" Click="SW03"/>
+            <Button Content="SW04" Height="35" Width="35" Margin="4" Click="SW04"/>
+            <Button Content="SW05" Height="35" Width="35" Margin="4" Click="SW05"/>
+            <Button Content="SW06" Height="35" Width="35" Margin="4" Click="SW06"/>
+
+            <!-- 2段目 -->
+            <Button Content="SW07" Height="35" Width="35" Margin="4" Click="SW07"/>
+            <Button Content="SW08" Height="35" Width="35" Margin="4" Click="SW08"/>
+            <Button Content="SW09" Height="35" Width="35" Margin="4" Click="SW09"/>
+            <Button Content="SW10" Height="35" Width="35" Margin="4" Click="SW10"/>
+            <Button Content="SW11" Height="35" Width="35" Margin="4" Click="SW11"/>
+            <Button Content="SW12" Height="35" Width="35" Margin="4" Click="SW12"/>
+
+            <!-- 3段目 -->
+            <Button Content="SW13" Height="35" Width="35" Margin="4" Click="SW13"/>
+            <Button Content="SW14" Height="35" Width="35" Margin="4" Click="SW14"/>
+            <Button Content="SW15" Height="35" Width="35" Margin="4" Click="SW15"/>
+            <Button Content="SW16" Height="35" Width="35" Margin="4" Click="SW16"/>
+            <Button Content="SW17" Height="35" Width="35" Margin="4" Click="SW17"/>
+            <Button Content="SW18" Height="35" Width="35" Margin="4" Click="SW18"/>
+
+            <!-- 4段目 -->
+            <Button Content="SW19" Height="35" Width="35" Margin="4" Click="SW19"/>
+            <Button Content="SW20" Height="35" Width="35" Margin="4" Click="SW20"/>
+            <Button Content="SW21" Height="35" Width="35" Margin="4" Click="SW21"/>
+            <Button Content="SW22" Height="35" Width="35" Margin="4" Click="SW22"/>
+            <Button Content="SW23" Height="35" Width="35" Margin="4" Click="SW23"/>
+            <Button Content="SW24" Height="35" Width="35" Margin="4" Click="SW24"/>
+
+            <!-- 5段目 -->
+            <Button Content="SW25" Height="35" Width="35" Margin="4" Click="SW25"/>
+            <Button Content="SW26" Height="35" Width="35" Margin="4" Click="SW26"/>
+            <Button Content="SW27" Height="35" Width="35" Margin="4" Click="SW27"/>
+            <Button Content="SW28" Height="35" Width="35" Margin="4" Click="SW28"/>
+            <Button Content="SW29" Height="35" Width="35" Margin="4" Click="SW29"/>
+            <Button Content="SW30" Height="35" Width="35" Margin="4" Click="SW30"/>
+            </UniformGrid>
+
+            <!-- 右：ロータリー（回転＋押し込み） -->
+            <Border Grid.Column="2" Padding="10" CornerRadius="8" BorderThickness="1" BorderBrush="#444">
+                <StackPanel>
+                    <TextBlock Text="Rotary" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                    <!-- 回転（左/右） -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                        <Button Content="←" Width="70" Height="40" Margin="4" Click="hidari"/>
+                        <Button Content="→" Width="70" Height="40" Margin="4" Click="migi"/>
+                    </StackPanel>
+
+                    <!-- 押し込み -->
+                    <Button Content="SW35" Height="35" Margin="4" Click="SW35"/>
+                </StackPanel>
+            </Border>
+
+        </Grid>
+    </Grid>
+</UserControl>
