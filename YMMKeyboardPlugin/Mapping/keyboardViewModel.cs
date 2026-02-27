@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Shapes;
 using YukkuriMovieMaker.Project;
 using YukkuriMovieMaker.Project.Items;
 using YukkuriMovieMaker.UndoRedo;
@@ -22,11 +23,10 @@ namespace YMMKeyboardPlugin.Mapping
             Debug.WriteLine("[Mp3Insert] Constructor");
         }
 
-        public static void InsertMp3()
+        public static void InsertMp3(string path)
         {
             Debug.WriteLine("[Mp3Insert] Insert START");
 
-            var path = @"C:\Users\yu-za-hazimeyou\Desktop\S06test.wav";
             if (!File.Exists(path))
             {
                 Debug.WriteLine("[Mp3Insert] File not found");
