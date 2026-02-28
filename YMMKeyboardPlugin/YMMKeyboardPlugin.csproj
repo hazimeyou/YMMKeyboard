@@ -14,24 +14,17 @@
 	<ItemGroup Condition="Exists('$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll')">
 		<Reference Include="YukkuriMovieMaker.Plugin" HintPath="$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll" Private="false" ExcludeAssets="runtime" />
 		<Reference Include="YukkuriMovieMaker.Controls" HintPath="$(YMM4DirPath)\YukkuriMovieMaker.Controls.dll" Private="false" ExcludeAssets="runtime" />
+		<Reference Include="YukkuriMovieMaker.Controls" HintPath="$(YMM4DirPath)\YukkuriMovieMaker.dll" Private="false" ExcludeAssets="runtime" />
 	</ItemGroup>
 
 	<ItemGroup Condition="!Exists('$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll')">
 		<Reference Include="YukkuriMovieMaker.Plugin" HintPath="..\libs\YukkuriMovieMaker.Plugin.dll" Private="false" ExcludeAssets="runtime" />
 		<Reference Include="YukkuriMovieMaker.Controls" HintPath="..\libs\YukkuriMovieMaker.Controls.dll" Private="false" ExcludeAssets="runtime" />
+		<Reference Include="YukkuriMovieMaker.Controls" HintPath="..\libs\YukkuriMovieMaker.dll" Private="false" ExcludeAssets="runtime" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <PackageReference Include="System.IO.Ports" Version="10.0.2" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Reference Include="YukkuriMovieMaker">
-	    <HintPath>..\..\..\..\Desktop\YukkuriMovieMaker_v4_Lite\YukkuriMovieMaker.dll</HintPath>
-	  </Reference>
-	  <Reference Include="YukkuriMovieMaker.Plugin.Community">
-	    <HintPath>..\..\..\..\Desktop\YukkuriMovieMaker_v4_Lite\YukkuriMovieMaker.Plugin.Community.dll</HintPath>
-	  </Reference>
 	</ItemGroup>
 	<Target Name="CopyToYMM4" AfterTargets="Build" Condition="Exists('$(YMM4DirPath)')">
 
