@@ -91,63 +91,63 @@ namespace YMMKeyboardPlugin.Mapping
             };
             map[22] = () =>
             {
-                MappingConverter.SW20();
+                MappingConverter.SW19();
             };
             map[23] = () =>
             {
-                MappingConverter.SW22();
+                MappingConverter.SW20();
+            };
+            map[24] = () =>
+            {
+                MappingConverter.SW21();
             };
             map[25] = () =>
             {
-                MappingConverter.SW23();
+                MappingConverter.SW22();
             };
             map[26] = () =>
             {
-                MappingConverter.SW24();
+                MappingConverter.SW23();
             };
             map[27] = () =>
             {
-                MappingConverter.SW25();
-            };
-            map[28] = () =>
-            {
-                MappingConverter.SW26();
+                MappingConverter.SW24();
             };
             map[29] = () =>
             {
-                MappingConverter.SW29();
+                MappingConverter.SW25();
             };
             map[30] = () =>
             {
-                MappingConverter.SW30();
+                MappingConverter.SW26();
             };
             map[31] = () =>
             {
-                MappingConverter.SW01();
+                MappingConverter.SW27();
             };
             map[32] = () =>
             {
-                MappingConverter.SW01();
+                MappingConverter.SW28();
             };
             map[33] = () =>
             {
-                MappingConverter.SW01();
+                MappingConverter.SW29();
             };
             map[34] = () =>
             {
-                MappingConverter.SW01();
+                MappingConverter.SW30();
             };
             map[35] = () =>
             {
-                MappingConverter.SW01();
+                MappingConverter.SW35();
             };
             map[36] = () =>
             {
-                MappingConverter.SW01();
+                MappingConverter.SW37();
             };
             map[37] = () =>
             {
-                MappingConverter.SW01();
+                MappingConverter.SW36();
             };
             return map;
         }
