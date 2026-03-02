@@ -5,8 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:YMMKeyboardPlugin.Settings"
         xmlns:c="clr-namespace:YukkuriMovieMaker.Controls;assembly=YukkuriMovieMaker.Controls"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             mc:Ignorable="d" Height="350" Width="600">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -23,13 +22,13 @@
         <!-- 本体 -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="180"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="88"/>
+                <ColumnDefinition Width="108"/>
             </Grid.ColumnDefinitions>
 
             <!-- 左：通常キー（SW01〜SW30） -->
-            <UniformGrid Grid.Column="0" Columns="6" Margin="196,-10,0,10" Grid.ColumnSpan="2">
+            <UniformGrid Grid.Column="0" Columns="6" Margin="172,-10,24,10" Grid.ColumnSpan="2">
 
                 <!-- 1段目 -->
                 <Button Content="SW01" Height="35" Width="35" Margin="4" Click="SW01"/>
@@ -73,22 +72,26 @@
             </UniformGrid>
 
             <!-- 右：ロータリー（回転＋押し込み） -->
-            <Border Grid.Column="2" Padding="10" CornerRadius="8" BorderThickness="1" BorderBrush="#444">
-                <StackPanel>
-                    <TextBlock Text="Rotary" FontWeight="Bold" Margin="0,0,0,10"/>
+            <Border Grid.Column="1" Padding="10" CornerRadius="8" BorderThickness="1" BorderBrush="#444" Grid.ColumnSpan="2" Margin="69,0,0,0">
+                <StackPanel Margin="-6,10,-6,-11">
+
+                    <!-- 回転（左/右） -->
+                    <TextBlock Text="Rotary" FontWeight="Bold"/>
 
                     <!-- 回転（左/右） -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
-                        <Button Content="←" Width="70" Height="40" Margin="4" Click="SW36"/>
-                        <Button Content="→" Width="70" Height="40" Margin="4" Click="SW37"/>
+                        <Button Content="←" Width="40" Height="40" Margin="4" Click="SW36"/>
+                        <Button Content="→" Width="40" Height="40" Margin="4" Click="SW37"/>
                     </StackPanel>
 
                     <!-- 押し込み -->
-                    <Button Content="SW35" Height="35" Margin="4" Click="SW35"/>
+                    <Button Content="SW35" Height="35" Margin="4" Width="88" Click="SW35"/>
+
                 </StackPanel>
+
             </Border>
-            <Border Padding="10" CornerRadius="8" BorderThickness="1" BorderBrush="#444" Margin="0,0,400,0">
-                <Button Content="ファイルを選択" Height="35" Margin="4" Click="File"/>
+            <Border Padding="10" CornerRadius="8" BorderThickness="1" BorderBrush="#444" Margin="0,0,380,0">
+                <Button Content="ファイルを選択" Height="20" Width="80" Margin="4" Click="File"/>
             </Border>
         </Grid>
     </Grid>

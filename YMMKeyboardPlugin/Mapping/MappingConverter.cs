@@ -7,7 +7,10 @@ namespace YMMKeyboardPlugin.Mapping
 {
      public class MappingConverter
     {
-        public static void SW01() => Execute("SW01");
+        public static void SW01()
+        {
+            MessageBox.Show("SW01");
+        }
         public static void SW02()
         {
             MessageBox.Show("SW02");
@@ -136,27 +139,7 @@ namespace YMMKeyboardPlugin.Mapping
         {
             MessageBox.Show("SW37");
         }
-        private static void Execute(string swName)
-        {
-            // 1. 設定を取得
-            var config = YMMKeyboardSettings.Default.GetConfig(swName);
 
-            // 2. アクション名に応じて分岐
-            switch (config.ActionName)
-            {
-                case "InsertMp3":
-                    // オプション（Parameter）に入っているパスを使う
-                    keyboardViewModel.InsertMp3(config.Parameter);
-                    break;
-
-                case "Copy":
-                    // コピー処理など
-                    break;
-
-                default:
-                    MessageBox.Show($"{swName} には何も割り当てられていません");
-                    break;
-            }
-        }
+        
     }
 }
