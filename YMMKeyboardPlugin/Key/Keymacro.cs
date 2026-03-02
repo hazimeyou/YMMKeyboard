@@ -19,7 +19,7 @@ namespace YMMKeyboardPlugin
         {
             Debug.WriteLine("[Keymacro] Initialize START");
 
-            _link = new SerialKeyboardLink("COM5");
+            _link = new SerialKeyboardLink("COM3");
 
             _link.DeviceDetected += OnDeviceDetected;
             _link.KeyEventReceived += OnKeyEventReceived;

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using YMMKeyboardPlugin.Settings;
+//using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Mapping
 {
@@ -138,8 +138,6 @@ namespace YMMKeyboardPlugin.Mapping
         public static void SW37()
         {
             MessageBox.Show("SW37");
-        }
-
-        
+        }        
     }
 }

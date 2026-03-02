@@ -30,9 +30,18 @@ namespace YMMKeyboardPlugin
 
         public MyToolPlugin()
         {
-            // ★ YMM起動時に必ず呼ばれる
-            _keymacro = new Keymacro();
-            _keymacro.Initialize(); // ← ここであなたのコードが動く
+            try
+                {
+                Debug.WriteLine("[MyToolPlugin] Constructor START");
+                _keymacro = new Keymacro();
+                _keymacro.Initialize();
+                    Debug.WriteLine("[MyToolPlugin] Constructor END");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[MyToolPlugin] Constructor Exception: {ex}");
+                MessageBox.Show($"多分USB刺さってないかCOMポート間違ってる\n{ex}");
+            }
         }
     }
 }
