@@ -23,12 +23,6 @@
 		<Reference Include="YukkuriMovieMaker.Controls" HintPath="..\libs\YukkuriMovieMaker.dll" Private="false" ExcludeAssets="runtime" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Compile Remove="Settings\**" />
-	  <EmbeddedResource Remove="Settings\**" />
-	  <None Remove="Settings\**" />
-	  <Page Remove="Settings\**" />
-	</ItemGroup>
 
 	<ItemGroup>
 	  <PackageReference Include="System.IO.Ports" Version="10.0.2" />

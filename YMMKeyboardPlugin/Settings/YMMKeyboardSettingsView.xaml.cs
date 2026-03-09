@@ -153,7 +153,7 @@ namespace YMMKeyboardPlugin.Settings
             {
                 InitialDirectory = @"C:\",
                 Title = "ファイルを選択してください",
-                Filter = "テキストファイル (*.txt)|*.txt|すべてのファイル (*.*)|*.*",
+                Filter = "すべてのファイル (*.*)|*.*",
                 Multiselect = false
             };
 
