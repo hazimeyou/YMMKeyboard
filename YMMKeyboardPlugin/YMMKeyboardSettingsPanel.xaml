@@ -1,13 +1,15 @@
-﻿<UserControl x:Class="YMMKeyboardPlugin.Settings.YMMKeyboardSettingsView"
+﻿<UserControl x:Class="YMMKeyboardPlugin.YMMKeyboardSettingsPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             MinHeight="260"
-             MinWidth="420">
+             MinHeight="360"
+             MinWidth="520">
     <Grid Margin="16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="16"/>
             <RowDefinition Height="Auto"/>
@@ -22,7 +24,7 @@
                        FontWeight="Bold"/>
             <TextBlock Margin="0,6,0,0"
                        Foreground="#666"
-                       Text="接続するCOMポートの選択と、キーボード割り当て画面の起動をここから行えます。"/>
+                       Text="接続するCOMポート、起動時の自動接続、手動テストUIDをここから設定できます。"/>
         </StackPanel>
 
         <Border Grid.Row="2"
@@ -34,12 +36,15 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="COMポート" FontWeight="Bold"/>
                     <ComboBox x:Name="PortComboBox"
+                              Margin="0,8,0,0"
                               MinWidth="180"
-                              SelectionChanged="PortComboBox_OnSelectionChanged" Width="123"/>
+                              SelectionChanged="PortComboBox_OnSelectionChanged"/>
                     <TextBlock x:Name="PortStatusTextBlock"
                                Margin="0,8,0,0"
                                Foreground="#666"
@@ -52,6 +57,20 @@
                         VerticalAlignment="Top"
                         Content="再読み込み"
                         Click="ReloadPorts_OnClick"/>
+
+                <Button Grid.Column="2"
+                        Margin="12,24,0,0"
+                        Padding="12,6"
+                        VerticalAlignment="Top"
+                        Content="接続"
+                        Click="Connect_OnClick"/>
+
+                <Button Grid.Column="3"
+                        Margin="12,24,0,0"
+                        Padding="12,6"
+                        VerticalAlignment="Top"
+                        Content="接続解除"
+                        Click="Disconnect_OnClick"/>
             </Grid>
         </Border>
 
@@ -60,11 +79,44 @@
                 BorderBrush="#D0D0D0"
                 BorderThickness="1"
                 CornerRadius="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="起動時に接続するCOMポート" FontWeight="Bold"/>
+                    <ListBox x:Name="StartupPortsListBox"
+                             Margin="0,8,0,0"
+                             MinHeight="80"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="12,24,0,0">
+                    <Button Padding="12,6"
+                            Content="追加"
+                            Click="AddStartupPort_OnClick"/>
+                    <Button Margin="0,8,0,0"
+                            Padding="12,6"
+                            Content="削除"
+                            Click="RemoveStartupPort_OnClick"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="6"
+                Padding="12"
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                CornerRadius="8">
             <StackPanel>
                 <TextBlock Text="キーボードの割り当て" FontWeight="Bold"/>
                 <TextBlock Margin="0,8,0,0"
                            Foreground="#666"
-                           Text="割り当て編集は別ウィンドウで開きます。"/>
+                           Text="割り当て編集はUIDごとに別ウィンドウで開きます。手動テストの対象UIDもここで選べます。"/>
+                <ComboBox x:Name="ManualTargetUidComboBox"
+                          Margin="0,12,0,0"
+                          MinWidth="260"
+                          HorizontalAlignment="Left"
+                          SelectionChanged="ManualTargetUidComboBox_OnSelectionChanged"/>
                 <Button Margin="0,12,0,0"
                         Width="160"
                         Padding="12,6"

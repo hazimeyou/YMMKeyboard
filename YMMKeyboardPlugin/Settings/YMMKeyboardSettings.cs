@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text;
+using System.Text.Json;
+using YMMKeyboardPlugin.Mapping;
 using YukkuriMovieMaker.Plugin;
 
 namespace YMMKeyboardPlugin.Settings
@@ -9,22 +9,261 @@ namespace YMMKeyboardPlugin.Settings
     [DataContract]
     public class ButtonConfig
     {
-        [DataMember] public string ActionName { get; set; } = "None";
-        [DataMember] public string Parameter { get; set; } = "";
+        [DataMember] public string ActionName { get; set; } = MappingConverter.NoneActionName;
+        [DataMember] public string Parameter { get; set; } = string.Empty;
     }
 
     [DataContract]
     public class YMMKeyboardSettings : SettingsBase<YMMKeyboardSettings>
     {
+        private const string SettingsDirectoryName = "settings";
+        private const string SettingsFileName = "YMMKeyboardSettings.json";
+
+        public static YMMKeyboardSettings Current { get; private set; } = new();
+        public static event Action<string>? ConnectionRequested;
+        public static event Action<string>? DisconnectionRequested;
+        public static event Action? SettingsLoaded;
+
         public override SettingsCategory Category => SettingsCategory.None;
         public override string Name => "キーボードプラグイン";
         public override bool HasSettingView => true;
-        public override object? SettingView => new YMMKeyboardSettingsView();
+        public override object? SettingView => new global::YMMKeyboardPlugin.YMMKeyboardSettingsPanel(this);
+
         [DataMember]
-        public Dictionary<string, ButtonConfig> ButtonConfigs { get; set; } = new Dictionary<string, ButtonConfig>();
+        public string PortName { get; set; } = string.Empty;
+
+        [DataMember]
+        public List<string> StartupPortNames { get; set; } = new List<string>();
+
+        [DataMember]
+        public List<string> KnownDeviceUids { get; set; } = new List<string>();
+
+        [DataMember]
+        public string ManualTargetUid { get; set; } = string.Empty;
+
+        [DataMember]
+        public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceButtonConfigs { get; set; } = new Dictionary<string, Dictionary<string, ButtonConfig>>();
+
+        public YMMKeyboardSettings()
+        {
+            Current = this;
+            LoadFromPluginDirectory();
+        }
+
         public override void Initialize()
         {
-            
+            Current = this;
+            LoadFromPluginDirectory();
+            NormalizeSettings();
+            SettingsLoaded?.Invoke();
+        }
+
+        public IReadOnlyList<string> GetKnownDeviceUids()
+        {
+            NormalizeSettings();
+            return KnownDeviceUids;
+        }
+
+        public IReadOnlyList<string> GetStartupPortNames()
+        {
+            NormalizeSettings();
+            return StartupPortNames;
+        }
+
+        public string GetSettingsFilePath()
+        {
+            return Path.Combine(GetSettingsDirectoryPath(), SettingsFileName);
+        }
+
+        public void RegisterKnownDeviceUid(string uid)
+        {
+            if (string.IsNullOrWhiteSpace(uid))
+                return;
+
+            if (!KnownDeviceUids.Contains(uid, StringComparer.OrdinalIgnoreCase))
+                KnownDeviceUids.Add(uid);
+
+            if (string.IsNullOrWhiteSpace(ManualTargetUid))
+                ManualTargetUid = uid;
+
+            EnsureDefaults(uid);
+            SaveToPluginDirectory();
+        }
+
+        public void SetManualTargetUid(string uid)
+        {
+            ManualTargetUid = uid;
+            SaveToPluginDirectory();
+        }
+
+        public string GetManualTargetUid()
+        {
+            NormalizeSettings();
+
+            if (!string.IsNullOrWhiteSpace(ManualTargetUid))
+                return ManualTargetUid;
+
+            return KnownDeviceUids.FirstOrDefault() ?? string.Empty;
+        }
+
+        public ButtonConfig GetButtonConfig(string uid, string switchName)
+        {
+            RegisterKnownDeviceUid(uid);
+            EnsureDefaults(uid);
+            return DeviceButtonConfigs[uid][switchName];
+        }
+
+        public void SetButtonConfig(string uid, string switchName, ButtonConfig config)
+        {
+            RegisterKnownDeviceUid(uid);
+            DeviceButtonConfigs[uid][switchName] = config;
+            SaveToPluginDirectory();
+        }
+
+        public void UpdatePortName(string portName)
+        {
+            PortName = portName;
+            SaveToPluginDirectory();
+        }
+
+        public void AddStartupPort(string portName)
+        {
+            if (string.IsNullOrWhiteSpace(portName))
+                return;
+
+            if (!StartupPortNames.Contains(portName, StringComparer.OrdinalIgnoreCase))
+            {
+                StartupPortNames.Add(portName);
+                SaveToPluginDirectory();
+            }
+        }
+
+        public void RemoveStartupPort(string portName)
+        {
+            var existing = StartupPortNames.FirstOrDefault(name => string.Equals(name, portName, StringComparison.OrdinalIgnoreCase));
+            if (existing is not null)
+            {
+                StartupPortNames.Remove(existing);
+                SaveToPluginDirectory();
+            }
+        }
+
+        public void RequestConnection()
+        {
+            if (!string.IsNullOrWhiteSpace(PortName))
+                ConnectionRequested?.Invoke(PortName);
+        }
+
+        public void RequestDisconnection()
+        {
+            if (!string.IsNullOrWhiteSpace(PortName))
+                DisconnectionRequested?.Invoke(PortName);
+        }
+
+        private void LoadFromPluginDirectory()
+        {
+            try
+            {
+                var path = GetSettingsFilePath();
+                if (!File.Exists(path))
+                {
+                    NormalizeSettings();
+                    return;
+                }
+
+                var json = File.ReadAllText(path);
+                var data = JsonSerializer.Deserialize<PersistedSettings>(json);
+                if (data is null)
+                    return;
+
+                PortName = data.PortName ?? string.Empty;
+                StartupPortNames = data.StartupPortNames ?? new List<string>();
+                KnownDeviceUids = data.KnownDeviceUids ?? new List<string>();
+                ManualTargetUid = data.ManualTargetUid ?? string.Empty;
+                DeviceButtonConfigs = data.DeviceButtonConfigs ?? new Dictionary<string, Dictionary<string, ButtonConfig>>();
+                NormalizeSettings();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[YMMKeyboardSettings] Load failed: {ex}");
+            }
+        }
+
+        private void SaveToPluginDirectory()
+        {
+            try
+            {
+                NormalizeSettings();
+                var directory = GetSettingsDirectoryPath();
+                Directory.CreateDirectory(directory);
+
+                var data = new PersistedSettings
+                {
+                    PortName = PortName,
+                    StartupPortNames = StartupPortNames,
+                    KnownDeviceUids = KnownDeviceUids,
+                    ManualTargetUid = ManualTargetUid,
+                    DeviceButtonConfigs = DeviceButtonConfigs,
+                };
+
+                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                });
+
+                File.WriteAllText(GetSettingsFilePath(), json);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[YMMKeyboardSettings] Save failed: {ex}");
+            }
+        }
+
+        private string GetSettingsDirectoryPath()
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+                ?? AppContext.BaseDirectory;
+            return Path.Combine(assemblyDirectory, SettingsDirectoryName);
+        }
+
+        private void NormalizeSettings()
+        {
+            StartupPortNames = StartupPortNames
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            KnownDeviceUids = KnownDeviceUids
+                .Where(uid => !string.IsNullOrWhiteSpace(uid))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var uid in KnownDeviceUids)
+                EnsureDefaults(uid);
+        }
+
+        private void EnsureDefaults(string uid)
+        {
+            if (!DeviceButtonConfigs.TryGetValue(uid, out var configs))
+            {
+                configs = new Dictionary<string, ButtonConfig>();
+                DeviceButtonConfigs[uid] = configs;
+            }
+
+            foreach (var item in global::YMMKeyboardPlugin.SwitchLayout.All)
+            {
+                if (!configs.ContainsKey(item.SwitchName))
+                    configs[item.SwitchName] = new ButtonConfig();
+            }
+        }
+
+        private class PersistedSettings
+        {
+            public string? PortName { get; set; }
+            public List<string>? StartupPortNames { get; set; }
+            public List<string>? KnownDeviceUids { get; set; }
+            public string? ManualTargetUid { get; set; }
+            public Dictionary<string, Dictionary<string, ButtonConfig>>? DeviceButtonConfigs { get; set; }
         }
     }
 }

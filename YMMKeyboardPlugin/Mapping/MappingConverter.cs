@@ -1,143 +1,81 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-//using YMMKeyboardPlugin.Settings;
+﻿using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Mapping
 {
-     public class MappingConverter
+    public static class MappingConverter
     {
-        public static void SW01()
+        public const string NoneActionName = "None";
+        public const string TestEventActionName = "TestEvent";
+
+        public static IReadOnlyList<string> AvailableActions { get; } = new[]
         {
-            MessageBox.Show("SW01");
+            NoneActionName,
+            TestEventActionName,
+        };
+
+        public static void ExecuteSwitch(string uid, string switchName)
+        {
+            if (string.IsNullOrWhiteSpace(uid))
+                return;
+
+            var config = YMMKeyboardSettings.Current.GetButtonConfig(uid, switchName);
+            ExecuteAction(config.ActionName, config.Parameter, switchName, uid);
         }
-        public static void SW02()
+
+        public static void ExecuteAction(string actionName, string? parameter, string switchName, string uid)
         {
-            MessageBox.Show("SW02");
+            switch (actionName)
+            {
+                case TestEventActionName:
+                    TestEvent.Execute($"{switchName} ({uid})", parameter);
+                    break;
+                case NoneActionName:
+                case "":
+                case null:
+                    break;
+                default:
+                    MessageBox.Show($"未対応のアクションです: {actionName}", "キーボード割り当て");
+                    break;
+            }
         }
-        public static void SW03()
+
+        private static string GetManualUid()
         {
-            MessageBox.Show("SW03");
+            return YMMKeyboardSettings.Current.GetManualTargetUid();
         }
-        public static void SW04()
-        {
-            MessageBox.Show("SW04");
-        }
-        public static void SW05()
-        {
-            MessageBox.Show("SW05");
-        }
-        public static void SW06()
-        {
-            MessageBox.Show("SW06");
-        }
-        public static void SW07()
-        {
-            MessageBox.Show("SW07");
-        }
-        public static void SW08()
-        {
-            MessageBox.Show("SW08");
-        }
-        public static void SW09()
-        {
-            MessageBox.Show("SW09");
-        }
-        public static void SW10()
-        {
-            MessageBox.Show("SW10");
-        }
-        public static void SW11()
-        {
-            MessageBox.Show("SW11");
-        }
-        public static void SW12()
-        {
-            MessageBox.Show("SW12");
-        }
-        public static void SW13()
-        {
-            MessageBox.Show("SW13");
-        }
-        public static void SW14()
-        {
-            MessageBox.Show("SW14");
-        }
-        public static void SW15()
-        {
-            MessageBox.Show("SW15");
-        }
-        public static void SW16()
-        {
-            MessageBox.Show("SW16");
-        }
-        public static void SW17()
-        {
-            MessageBox.Show("SW17");
-        }
-        public static void SW18()
-        {
-            MessageBox.Show("SW18");
-        }
-        public static void SW19()
-        {
-            MessageBox.Show("SW19");
-        }
-        public static void SW20()
-        {
-            MessageBox.Show("SW20");
-        }
-        public static void SW21()
-        {
-            MessageBox.Show("SW21");
-        }
-        public static void SW22()
-        {
-            MessageBox.Show("SW22");
-        }
-        public static void SW23()
-        {
-            MessageBox.Show("SW23");
-        }
-        public static void SW24()
-        {
-            MessageBox.Show("SW24");
-        }
-        public static void SW25()
-        {
-            MessageBox.Show("SW25");
-        }
-        public static void SW26()
-        {
-            MessageBox.Show("SW26");
-        }
-        public static void SW27()
-        {
-            MessageBox.Show("SW27");
-        }
-        public static void SW28()
-        {
-            MessageBox.Show("SW28");
-        }
-        public static void SW29()
-        {
-            MessageBox.Show("SW29");
-        }
-        public static void SW30()
-        {
-            MessageBox.Show("SW30");
-        }
-        public static void SW35()
-        {
-            MessageBox.Show("SW35");
-        }
-        public static void SW36()
-        {
-            MessageBox.Show("SW36");
-        }
-        public static void SW37()
-        {
-            MessageBox.Show("SW37");
-        }        
+
+        public static void SW01() => ExecuteSwitch(GetManualUid(), "SW01");
+        public static void SW02() => ExecuteSwitch(GetManualUid(), "SW02");
+        public static void SW03() => ExecuteSwitch(GetManualUid(), "SW03");
+        public static void SW04() => ExecuteSwitch(GetManualUid(), "SW04");
+        public static void SW05() => ExecuteSwitch(GetManualUid(), "SW05");
+        public static void SW06() => ExecuteSwitch(GetManualUid(), "SW06");
+        public static void SW07() => ExecuteSwitch(GetManualUid(), "SW07");
+        public static void SW08() => ExecuteSwitch(GetManualUid(), "SW08");
+        public static void SW09() => ExecuteSwitch(GetManualUid(), "SW09");
+        public static void SW10() => ExecuteSwitch(GetManualUid(), "SW10");
+        public static void SW11() => ExecuteSwitch(GetManualUid(), "SW11");
+        public static void SW12() => ExecuteSwitch(GetManualUid(), "SW12");
+        public static void SW13() => ExecuteSwitch(GetManualUid(), "SW13");
+        public static void SW14() => ExecuteSwitch(GetManualUid(), "SW14");
+        public static void SW15() => ExecuteSwitch(GetManualUid(), "SW15");
+        public static void SW16() => ExecuteSwitch(GetManualUid(), "SW16");
+        public static void SW17() => ExecuteSwitch(GetManualUid(), "SW17");
+        public static void SW18() => ExecuteSwitch(GetManualUid(), "SW18");
+        public static void SW19() => ExecuteSwitch(GetManualUid(), "SW19");
+        public static void SW20() => ExecuteSwitch(GetManualUid(), "SW20");
+        public static void SW21() => ExecuteSwitch(GetManualUid(), "SW21");
+        public static void SW22() => ExecuteSwitch(GetManualUid(), "SW22");
+        public static void SW23() => ExecuteSwitch(GetManualUid(), "SW23");
+        public static void SW24() => ExecuteSwitch(GetManualUid(), "SW24");
+        public static void SW25() => ExecuteSwitch(GetManualUid(), "SW25");
+        public static void SW26() => ExecuteSwitch(GetManualUid(), "SW26");
+        public static void SW27() => ExecuteSwitch(GetManualUid(), "SW27");
+        public static void SW28() => ExecuteSwitch(GetManualUid(), "SW28");
+        public static void SW29() => ExecuteSwitch(GetManualUid(), "SW29");
+        public static void SW30() => ExecuteSwitch(GetManualUid(), "SW30");
+        public static void SW35() => ExecuteSwitch(GetManualUid(), "SW35");
+        public static void SW36() => ExecuteSwitch(GetManualUid(), "SW36");
+        public static void SW37() => ExecuteSwitch(GetManualUid(), "SW37");
     }
 }
