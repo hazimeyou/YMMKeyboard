@@ -1,7 +1,16 @@
-namespace YMMKeyboardPlugin.Models
+﻿namespace YMMKeyboardPlugin.Models
 {
     public static class SwitchLayout
     {
+        private static readonly IReadOnlyDictionary<string, int> sortOrder;
+
+        static SwitchLayout()
+        {
+            sortOrder = All
+                .Select((item, index) => new { item.SwitchName, Index = index })
+                .ToDictionary(item => item.SwitchName, item => item.Index, StringComparer.OrdinalIgnoreCase);
+        }
+
         public static IReadOnlyList<(int SwitchId, string SwitchName)> All { get; } = new[]
         {
             (1, "SW01"),
@@ -38,5 +47,45 @@ namespace YMMKeyboardPlugin.Models
             (36, "SW37"),
             (37, "SW36")
         };
+
+        public static bool TryGetSwitchName(int switchId, out string switchName)
+        {
+            foreach (var item in All)
+            {
+                if (item.SwitchId == switchId)
+                {
+                    switchName = item.SwitchName;
+                    return true;
+                }
+            }
+
+            switchName = string.Empty;
+            return false;
+        }
+
+        public static string NormalizeCombination(IEnumerable<string> switchNames)
+        {
+            return string.Join("+", switchNames
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(GetSortIndex)
+                .ThenBy(name => name, StringComparer.OrdinalIgnoreCase));
+        }
+
+        public static string FormatCombination(IEnumerable<string> switchNames)
+        {
+            return string.Join(" + ", switchNames
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(GetSortIndex)
+                .ThenBy(name => name, StringComparer.OrdinalIgnoreCase));
+        }
+
+        private static int GetSortIndex(string switchName)
+        {
+            return sortOrder.TryGetValue(switchName, out var index)
+                ? index
+                : int.MaxValue;
+        }
     }
 }

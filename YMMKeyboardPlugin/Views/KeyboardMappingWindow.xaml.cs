@@ -1,8 +1,8 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Windows.Media;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
@@ -16,6 +16,7 @@ namespace YMMKeyboardPlugin.Views
         private readonly YMMKeyboardSettings settings;
         private readonly ObservableCollection<SwitchAssignmentItem> items = new();
         private readonly ObservableCollection<string> scopeOptions = new();
+        private readonly HashSet<string> selectedCombination = new(StringComparer.OrdinalIgnoreCase);
         private string currentScope = UiScopeLabel;
         private SwitchAssignmentItem? selectedAssignment;
         private bool isUpdatingSelection;
@@ -28,6 +29,8 @@ namespace YMMKeyboardPlugin.Views
             ActionComboBox.ItemsSource = MappingConverter.AvailableActions;
             LoadScopes();
         }
+
+        private bool IsComboMode => ComboModeCheckBox.IsChecked == true;
 
         private static bool IsUiScope(string scope)
         {
@@ -65,68 +68,138 @@ namespace YMMKeyboardPlugin.Views
                 });
             }
 
-            SelectAssignment(items.FirstOrDefault()?.SwitchName ?? string.Empty);
+            selectedCombination.Clear();
+            selectedAssignment = items.FirstOrDefault();
+            LoadCurrentSelection();
             RefreshKeyboardButtons();
         }
 
-        private void SaveAssignments()
+        private void SaveCurrentSelection()
         {
-            if (string.IsNullOrWhiteSpace(currentScope))
+            if (isUpdatingSelection)
                 return;
 
-            foreach (var item in items)
+            if (IsComboMode)
             {
-                var config = new ButtonConfig
-                {
-                    ActionName = item.SelectedActionName,
-                    Parameter = item.Parameter,
-                };
+                if (selectedCombination.Count < 2)
+                    return;
 
+                var combinationKey = SwitchLayout.NormalizeCombination(selectedCombination);
+                var config = CreateConfigFromEditor();
                 if (IsUiScope(currentScope))
-                    settings.SetUiButtonConfig(item.SwitchName, config);
+                    settings.SetUiComboButtonConfig(combinationKey, config);
                 else
-                    settings.SetDeviceButtonConfig(currentScope, item.SwitchName, config);
+                    settings.SetDeviceComboButtonConfig(currentScope, combinationKey, config);
+                return;
             }
+
+            if (selectedAssignment is null)
+                return;
+
+            selectedAssignment.SelectedActionName = ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName;
+            selectedAssignment.Parameter = ParameterTextBox.Text;
+
+            var singleConfig = CreateConfigFromEditor();
+            if (IsUiScope(currentScope))
+                settings.SetUiButtonConfig(selectedAssignment.SwitchName, singleConfig);
+            else
+                settings.SetDeviceButtonConfig(currentScope, selectedAssignment.SwitchName, singleConfig);
         }
 
-        private void SelectAssignment(string switchName)
+        private ButtonConfig CreateConfigFromEditor()
         {
-            selectedAssignment = items.FirstOrDefault(item => item.SwitchName == switchName);
+            return new ButtonConfig
+            {
+                ActionName = ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName,
+                Parameter = ParameterTextBox.Text,
+            };
+        }
+
+        private void LoadCurrentSelection()
+        {
             isUpdatingSelection = true;
 
+            if (IsComboMode)
+                LoadCombinationSelection();
+            else
+                LoadSingleSelection();
+
+            isUpdatingSelection = false;
+            RefreshKeyboardButtons();
+        }
+
+        private void LoadSingleSelection()
+        {
             if (selectedAssignment is null)
             {
                 SelectedSwitchTextBlock.Text = "未選択";
                 ActionComboBox.SelectedItem = null;
                 ParameterTextBox.Text = string.Empty;
                 SelectionHintTextBlock.Text = "キーを選ぶとここに設定内容が表示されます。";
-            }
-            else
-            {
-                SelectedSwitchTextBlock.Text = selectedAssignment.SwitchName;
-                ActionComboBox.SelectedItem = selectedAssignment.SelectedActionName;
-                ParameterTextBox.Text = selectedAssignment.Parameter;
-                UpdateSelectionHint();
+                return;
             }
 
-            isUpdatingSelection = false;
-            RefreshKeyboardButtons();
+            SelectedSwitchTextBlock.Text = selectedAssignment.SwitchName;
+            ActionComboBox.SelectedItem = selectedAssignment.SelectedActionName;
+            ParameterTextBox.Text = selectedAssignment.Parameter;
+            UpdateSelectionHint();
+        }
+
+        private void LoadCombinationSelection()
+        {
+            if (selectedCombination.Count == 0)
+            {
+                SelectedSwitchTextBlock.Text = "未選択";
+                ActionComboBox.SelectedItem = MappingConverter.NoneActionName;
+                ParameterTextBox.Text = string.Empty;
+                SelectionHintTextBlock.Text = "複数キー編集モードでは、2つ以上のキーを選んでください。";
+                return;
+            }
+
+            SelectedSwitchTextBlock.Text = SwitchLayout.FormatCombination(selectedCombination);
+            if (selectedCombination.Count < 2)
+            {
+                ActionComboBox.SelectedItem = MappingConverter.NoneActionName;
+                ParameterTextBox.Text = string.Empty;
+                SelectionHintTextBlock.Text = "あと1つ以上キーを選ぶと、組み合わせの設定を編集できます。";
+                return;
+            }
+
+            var combinationKey = SwitchLayout.NormalizeCombination(selectedCombination);
+            var config = IsUiScope(currentScope)
+                ? settings.GetUiComboButtonConfig(combinationKey)
+                : settings.GetDeviceComboButtonConfig(currentScope, combinationKey);
+
+            ActionComboBox.SelectedItem = config.ActionName;
+            ParameterTextBox.Text = config.Parameter;
+            UpdateSelectionHint();
         }
 
         private void UpdateSelectionHint()
         {
+            if (IsComboMode)
+            {
+                var selectedText = selectedCombination.Count == 0
+                    ? "なし"
+                    : SwitchLayout.FormatCombination(selectedCombination);
+                var parameterText = string.IsNullOrWhiteSpace(ParameterTextBox.Text) ? "なし" : ParameterTextBox.Text;
+                SelectionHintTextBlock.Text =
+                    $"組み合わせ: {selectedText}\n動作: {ActionComboBox.SelectedItem ?? MappingConverter.NoneActionName}\nパラメータ: {parameterText}";
+                return;
+            }
+
             if (selectedAssignment is null)
             {
                 SelectionHintTextBlock.Text = "キーを選ぶとここに設定内容が表示されます。";
                 return;
             }
 
-            var parameterText = string.IsNullOrWhiteSpace(selectedAssignment.Parameter)
+            var singleParameter = string.IsNullOrWhiteSpace(selectedAssignment.Parameter)
                 ? "なし"
                 : selectedAssignment.Parameter;
 
             SelectionHintTextBlock.Text =
-                $"選択中: {selectedAssignment.SwitchName}\n動作: {selectedAssignment.SelectedActionName}\nパラメータ: {parameterText}";
+                $"選択中: {selectedAssignment.SwitchName}\n動作: {selectedAssignment.SelectedActionName}\nパラメータ: {singleParameter}";
         }
 
         private void RefreshKeyboardButtons()
@@ -138,7 +211,10 @@ namespace YMMKeyboardPlugin.Views
                 if (assignment is null)
                     continue;
 
-                var isSelected = selectedAssignment?.SwitchName == switchName;
+                var isSelected = IsComboMode
+                    ? selectedCombination.Contains(switchName)
+                    : selectedAssignment?.SwitchName == switchName;
+
                 button.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isSelected ? "#D9E9FF" : "#F5F3ED"));
                 button.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isSelected ? "#4A84D8" : "#C7B9A5"));
                 button.Content = CreateButtonContent(switchName, assignment);
@@ -194,15 +270,14 @@ namespace YMMKeyboardPlugin.Views
 
         private void OpenScope_OnClick(object sender, RoutedEventArgs e)
         {
+            SaveCurrentSelection();
+
             var scope = ScopeComboBox.Text?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(scope))
             {
                 StatusTextBlock.Text = "対象を入力してください。";
                 return;
             }
-
-            if (!string.IsNullOrWhiteSpace(currentScope))
-                SaveAssignments();
 
             if (!IsUiScope(scope))
             {
@@ -223,57 +298,108 @@ namespace YMMKeyboardPlugin.Views
                 : $"実機 UID {scope} の割り当てを編集中です。";
         }
 
+        private void ComboModeCheckBox_OnChanged(object sender, RoutedEventArgs e)
+        {
+            SaveCurrentSelection();
+
+            if (IsComboMode)
+            {
+                selectedCombination.Clear();
+                if (selectedAssignment is not null)
+                    selectedCombination.Add(selectedAssignment.SwitchName);
+            }
+            else
+            {
+                var fallbackSwitch = selectedCombination.FirstOrDefault() ?? items.FirstOrDefault()?.SwitchName;
+                selectedCombination.Clear();
+                selectedAssignment = items.FirstOrDefault(item => item.SwitchName == fallbackSwitch)
+                    ?? items.FirstOrDefault();
+            }
+
+            LoadCurrentSelection();
+        }
+
         private void SwitchButton_OnClick(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button || button.Tag is not string switchName)
                 return;
 
-            SelectAssignment(switchName);
+            if (IsComboMode)
+            {
+                if (!selectedCombination.Add(switchName))
+                    selectedCombination.Remove(switchName);
+            }
+            else
+            {
+                selectedAssignment = items.FirstOrDefault(item => item.SwitchName == switchName);
+            }
+
+            LoadCurrentSelection();
         }
 
         private void ActionComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (isUpdatingSelection || selectedAssignment is null)
+            if (isUpdatingSelection)
                 return;
 
-            selectedAssignment.SelectedActionName = ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName;
+            SaveCurrentSelection();
+
+            if (!IsComboMode && selectedAssignment is not null)
+                selectedAssignment.SelectedActionName = ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName;
+
             UpdateSelectionHint();
-            SaveAssignments();
             RefreshKeyboardButtons();
         }
 
         private void ParameterTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
         {
-            if (isUpdatingSelection || selectedAssignment is null)
+            if (isUpdatingSelection)
                 return;
 
-            selectedAssignment.Parameter = ParameterTextBox.Text;
+            SaveCurrentSelection();
+
+            if (!IsComboMode && selectedAssignment is not null)
+                selectedAssignment.Parameter = ParameterTextBox.Text;
+
             UpdateSelectionHint();
-            SaveAssignments();
         }
 
         private void TestSelectedButton_OnClick(object sender, RoutedEventArgs e)
         {
+            SaveCurrentSelection();
+
+            if (IsComboMode)
+            {
+                if (selectedCombination.Count < 2)
+                    return;
+
+                MappingConverter.ExecuteAction(
+                    ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName,
+                    ParameterTextBox.Text,
+                    SwitchLayout.NormalizeCombination(selectedCombination),
+                    currentScope);
+                return;
+            }
+
             if (selectedAssignment is null)
                 return;
 
-            SaveAssignments();
             MappingConverter.ExecuteAction(
-                selectedAssignment.SelectedActionName,
-                selectedAssignment.Parameter,
+                ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName,
+                ParameterTextBox.Text,
                 selectedAssignment.SwitchName,
                 currentScope);
         }
 
         private void CloseButton_OnClick(object sender, RoutedEventArgs e)
         {
-            SaveAssignments();
+            SaveCurrentSelection();
             Close();
         }
 
         protected override void OnClosing(CancelEventArgs e)
         {
-            SaveAssignments();
+            SaveCurrentSelection();
             base.OnClosing(e);
         }
     }

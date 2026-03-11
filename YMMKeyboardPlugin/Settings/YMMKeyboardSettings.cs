@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using YMMKeyboardPlugin.Mapping;
@@ -31,20 +31,13 @@ namespace YMMKeyboardPlugin.Settings
         public override bool HasSettingView => true;
         public override object? SettingView => new YMMKeyboardSettingsPanel(this);
 
-        [DataMember]
-        public string PortName { get; set; } = string.Empty;
-
-        [DataMember]
-        public List<string> StartupPortNames { get; set; } = new();
-
-        [DataMember]
-        public List<string> KnownDeviceUids { get; set; } = new();
-
-        [DataMember]
-        public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new();
-
-        [DataMember]
-        public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceButtonConfigs { get; set; } = new();
+        [DataMember] public string PortName { get; set; } = string.Empty;
+        [DataMember] public List<string> StartupPortNames { get; set; } = new();
+        [DataMember] public List<string> KnownDeviceUids { get; set; } = new();
+        [DataMember] public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new();
+        [DataMember] public Dictionary<string, ButtonConfig> UiComboButtonConfigs { get; set; } = new();
+        [DataMember] public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceButtonConfigs { get; set; } = new();
+        [DataMember] public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceComboButtonConfigs { get; set; } = new();
 
         public YMMKeyboardSettings()
         {
@@ -90,6 +83,8 @@ namespace YMMKeyboardPlugin.Settings
             }
 
             EnsureDeviceDefaults(uid);
+            EnsureDeviceComboStore(uid);
+
             if (added)
                 SaveToPluginDirectory();
         }
@@ -108,6 +103,23 @@ namespace YMMKeyboardPlugin.Settings
             SaveToPluginDirectory();
         }
 
+        public ButtonConfig GetUiComboButtonConfig(string combinationKey)
+        {
+            NormalizeSettings();
+            return UiComboButtonConfigs.TryGetValue(combinationKey, out var config)
+                ? config
+                : new ButtonConfig();
+        }
+
+        public void SetUiComboButtonConfig(string combinationKey, ButtonConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(combinationKey))
+                return;
+
+            UiComboButtonConfigs[combinationKey] = config;
+            SaveToPluginDirectory();
+        }
+
         public ButtonConfig GetDeviceButtonConfig(string uid, string switchName)
         {
             RegisterKnownDeviceUid(uid);
@@ -119,6 +131,26 @@ namespace YMMKeyboardPlugin.Settings
         {
             RegisterKnownDeviceUid(uid);
             DeviceButtonConfigs[uid][switchName] = config;
+            SaveToPluginDirectory();
+        }
+
+        public ButtonConfig GetDeviceComboButtonConfig(string uid, string combinationKey)
+        {
+            RegisterKnownDeviceUid(uid);
+            EnsureDeviceComboStore(uid);
+            return DeviceComboButtonConfigs[uid].TryGetValue(combinationKey, out var config)
+                ? config
+                : new ButtonConfig();
+        }
+
+        public void SetDeviceComboButtonConfig(string uid, string combinationKey, ButtonConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(combinationKey))
+                return;
+
+            RegisterKnownDeviceUid(uid);
+            EnsureDeviceComboStore(uid);
+            DeviceComboButtonConfigs[uid][combinationKey] = config;
             SaveToPluginDirectory();
         }
 
@@ -182,7 +214,9 @@ namespace YMMKeyboardPlugin.Settings
                 StartupPortNames = data.StartupPortNames ?? new();
                 KnownDeviceUids = data.KnownDeviceUids ?? new();
                 UiButtonConfigs = data.UiButtonConfigs ?? new();
+                UiComboButtonConfigs = data.UiComboButtonConfigs ?? new();
                 DeviceButtonConfigs = data.DeviceButtonConfigs ?? new();
+                DeviceComboButtonConfigs = data.DeviceComboButtonConfigs ?? new();
                 NormalizeSettings();
             }
             catch (Exception ex)
@@ -205,7 +239,9 @@ namespace YMMKeyboardPlugin.Settings
                     StartupPortNames = StartupPortNames,
                     KnownDeviceUids = KnownDeviceUids,
                     UiButtonConfigs = UiButtonConfigs,
+                    UiComboButtonConfigs = UiComboButtonConfigs,
                     DeviceButtonConfigs = DeviceButtonConfigs,
+                    DeviceComboButtonConfigs = DeviceComboButtonConfigs,
                 };
 
                 var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
@@ -240,11 +276,18 @@ namespace YMMKeyboardPlugin.Settings
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+            UiComboButtonConfigs = UiComboButtonConfigs
+                .Where(pair => !string.IsNullOrWhiteSpace(pair.Key))
+                .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+
             foreach (var item in SwitchLayout.All)
                 EnsureUiDefault(item.SwitchName);
 
             foreach (var uid in KnownDeviceUids)
+            {
                 EnsureDeviceDefaults(uid);
+                EnsureDeviceComboStore(uid);
+            }
         }
 
         private void EnsureUiDefault(string switchName)
@@ -257,7 +300,7 @@ namespace YMMKeyboardPlugin.Settings
         {
             if (!DeviceButtonConfigs.TryGetValue(uid, out var configs))
             {
-                configs = new Dictionary<string, ButtonConfig>();
+                configs = new Dictionary<string, ButtonConfig>(StringComparer.OrdinalIgnoreCase);
                 DeviceButtonConfigs[uid] = configs;
             }
 
@@ -268,13 +311,21 @@ namespace YMMKeyboardPlugin.Settings
             }
         }
 
+        private void EnsureDeviceComboStore(string uid)
+        {
+            if (!DeviceComboButtonConfigs.ContainsKey(uid))
+                DeviceComboButtonConfigs[uid] = new Dictionary<string, ButtonConfig>(StringComparer.OrdinalIgnoreCase);
+        }
+
         private class PersistedSettings
         {
             public string? PortName { get; set; }
             public List<string>? StartupPortNames { get; set; }
             public List<string>? KnownDeviceUids { get; set; }
             public Dictionary<string, ButtonConfig>? UiButtonConfigs { get; set; }
+            public Dictionary<string, ButtonConfig>? UiComboButtonConfigs { get; set; }
             public Dictionary<string, Dictionary<string, ButtonConfig>>? DeviceButtonConfigs { get; set; }
+            public Dictionary<string, Dictionary<string, ButtonConfig>>? DeviceComboButtonConfigs { get; set; }
         }
     }
 }

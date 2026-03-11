@@ -5,75 +5,135 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    MinWidth="520"
-    MinHeight="260">
+    MinWidth="760"
+    MinHeight="320">
+
+    <UserControl.Resources>
+        <Style x:Key="KeyButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Background" Value="#F5F3ED"/>
+            <Setter Property="BorderBrush" Value="#C7B9A5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+    </UserControl.Resources>
 
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock
-            Grid.Row="0"
-            Text="YMM4キーボード"
-            FontWeight="Bold"
-            Margin="0,0,0,10"/>
+        <StackPanel Grid.Row="0">
+            <TextBlock
+                Text="YMM4キーボード"
+                FontWeight="Bold"
+                FontSize="16"/>
+            <TextBlock
+                Margin="0,6,0,0"
+                Foreground="#666666"
+                Text="単独クリックはそのキーを実行します。複数キー実行モードでは、キーを選んでからまとめて実行できます。"/>
+        </StackPanel>
 
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="220"/>
             </Grid.ColumnDefinitions>
 
-            <UniformGrid Grid.Column="0" Columns="6">
-                <Button Content="SW01" Tag="SW01" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW02" Tag="SW02" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW03" Tag="SW03" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW04" Tag="SW04" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW05" Tag="SW05" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW06" Tag="SW06" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+            <Grid Grid.Column="0" x:Name="KeyboardSurfaceGrid">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="16"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <Button Content="SW07" Tag="SW07" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW08" Tag="SW08" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW09" Tag="SW09" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW10" Tag="SW10" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW11" Tag="SW11" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW12" Tag="SW12" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <UniformGrid Grid.Row="0" Columns="6">
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW01" Tag="SW01" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW02" Tag="SW02" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW03" Tag="SW03" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW04" Tag="SW04" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW05" Tag="SW05" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW06" Tag="SW06" Click="SwitchButton_OnClick"/>
 
-                <Button Content="SW13" Tag="SW13" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW14" Tag="SW14" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW15" Tag="SW15" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW16" Tag="SW16" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW17" Tag="SW17" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW18" Tag="SW18" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW07" Tag="SW07" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW08" Tag="SW08" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW09" Tag="SW09" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW10" Tag="SW10" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW11" Tag="SW11" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW12" Tag="SW12" Click="SwitchButton_OnClick"/>
 
-                <Button Content="SW19" Tag="SW19" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW20" Tag="SW20" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW21" Tag="SW21" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW22" Tag="SW22" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW23" Tag="SW23" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW24" Tag="SW24" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW13" Tag="SW13" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW14" Tag="SW14" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW15" Tag="SW15" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW16" Tag="SW16" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW17" Tag="SW17" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW18" Tag="SW18" Click="SwitchButton_OnClick"/>
 
-                <Button Content="SW25" Tag="SW25" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW26" Tag="SW26" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW27" Tag="SW27" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW28" Tag="SW28" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW29" Tag="SW29" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-                <Button Content="SW30" Tag="SW30" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
-            </UniformGrid>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW19" Tag="SW19" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW20" Tag="SW20" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW21" Tag="SW21" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW22" Tag="SW22" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW23" Tag="SW23" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW24" Tag="SW24" Click="SwitchButton_OnClick"/>
 
-            <Border Grid.Column="2" Padding="10" CornerRadius="8" BorderThickness="1" BorderBrush="#444">
-                <StackPanel>
-                    <TextBlock Text="Rotary" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW25" Tag="SW25" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW26" Tag="SW26" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW27" Tag="SW27" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW28" Tag="SW28" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW29" Tag="SW29" Click="SwitchButton_OnClick"/>
+                    <Button Style="{StaticResource KeyButtonStyle}" Content="SW30" Tag="SW30" Click="SwitchButton_OnClick"/>
+                </UniformGrid>
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
-                        <Button Content="左" Tag="SW36" Width="70" Height="40" Margin="4" Click="SwitchButton_OnClick"/>
-                        <Button Content="右" Tag="SW37" Width="70" Height="40" Margin="4" Click="SwitchButton_OnClick"/>
+                <Border Grid.Row="2"
+                        Padding="10"
+                        CornerRadius="8"
+                        BorderThickness="1"
+                        BorderBrush="#444444">
+                    <StackPanel>
+                        <TextBlock Text="Rotary" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="Left" Tag="SW36" Width="70" Click="SwitchButton_OnClick"/>
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="Push" Tag="SW35" Width="70" Click="SwitchButton_OnClick"/>
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="Right" Tag="SW37" Width="70" Click="SwitchButton_OnClick"/>
+                        </StackPanel>
                     </StackPanel>
+                </Border>
+            </Grid>
 
-                    <Button Content="SW35" Tag="SW35" Height="35" Margin="4" Click="SwitchButton_OnClick"/>
+            <Border Grid.Column="2"
+                    Padding="12"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    BorderBrush="#D0D0D0"
+                    Background="#FAFAFA">
+                <StackPanel>
+                    <CheckBox x:Name="ComboModeCheckBox"
+                              Content="複数キー実行モード"
+                              Checked="ComboModeCheckBox_OnChanged"
+                              Unchecked="ComboModeCheckBox_OnChanged"/>
+                    <TextBlock Margin="0,10,0,0"
+                               FontWeight="Bold"
+                               Text="選択中"/>
+                    <TextBlock x:Name="SelectedKeysTextBlock"
+                               Margin="0,6,0,0"
+                               TextWrapping="Wrap"
+                               Text="なし"/>
+                    <TextBlock Margin="0,12,0,0"
+                               Foreground="#666666"
+                               TextWrapping="Wrap"
+                               Text="このモードではキーをクリックして選択します。2つ以上選んだらまとめて実行できます。"/>
+                    <Button Margin="0,14,0,0"
+                            Padding="10,6"
+                            Content="複数キーを実行"
+                            Click="ExecuteCombinationButton_OnClick"/>
+                    <Button Margin="0,8,0,0"
+                            Padding="10,6"
+                            Content="選択をクリア"
+                            Click="ClearSelectionButton_OnClick"/>
                 </StackPanel>
             </Border>
         </Grid>

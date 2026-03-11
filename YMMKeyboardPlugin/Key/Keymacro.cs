@@ -1,7 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Mapping;
@@ -12,9 +14,15 @@ namespace YMMKeyboardPlugin
 {
     public class Keymacro : IDisposable
     {
+        private const int SingleKeyDelayMs = 120;
+
         private readonly Dictionary<string, SerialKeyboardLink> links = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Dictionary<int, Action>> macros = new();
         private readonly LegacyKeyboardViewModel mp3Vm = new();
+        private readonly Dictionary<string, HashSet<string>> pressedSwitches = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, HashSet<string>> consumedSwitches = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Dictionary<string, CancellationTokenSource>> pendingSingleActions = new(StringComparer.OrdinalIgnoreCase);
+        private readonly object stateLock = new();
 
         public void Initialize()
         {
@@ -130,37 +138,164 @@ namespace YMMKeyboardPlugin
         {
             Debug.WriteLine($"[Keymacro] KeyEventReceived UID={device.Uid} SW={e.SwitchId} Pressed={e.IsPressed}");
 
-            if (!e.IsPressed)
+            if (!SwitchLayout.TryGetSwitchName(e.SwitchId, out var switchName))
             {
-                Debug.WriteLine("[Keymacro] Released -> ignored");
+                Debug.WriteLine("[Keymacro] Unknown switch id");
                 return;
             }
 
-            if (!macros.TryGetValue(device.Uid, out var deviceMap))
+            if (e.IsPressed)
+                HandleKeyPressed(device.Uid, switchName);
+            else
+                HandleKeyReleased(device.Uid, switchName);
+        }
+
+        private void HandleKeyPressed(string uid, string switchName)
+        {
+            ButtonConfig? comboConfig = null;
+            string combinationKey = string.Empty;
+
+            lock (stateLock)
             {
-                Debug.WriteLine("[Keymacro] No mapping for UID");
+                var pressed = GetOrCreateSwitchSet(pressedSwitches, uid);
+                pressed.Add(switchName);
+
+                if (pressed.Count == 1)
+                {
+                    ScheduleSingleAction(uid, switchName);
+                    return;
+                }
+
+                combinationKey = SwitchLayout.NormalizeCombination(pressed);
+                comboConfig = YMMKeyboardSettings.Current.GetDeviceComboButtonConfig(uid, combinationKey);
+                if (!HasExecutableAction(comboConfig))
+                    return;
+
+                CancelPendingSingles(uid, pressed);
+                var consumed = GetOrCreateSwitchSet(consumedSwitches, uid);
+                foreach (var pressedSwitch in pressed)
+                    consumed.Add(pressedSwitch);
+            }
+
+            if (comboConfig is not null)
+                MappingConverter.ExecuteAction(comboConfig.ActionName, comboConfig.Parameter, combinationKey, uid);
+        }
+
+        private void HandleKeyReleased(string uid, string switchName)
+        {
+            lock (stateLock)
+            {
+                if (pressedSwitches.TryGetValue(uid, out var pressed))
+                {
+                    pressed.Remove(switchName);
+                    if (pressed.Count == 0)
+                        pressedSwitches.Remove(uid);
+                }
+
+                if (consumedSwitches.TryGetValue(uid, out var consumed))
+                {
+                    consumed.Remove(switchName);
+                    if (consumed.Count == 0)
+                        consumedSwitches.Remove(uid);
+                }
+            }
+        }
+
+        private void ScheduleSingleAction(string uid, string switchName)
+        {
+            var pendingByUid = GetOrCreatePendingSingles(uid);
+            if (pendingByUid.TryGetValue(switchName, out var existing))
+            {
+                existing.Cancel();
+                existing.Dispose();
+            }
+
+            var cts = new CancellationTokenSource();
+            pendingByUid[switchName] = cts;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(SingleKeyDelayMs, cts.Token);
+
+                    lock (stateLock)
+                    {
+                        if (cts.IsCancellationRequested)
+                            return;
+
+                        if (consumedSwitches.TryGetValue(uid, out var consumed) && consumed.Contains(switchName))
+                            return;
+
+                        RemovePendingSingle(uid, switchName);
+                    }
+
+                    MappingConverter.ExecuteDeviceSwitch(uid, switchName);
+                }
+                catch (TaskCanceledException)
+                {
+                }
+                finally
+                {
+                    cts.Dispose();
+                }
+            });
+        }
+
+        private void CancelPendingSingles(string uid, IEnumerable<string> switchNames)
+        {
+            if (!pendingSingleActions.TryGetValue(uid, out var pendingByUid))
                 return;
+
+            foreach (var switchName in switchNames)
+            {
+                if (!pendingByUid.TryGetValue(switchName, out var cts))
+                    continue;
+
+                cts.Cancel();
+                pendingByUid.Remove(switchName);
             }
 
-            if (!deviceMap.TryGetValue(e.SwitchId, out var action))
+            if (pendingByUid.Count == 0)
+                pendingSingleActions.Remove(uid);
+        }
+
+        private static bool HasExecutableAction(ButtonConfig config)
+        {
+            return !string.IsNullOrWhiteSpace(config.ActionName)
+                && config.ActionName != MappingConverter.NoneActionName;
+        }
+
+        private HashSet<string> GetOrCreateSwitchSet(Dictionary<string, HashSet<string>> store, string uid)
+        {
+            if (!store.TryGetValue(uid, out var set))
             {
-                Debug.WriteLine("[Keymacro] No action for this switch");
+                set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                store[uid] = set;
+            }
+
+            return set;
+        }
+
+        private Dictionary<string, CancellationTokenSource> GetOrCreatePendingSingles(string uid)
+        {
+            if (!pendingSingleActions.TryGetValue(uid, out var pendingByUid))
+            {
+                pendingByUid = new Dictionary<string, CancellationTokenSource>(StringComparer.OrdinalIgnoreCase);
+                pendingSingleActions[uid] = pendingByUid;
+            }
+
+            return pendingByUid;
+        }
+
+        private void RemovePendingSingle(string uid, string switchName)
+        {
+            if (!pendingSingleActions.TryGetValue(uid, out var pendingByUid))
                 return;
-            }
 
-            Debug.WriteLine("[Keymacro] Action FOUND -> Invoke");
-
-            try
-            {
-                action.Invoke();
-                Debug.WriteLine("[Keymacro] Action Invoke DONE");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("[Keymacro] Action Invoke ERROR");
-                Debug.WriteLine(ex.ToString());
-                MessageBox.Show(ex.ToString());
-            }
+            pendingByUid.Remove(switchName);
+            if (pendingByUid.Count == 0)
+                pendingSingleActions.Remove(uid);
         }
 
         public static void ShowToast(string message)
@@ -178,11 +313,19 @@ namespace YMMKeyboardPlugin
             YMMKeyboardSettings.DisconnectionRequested -= OnDisconnectionRequested;
             YMMKeyboardSettings.SettingsLoaded -= OnSettingsLoaded;
             DisconnectAll();
-        }
 
-        /*
-        // 将来的には CreateDeviceMap を専用クラスへ外だししたいが、
-        // 現在は重複だけ解消してここへ集約している。
-        */
+            lock (stateLock)
+            {
+                foreach (var pendingByUid in pendingSingleActions.Values)
+                {
+                    foreach (var cts in pendingByUid.Values)
+                        cts.Cancel();
+                }
+
+                pendingSingleActions.Clear();
+                pressedSwitches.Clear();
+                consumedSwitches.Clear();
+            }
+        }
     }
 }

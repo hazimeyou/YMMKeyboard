@@ -1,4 +1,6 @@
+using System.Windows;
 using YMMKeyboardPlugin.Actions;
+using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Mapping
@@ -20,7 +22,18 @@ namespace YMMKeyboardPlugin.Mapping
 
         public static void ExecuteUiSwitch(string switchName)
         {
-            ExecuteUiSwitchCore(switchName);
+            var config = YMMKeyboardSettings.Current.GetUiButtonConfig(switchName);
+            ExecuteAction(config.ActionName, config.Parameter, switchName, "UI Keyboard");
+        }
+
+        public static void ExecuteUiCombination(IEnumerable<string> switchNames)
+        {
+            var combinationKey = SwitchLayout.NormalizeCombination(switchNames);
+            if (string.IsNullOrWhiteSpace(combinationKey))
+                return;
+
+            var config = YMMKeyboardSettings.Current.GetUiComboButtonConfig(combinationKey);
+            ExecuteAction(config.ActionName, config.Parameter, combinationKey, "UI Keyboard");
         }
 
         public static void ExecuteDeviceSwitch(string uid, string switchName)
@@ -28,7 +41,8 @@ namespace YMMKeyboardPlugin.Mapping
             if (string.IsNullOrWhiteSpace(uid))
                 return;
 
-            ExecuteDeviceSwitchCore(uid, switchName);
+            var config = YMMKeyboardSettings.Current.GetDeviceButtonConfig(uid, switchName);
+            ExecuteAction(config.ActionName, config.Parameter, switchName, uid);
         }
 
         public static void ExecuteAction(string actionName, string? parameter, string switchName, string sourceName)
@@ -51,21 +65,9 @@ namespace YMMKeyboardPlugin.Mapping
                 case null:
                     break;
                 default:
-                    MessageBox.Show($"未対応のアクションです: {actionName}", "キーボード割り当て");
+                    MessageBox.Show($"未対応のアクションです: {actionName}", "キーボード設定");
                     break;
             }
-        }
-
-        private static void ExecuteUiSwitchCore(string switchName)
-        {
-            var config = YMMKeyboardSettings.Current.GetUiButtonConfig(switchName);
-            ExecuteAction(config.ActionName, config.Parameter, switchName, "UIキーボード");
-        }
-
-        private static void ExecuteDeviceSwitchCore(string uid, string switchName)
-        {
-            var config = YMMKeyboardSettings.Current.GetDeviceButtonConfig(uid, switchName);
-            ExecuteAction(config.ActionName, config.Parameter, switchName, uid);
         }
 
         private static int ParseFrameCount(string? parameter)
