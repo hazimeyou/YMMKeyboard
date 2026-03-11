@@ -20,7 +20,6 @@ namespace YMMKeyboardPlugin
             this.settings = settings;
             InitializeComponent();
             LoadPorts();
-            LoadUidOptions();
             LoadStartupPorts();
         }
 
@@ -43,15 +42,6 @@ namespace YMMKeyboardPlugin
                 : string.IsNullOrWhiteSpace(settings.PortName)
                     ? "接続するCOMポートを選択してください。"
                     : $"現在の設定: {settings.PortName}";
-        }
-
-        private void LoadUidOptions()
-        {
-            var uids = settings.GetKnownDeviceUids().ToList();
-            ManualTargetUidComboBox.ItemsSource = uids;
-            ManualTargetUidComboBox.SelectedItem = string.IsNullOrWhiteSpace(settings.GetManualTargetUid())
-                ? null
-                : uids.FirstOrDefault(uid => string.Equals(uid, settings.GetManualTargetUid(), StringComparison.OrdinalIgnoreCase));
         }
 
         private void LoadStartupPorts()
@@ -118,14 +108,6 @@ namespace YMMKeyboardPlugin
             PortStatusTextBlock.Text = $"{selectedPort} を起動時接続から外しました。";
         }
 
-        private void ManualTargetUidComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ManualTargetUidComboBox.SelectedItem is not string uid)
-                return;
-
-            settings.SetManualTargetUid(uid);
-        }
-
         private void OpenMappingWindow_OnClick(object sender, RoutedEventArgs e)
         {
             var owner = Window.GetWindow(this);
@@ -135,7 +117,6 @@ namespace YMMKeyboardPlugin
                 window.Owner = owner;
 
             window.ShowDialog();
-            LoadUidOptions();
         }
     }
 }

@@ -9,53 +9,50 @@ namespace YMMKeyboardPlugin
 {
     public partial class KeyboardMappingWindow : Window
     {
+        private const string UiScopeLabel = "UIキーボード";
+
         private readonly YMMKeyboardSettings settings;
         private readonly ObservableCollection<SwitchAssignmentItem> items = new();
-        private readonly ObservableCollection<string> knownUids = new();
-        private string currentUid = string.Empty;
+        private readonly ObservableCollection<string> scopeOptions = new();
+        private string currentScope = UiScopeLabel;
 
         public KeyboardMappingWindow()
         {
             settings = YMMKeyboardSettings.Current;
             InitializeComponent();
             AssignmentsGrid.ItemsSource = items;
-            UidComboBox.ItemsSource = knownUids;
-            LoadKnownUids();
+            ScopeComboBox.ItemsSource = scopeOptions;
+            LoadScopes();
         }
 
-        private void LoadKnownUids()
+        private static bool IsUiScope(string scope)
         {
-            knownUids.Clear();
-            foreach (var uid in settings.GetKnownDeviceUids())
-                knownUids.Add(uid);
-
-            var preferredUid = settings.GetManualTargetUid();
-            var initialUid = !string.IsNullOrWhiteSpace(preferredUid)
-                ? preferredUid
-                : knownUids.FirstOrDefault() ?? string.Empty;
-
-            if (!string.IsNullOrWhiteSpace(initialUid))
-            {
-                currentUid = initialUid;
-                UidComboBox.Text = currentUid;
-                settings.SetManualTargetUid(currentUid);
-                LoadAssignments(currentUid);
-                StatusTextBlock.Text = $"UID {currentUid} の割り当てを編集中です。";
-            }
-            else
-            {
-                items.Clear();
-                currentUid = string.Empty;
-                StatusTextBlock.Text = "まだUIDが登録されていません。機器を接続するか、UIDを入力して追加してください。";
-            }
+            return string.Equals(scope, UiScopeLabel, StringComparison.OrdinalIgnoreCase);
         }
 
-        private void LoadAssignments(string uid)
+        private void LoadScopes()
+        {
+            scopeOptions.Clear();
+            scopeOptions.Add(UiScopeLabel);
+
+            foreach (var uid in settings.GetKnownDeviceUids())
+                scopeOptions.Add(uid);
+
+            currentScope = UiScopeLabel;
+            ScopeComboBox.Text = currentScope;
+            LoadAssignments(currentScope);
+            StatusTextBlock.Text = "UIキーボードの割り当てを編集中です。";
+        }
+
+        private void LoadAssignments(string scope)
         {
             items.Clear();
             foreach (var item in SwitchLayout.All)
             {
-                var config = settings.GetButtonConfig(uid, item.SwitchName);
+                var config = IsUiScope(scope)
+                    ? settings.GetUiButtonConfig(item.SwitchName)
+                    : settings.GetDeviceButtonConfig(scope, item.SwitchName);
+
                 items.Add(new SwitchAssignmentItem
                 {
                     SwitchName = item.SwitchName,
@@ -67,40 +64,53 @@ namespace YMMKeyboardPlugin
 
         private void SaveAssignments()
         {
-            if (string.IsNullOrWhiteSpace(currentUid))
+            if (string.IsNullOrWhiteSpace(currentScope))
                 return;
 
             foreach (var item in items)
             {
-                settings.SetButtonConfig(currentUid, item.SwitchName, new ButtonConfig
+                var config = new ButtonConfig
                 {
                     ActionName = item.SelectedActionName,
                     Parameter = item.Parameter,
-                });
+                };
+
+                if (IsUiScope(currentScope))
+                    settings.SetUiButtonConfig(item.SwitchName, config);
+                else
+                    settings.SetDeviceButtonConfig(currentScope, item.SwitchName, config);
             }
         }
 
-        private void AddOrSelectUid_OnClick(object sender, RoutedEventArgs e)
+        private void OpenScope_OnClick(object sender, RoutedEventArgs e)
         {
-            var uid = UidComboBox.Text?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(uid))
+            var scope = ScopeComboBox.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(scope))
             {
-                StatusTextBlock.Text = "UIDを入力してください。";
+                StatusTextBlock.Text = "対象を入力してください。";
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(currentUid))
+            if (!string.IsNullOrWhiteSpace(currentScope))
                 SaveAssignments();
 
-            settings.RegisterKnownDeviceUid(uid);
-            settings.SetManualTargetUid(uid);
-            if (!knownUids.Contains(uid))
-                knownUids.Add(uid);
+            if (!IsUiScope(scope))
+            {
+                settings.RegisterKnownDeviceUid(scope);
+                if (!scopeOptions.Contains(scope))
+                    scopeOptions.Add(scope);
+            }
+            else
+            {
+                scope = UiScopeLabel;
+            }
 
-            currentUid = uid;
-            UidComboBox.Text = uid;
-            LoadAssignments(uid);
-            StatusTextBlock.Text = $"UID {uid} の割り当てを編集中です。";
+            currentScope = scope;
+            ScopeComboBox.Text = scope;
+            LoadAssignments(scope);
+            StatusTextBlock.Text = IsUiScope(scope)
+                ? "UIキーボードの割り当てを編集中です。"
+                : $"実機 UID {scope} の割り当てを編集中です。";
         }
 
         private void TestButton_OnClick(object sender, RoutedEventArgs e)
@@ -109,7 +119,7 @@ namespace YMMKeyboardPlugin
                 return;
 
             SaveAssignments();
-            MappingConverter.ExecuteAction(item.SelectedActionName, item.Parameter, item.SwitchName, currentUid);
+            MappingConverter.ExecuteAction(item.SelectedActionName, item.Parameter, item.SwitchName, currentScope);
         }
 
         private void CloseButton_OnClick(object sender, RoutedEventArgs e)

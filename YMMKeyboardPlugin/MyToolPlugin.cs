@@ -17,13 +17,13 @@ global using System.Diagnostics.CodeAnalysis;
 global using YukkuriMovieMaker.Commons;
 global using YukkuriMovieMaker.Plugin;
 using YMMKeyboardPlugin.Key;
-using YMMKeyboardPlugin.Mapping;
+
 namespace YMMKeyboardPlugin
 {
     public class MyToolPlugin : IToolPlugin
     {
         public string Name => "キーボードプラグイン";
-        public Type ViewModelType => typeof(keyboardViewModel);
+        public Type ViewModelType => typeof(KeyboardAction);
         public Type ViewType => typeof(KeyboardView);
 
         private Keymacro _keymacro;
@@ -31,11 +31,11 @@ namespace YMMKeyboardPlugin
         public MyToolPlugin()
         {
             try
-                {
+            {
                 Debug.WriteLine("[MyToolPlugin] Constructor START");
                 _keymacro = new Keymacro();
                 _keymacro.Initialize();
-                    Debug.WriteLine("[MyToolPlugin] Constructor END");
+                Debug.WriteLine("[MyToolPlugin] Constructor END");
             }
             catch (Exception ex)
             {

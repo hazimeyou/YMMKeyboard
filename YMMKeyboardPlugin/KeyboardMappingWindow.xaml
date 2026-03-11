@@ -26,7 +26,7 @@
                        FontWeight="Bold"/>
             <TextBlock Margin="0,6,0,0"
                        Foreground="#666"
-                       Text="UIDごとに各スイッチの動作を設定できます。現在は TestEvent を仮動作として利用できます。"/>
+                       Text="UIキーボード用と実機UID用の割り当てを別々に設定できます。"/>
         </StackPanel>
 
         <Border Grid.Row="2"
@@ -40,8 +40,8 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="対象UID" FontWeight="Bold"/>
-                    <ComboBox x:Name="UidComboBox"
+                    <TextBlock Text="対象" FontWeight="Bold"/>
+                    <ComboBox x:Name="ScopeComboBox"
                               Margin="0,8,0,0"
                               IsEditable="True"
                               IsTextSearchEnabled="False"
@@ -55,8 +55,8 @@
                         Margin="12,24,0,0"
                         Padding="12,6"
                         VerticalAlignment="Top"
-                        Content="UIDを開く"
-                        Click="AddOrSelectUid_OnClick"/>
+                        Content="対象を開く"
+                        Click="OpenScope_OnClick"/>
             </Grid>
         </Border>
 

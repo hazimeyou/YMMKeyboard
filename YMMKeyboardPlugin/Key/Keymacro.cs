@@ -119,7 +119,7 @@ namespace YMMKeyboardPlugin
             foreach (var item in SwitchLayout.All)
             {
                 var switchName = item.SwitchName;
-                map[item.SwitchId] = () => MappingConverter.ExecuteSwitch(uid, switchName);
+                map[item.SwitchId] = () => MappingConverter.ExecuteDeviceSwitch(uid, switchName);
             }
 
             return map;

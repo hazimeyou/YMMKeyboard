@@ -13,8 +13,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="16"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="16"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -24,7 +22,7 @@
                        FontWeight="Bold"/>
             <TextBlock Margin="0,6,0,0"
                        Foreground="#666"
-                       Text="接続するCOMポート、起動時の自動接続、手動テストUIDをここから設定できます。"/>
+                       Text="接続するCOMポート、起動時の自動接続、UIキーボードと実機の割り当てをここから設定できます。"/>
         </StackPanel>
 
         <Border Grid.Row="2"
@@ -102,7 +100,8 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="6"
+        <Border Grid.Row="5"
+                Margin="0,16,0,0"
                 Padding="12"
                 BorderBrush="#D0D0D0"
                 BorderThickness="1"
@@ -111,12 +110,7 @@
                 <TextBlock Text="キーボードの割り当て" FontWeight="Bold"/>
                 <TextBlock Margin="0,8,0,0"
                            Foreground="#666"
-                           Text="割り当て編集はUIDごとに別ウィンドウで開きます。手動テストの対象UIDもここで選べます。"/>
-                <ComboBox x:Name="ManualTargetUidComboBox"
-                          Margin="0,12,0,0"
-                          MinWidth="260"
-                          HorizontalAlignment="Left"
-                          SelectionChanged="ManualTargetUidComboBox_OnSelectionChanged"/>
+                           Text="割り当て編集は別ウィンドウで開きます。UIキーボード用と実機UID用を切り替えて編集できます。"/>
                 <Button Margin="0,12,0,0"
                         Width="160"
                         Padding="12,6"

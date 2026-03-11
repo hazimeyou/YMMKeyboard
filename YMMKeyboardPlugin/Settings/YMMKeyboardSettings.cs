@@ -39,7 +39,7 @@ namespace YMMKeyboardPlugin.Settings
         public List<string> KnownDeviceUids { get; set; } = new List<string>();
 
         [DataMember]
-        public string ManualTargetUid { get; set; } = string.Empty;
+        public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new Dictionary<string, ButtonConfig>();
 
         [DataMember]
         public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceButtonConfigs { get; set; } = new Dictionary<string, Dictionary<string, ButtonConfig>>();
@@ -80,40 +80,40 @@ namespace YMMKeyboardPlugin.Settings
             if (string.IsNullOrWhiteSpace(uid))
                 return;
 
+            var added = false;
             if (!KnownDeviceUids.Contains(uid, StringComparer.OrdinalIgnoreCase))
+            {
                 KnownDeviceUids.Add(uid);
+                added = true;
+            }
 
-            if (string.IsNullOrWhiteSpace(ManualTargetUid))
-                ManualTargetUid = uid;
-
-            EnsureDefaults(uid);
-            SaveToPluginDirectory();
+            EnsureDeviceDefaults(uid);
+            if (added)
+                SaveToPluginDirectory();
         }
 
-        public void SetManualTargetUid(string uid)
-        {
-            ManualTargetUid = uid;
-            SaveToPluginDirectory();
-        }
-
-        public string GetManualTargetUid()
+        public ButtonConfig GetUiButtonConfig(string switchName)
         {
             NormalizeSettings();
-
-            if (!string.IsNullOrWhiteSpace(ManualTargetUid))
-                return ManualTargetUid;
-
-            return KnownDeviceUids.FirstOrDefault() ?? string.Empty;
+            EnsureUiDefault(switchName);
+            return UiButtonConfigs[switchName];
         }
 
-        public ButtonConfig GetButtonConfig(string uid, string switchName)
+        public void SetUiButtonConfig(string switchName, ButtonConfig config)
+        {
+            EnsureUiDefault(switchName);
+            UiButtonConfigs[switchName] = config;
+            SaveToPluginDirectory();
+        }
+
+        public ButtonConfig GetDeviceButtonConfig(string uid, string switchName)
         {
             RegisterKnownDeviceUid(uid);
-            EnsureDefaults(uid);
+            EnsureDeviceDefaults(uid);
             return DeviceButtonConfigs[uid][switchName];
         }
 
-        public void SetButtonConfig(string uid, string switchName, ButtonConfig config)
+        public void SetDeviceButtonConfig(string uid, string switchName, ButtonConfig config)
         {
             RegisterKnownDeviceUid(uid);
             DeviceButtonConfigs[uid][switchName] = config;
@@ -179,7 +179,7 @@ namespace YMMKeyboardPlugin.Settings
                 PortName = data.PortName ?? string.Empty;
                 StartupPortNames = data.StartupPortNames ?? new List<string>();
                 KnownDeviceUids = data.KnownDeviceUids ?? new List<string>();
-                ManualTargetUid = data.ManualTargetUid ?? string.Empty;
+                UiButtonConfigs = data.UiButtonConfigs ?? new Dictionary<string, ButtonConfig>();
                 DeviceButtonConfigs = data.DeviceButtonConfigs ?? new Dictionary<string, Dictionary<string, ButtonConfig>>();
                 NormalizeSettings();
             }
@@ -202,7 +202,7 @@ namespace YMMKeyboardPlugin.Settings
                     PortName = PortName,
                     StartupPortNames = StartupPortNames,
                     KnownDeviceUids = KnownDeviceUids,
-                    ManualTargetUid = ManualTargetUid,
+                    UiButtonConfigs = UiButtonConfigs,
                     DeviceButtonConfigs = DeviceButtonConfigs,
                 };
 
@@ -238,11 +238,20 @@ namespace YMMKeyboardPlugin.Settings
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+            foreach (var item in global::YMMKeyboardPlugin.SwitchLayout.All)
+                EnsureUiDefault(item.SwitchName);
+
             foreach (var uid in KnownDeviceUids)
-                EnsureDefaults(uid);
+                EnsureDeviceDefaults(uid);
         }
 
-        private void EnsureDefaults(string uid)
+        private void EnsureUiDefault(string switchName)
+        {
+            if (!UiButtonConfigs.ContainsKey(switchName))
+                UiButtonConfigs[switchName] = new ButtonConfig();
+        }
+
+        private void EnsureDeviceDefaults(string uid)
         {
             if (!DeviceButtonConfigs.TryGetValue(uid, out var configs))
             {
@@ -262,7 +271,7 @@ namespace YMMKeyboardPlugin.Settings
             public string? PortName { get; set; }
             public List<string>? StartupPortNames { get; set; }
             public List<string>? KnownDeviceUids { get; set; }
-            public string? ManualTargetUid { get; set; }
+            public Dictionary<string, ButtonConfig>? UiButtonConfigs { get; set; }
             public Dictionary<string, Dictionary<string, ButtonConfig>>? DeviceButtonConfigs { get; set; }
         }
     }
