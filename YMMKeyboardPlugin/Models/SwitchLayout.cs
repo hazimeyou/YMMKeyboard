@@ -1,4 +1,4 @@
-﻿namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Models
 {
     public static class SwitchLayout
     {

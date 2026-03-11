@@ -1,0 +1,81 @@
+<UserControl
+    x:Class="YMMKeyboardPlugin.Views.KeyboardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    MinWidth="520"
+    MinHeight="260">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            Text="YMM4キーボード"
+            FontWeight="Bold"
+            Margin="0,0,0,10"/>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="180"/>
+            </Grid.ColumnDefinitions>
+
+            <UniformGrid Grid.Column="0" Columns="6">
+                <Button Content="SW01" Tag="SW01" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW02" Tag="SW02" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW03" Tag="SW03" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW04" Tag="SW04" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW05" Tag="SW05" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW06" Tag="SW06" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+
+                <Button Content="SW07" Tag="SW07" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW08" Tag="SW08" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW09" Tag="SW09" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW10" Tag="SW10" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW11" Tag="SW11" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW12" Tag="SW12" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+
+                <Button Content="SW13" Tag="SW13" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW14" Tag="SW14" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW15" Tag="SW15" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW16" Tag="SW16" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW17" Tag="SW17" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW18" Tag="SW18" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+
+                <Button Content="SW19" Tag="SW19" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW20" Tag="SW20" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW21" Tag="SW21" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW22" Tag="SW22" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW23" Tag="SW23" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW24" Tag="SW24" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+
+                <Button Content="SW25" Tag="SW25" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW26" Tag="SW26" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW27" Tag="SW27" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW28" Tag="SW28" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW29" Tag="SW29" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+                <Button Content="SW30" Tag="SW30" Height="35" Width="35" Margin="4" Click="SwitchButton_OnClick"/>
+            </UniformGrid>
+
+            <Border Grid.Column="2" Padding="10" CornerRadius="8" BorderThickness="1" BorderBrush="#444">
+                <StackPanel>
+                    <TextBlock Text="Rotary" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                        <Button Content="左" Tag="SW36" Width="70" Height="40" Margin="4" Click="SwitchButton_OnClick"/>
+                        <Button Content="右" Tag="SW37" Width="70" Height="40" Margin="4" Click="SwitchButton_OnClick"/>
+                    </StackPanel>
+
+                    <Button Content="SW35" Tag="SW35" Height="35" Margin="4" Click="SwitchButton_OnClick"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

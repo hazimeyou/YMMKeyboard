@@ -1,7 +1,9 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using YMMKeyboardPlugin.Mapping;
+using YMMKeyboardPlugin.Models;
+using YMMKeyboardPlugin.Views;
 using YukkuriMovieMaker.Plugin;
 
 namespace YMMKeyboardPlugin.Settings
@@ -27,22 +29,22 @@ namespace YMMKeyboardPlugin.Settings
         public override SettingsCategory Category => SettingsCategory.None;
         public override string Name => "キーボードプラグイン";
         public override bool HasSettingView => true;
-        public override object? SettingView => new global::YMMKeyboardPlugin.YMMKeyboardSettingsPanel(this);
+        public override object? SettingView => new YMMKeyboardSettingsPanel(this);
 
         [DataMember]
         public string PortName { get; set; } = string.Empty;
 
         [DataMember]
-        public List<string> StartupPortNames { get; set; } = new List<string>();
+        public List<string> StartupPortNames { get; set; } = new();
 
         [DataMember]
-        public List<string> KnownDeviceUids { get; set; } = new List<string>();
+        public List<string> KnownDeviceUids { get; set; } = new();
 
         [DataMember]
-        public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new Dictionary<string, ButtonConfig>();
+        public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new();
 
         [DataMember]
-        public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceButtonConfigs { get; set; } = new Dictionary<string, Dictionary<string, ButtonConfig>>();
+        public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceButtonConfigs { get; set; } = new();
 
         public YMMKeyboardSettings()
         {
@@ -177,10 +179,10 @@ namespace YMMKeyboardPlugin.Settings
                     return;
 
                 PortName = data.PortName ?? string.Empty;
-                StartupPortNames = data.StartupPortNames ?? new List<string>();
-                KnownDeviceUids = data.KnownDeviceUids ?? new List<string>();
-                UiButtonConfigs = data.UiButtonConfigs ?? new Dictionary<string, ButtonConfig>();
-                DeviceButtonConfigs = data.DeviceButtonConfigs ?? new Dictionary<string, Dictionary<string, ButtonConfig>>();
+                StartupPortNames = data.StartupPortNames ?? new();
+                KnownDeviceUids = data.KnownDeviceUids ?? new();
+                UiButtonConfigs = data.UiButtonConfigs ?? new();
+                DeviceButtonConfigs = data.DeviceButtonConfigs ?? new();
                 NormalizeSettings();
             }
             catch (Exception ex)
@@ -238,7 +240,7 @@ namespace YMMKeyboardPlugin.Settings
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            foreach (var item in global::YMMKeyboardPlugin.SwitchLayout.All)
+            foreach (var item in SwitchLayout.All)
                 EnsureUiDefault(item.SwitchName);
 
             foreach (var uid in KnownDeviceUids)
@@ -259,7 +261,7 @@ namespace YMMKeyboardPlugin.Settings
                 DeviceButtonConfigs[uid] = configs;
             }
 
-            foreach (var item in global::YMMKeyboardPlugin.SwitchLayout.All)
+            foreach (var item in SwitchLayout.All)
             {
                 if (!configs.ContainsKey(item.SwitchName))
                     configs[item.SwitchName] = new ButtonConfig();

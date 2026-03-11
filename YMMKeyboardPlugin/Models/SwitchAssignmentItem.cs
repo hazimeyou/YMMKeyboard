@@ -3,7 +3,7 @@ using System.ComponentModel;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Settings;
 
-namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Models
 {
     public class SwitchAssignmentItem : INotifyPropertyChanged
     {

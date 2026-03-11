@@ -1,11 +1,12 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using YMMKeyboardPlugin.Mapping;
+using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
 
-namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Views
 {
     public partial class KeyboardMappingWindow : Window
     {

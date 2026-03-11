@@ -1,4 +1,4 @@
-﻿global using System;
+global using System;
 global using System.IO;
 global using System.Diagnostics;
 global using System.IO.Compression;
@@ -16,9 +16,11 @@ global using System.Reflection;
 global using System.Diagnostics.CodeAnalysis;
 global using YukkuriMovieMaker.Commons;
 global using YukkuriMovieMaker.Plugin;
+using YMMKeyboardPlugin.Actions;
 using YMMKeyboardPlugin.Key;
+using YMMKeyboardPlugin.Views;
 
-namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Plugin
 {
     public class MyToolPlugin : IToolPlugin
     {
@@ -26,15 +28,15 @@ namespace YMMKeyboardPlugin
         public Type ViewModelType => typeof(KeyboardAction);
         public Type ViewType => typeof(KeyboardView);
 
-        private Keymacro _keymacro;
+        private Keymacro? keymacro;
 
         public MyToolPlugin()
         {
             try
             {
                 Debug.WriteLine("[MyToolPlugin] Constructor START");
-                _keymacro = new Keymacro();
-                _keymacro.Initialize();
+                keymacro = new Keymacro();
+                keymacro.Initialize();
                 Debug.WriteLine("[MyToolPlugin] Constructor END");
             }
             catch (Exception ex)
@@ -43,5 +45,10 @@ namespace YMMKeyboardPlugin
                 MessageBox.Show($"多分USB刺さってないかCOMポート間違ってる\n{ex}");
             }
         }
+
+        /*
+        // 旧実装: null 非許容の _keymacro を使っていた。
+        // private Keymacro _keymacro;
+        */
     }
 }

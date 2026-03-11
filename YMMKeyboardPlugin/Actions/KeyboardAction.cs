@@ -4,7 +4,7 @@ using YukkuriMovieMaker.Plugin;
 using YukkuriMovieMaker.Project;
 using YukkuriMovieMaker.UndoRedo;
 
-namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Actions
 {
     public class KeyboardAction : ITimelineToolViewModel, INotifyPropertyChanged
     {
@@ -16,9 +16,12 @@ namespace YMMKeyboardPlugin
         public void SetTimelineToolInfo(TimelineToolInfo info)
         {
             Debug.WriteLine("[KeyboardAction] SetTimelineToolInfo");
+            SyncTimelineToolInfo(info);
+        }
+
+        public static void SyncTimelineToolInfo(TimelineToolInfo info)
+        {
             TimelineInstance = info.Timeline;
-            undoRedoManager = info.UndoRedoManager;
-            Timeline = info.Timeline;
         }
 
         public static void PlusSeekFrame(int frames)
@@ -48,5 +51,10 @@ namespace YMMKeyboardPlugin
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        /*
+        // 旧実装: UndoRedoManager を直接保持していたが、現状の操作では未使用。
+        // 将来アンドゥ対応を戻す場合はここから再利用できるようフィールドは残している。
+        */
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Actions
 {
     public static class TestEvent
     {

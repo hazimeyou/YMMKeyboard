@@ -1,10 +1,10 @@
-﻿using System.IO.Ports;
+using System.IO.Ports;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using YMMKeyboardPlugin.Settings;
 
-namespace YMMKeyboardPlugin
+namespace YMMKeyboardPlugin.Views
 {
     public partial class YMMKeyboardSettingsPanel : UserControl
     {

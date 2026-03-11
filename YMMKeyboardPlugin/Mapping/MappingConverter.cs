@@ -1,4 +1,5 @@
-﻿using YMMKeyboardPlugin.Settings;
+using YMMKeyboardPlugin.Actions;
+using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Mapping
 {
@@ -19,8 +20,7 @@ namespace YMMKeyboardPlugin.Mapping
 
         public static void ExecuteUiSwitch(string switchName)
         {
-            var config = YMMKeyboardSettings.Current.GetUiButtonConfig(switchName);
-            ExecuteAction(config.ActionName, config.Parameter, switchName, "UIキーボード");
+            ExecuteUiSwitchCore(switchName);
         }
 
         public static void ExecuteDeviceSwitch(string uid, string switchName)
@@ -28,8 +28,7 @@ namespace YMMKeyboardPlugin.Mapping
             if (string.IsNullOrWhiteSpace(uid))
                 return;
 
-            var config = YMMKeyboardSettings.Current.GetDeviceButtonConfig(uid, switchName);
-            ExecuteAction(config.ActionName, config.Parameter, switchName, uid);
+            ExecuteDeviceSwitchCore(uid, switchName);
         }
 
         public static void ExecuteAction(string actionName, string? parameter, string switchName, string sourceName)
@@ -55,6 +54,18 @@ namespace YMMKeyboardPlugin.Mapping
                     MessageBox.Show($"未対応のアクションです: {actionName}", "キーボード割り当て");
                     break;
             }
+        }
+
+        private static void ExecuteUiSwitchCore(string switchName)
+        {
+            var config = YMMKeyboardSettings.Current.GetUiButtonConfig(switchName);
+            ExecuteAction(config.ActionName, config.Parameter, switchName, "UIキーボード");
+        }
+
+        private static void ExecuteDeviceSwitchCore(string uid, string switchName)
+        {
+            var config = YMMKeyboardSettings.Current.GetDeviceButtonConfig(uid, switchName);
+            ExecuteAction(config.ActionName, config.Parameter, switchName, uid);
         }
 
         private static int ParseFrameCount(string? parameter)

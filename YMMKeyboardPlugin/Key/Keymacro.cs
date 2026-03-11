@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Mapping;
+using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin
@@ -13,7 +14,7 @@ namespace YMMKeyboardPlugin
     {
         private readonly Dictionary<string, SerialKeyboardLink> links = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Dictionary<int, Action>> macros = new();
-        private readonly keyboardViewModel mp3Vm = new();
+        private readonly LegacyKeyboardViewModel mp3Vm = new();
 
         public void Initialize()
         {
@@ -178,5 +179,10 @@ namespace YMMKeyboardPlugin
             YMMKeyboardSettings.SettingsLoaded -= OnSettingsLoaded;
             DisconnectAll();
         }
+
+        /*
+        // 将来的には CreateDeviceMap を専用クラスへ外だししたいが、
+        // 現在は重複だけ解消してここへ集約している。
+        */
     }
 }
