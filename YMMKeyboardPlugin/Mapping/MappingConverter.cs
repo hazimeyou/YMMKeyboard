@@ -11,6 +11,7 @@ namespace YMMKeyboardPlugin.Mapping
         public const string TestEventActionName = "TestEvent";
         public const string PlusSeekFrameActionName = "PlusSeekFrame";
         public const string MinusSeekFrameActionName = "MinusSeekFrame";
+        public const string LoadYmmtCatalogActionName = "LoadYmmtCatalog";
 
         public static IReadOnlyList<string> AvailableActions { get; } = new[]
         {
@@ -18,6 +19,7 @@ namespace YMMKeyboardPlugin.Mapping
             TestEventActionName,
             PlusSeekFrameActionName,
             MinusSeekFrameActionName,
+            LoadYmmtCatalogActionName,
         };
 
         public static void ExecuteUiSwitch(string switchName)
@@ -59,6 +61,9 @@ namespace YMMKeyboardPlugin.Mapping
                     break;
                 case MinusSeekFrameActionName:
                     KeyboardAction.MinusSeekFrame(frameCount);
+                    break;
+                case LoadYmmtCatalogActionName:
+                    LoadYmmtCatalogAction.Execute($"{switchName} ({sourceName})", parameter);
                     break;
                 case NoneActionName:
                 case "":

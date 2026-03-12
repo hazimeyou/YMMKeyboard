@@ -76,8 +76,18 @@ namespace YMMKeyboardPlugin.Views
             {
                 var switchName = button.Tag as string ?? string.Empty;
                 var isSelected = IsComboMode && selectedCombination.Contains(switchName);
-                button.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isSelected ? "#D9E9FF" : "#F5F3ED"));
-                button.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isSelected ? "#4A84D8" : "#C7B9A5"));
+                if (isSelected)
+                {
+                    button.Background = SystemColors.HighlightBrush;
+                    button.BorderBrush = SystemColors.HighlightBrush;
+                    button.Foreground = SystemColors.HighlightTextBrush;
+                }
+                else
+                {
+                    button.ClearValue(Control.BackgroundProperty);
+                    button.ClearValue(Control.BorderBrushProperty);
+                    button.ClearValue(Control.ForegroundProperty);
+                }
             }
         }
 

@@ -215,8 +215,18 @@ namespace YMMKeyboardPlugin.Views
                     ? selectedCombination.Contains(switchName)
                     : selectedAssignment?.SwitchName == switchName;
 
-                button.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isSelected ? "#D9E9FF" : "#F5F3ED"));
-                button.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isSelected ? "#4A84D8" : "#C7B9A5"));
+                if (isSelected)
+                {
+                    button.Background = SystemColors.HighlightBrush;
+                    button.BorderBrush = SystemColors.HighlightBrush;
+                    button.Foreground = SystemColors.HighlightTextBrush;
+                }
+                else
+                {
+                    button.ClearValue(Control.BackgroundProperty);
+                    button.ClearValue(Control.BorderBrushProperty);
+                    button.ClearValue(Control.ForegroundProperty);
+                }
                 button.Content = CreateButtonContent(switchName, assignment);
             }
         }
@@ -228,8 +238,9 @@ namespace YMMKeyboardPlugin.Views
             {
                 Text = switchName,
                 FontFamily = new FontFamily("Consolas"),
-                FontSize = 14,
+                FontSize = 12,
                 FontWeight = FontWeights.Bold,
+                Foreground = SystemColors.ControlDarkDarkBrush,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
             });
@@ -237,8 +248,9 @@ namespace YMMKeyboardPlugin.Views
             {
                 Text = GetActionDisplayName(assignment.SelectedActionName),
                 Margin = new Thickness(0, 4, 0, 0),
-                FontSize = 11,
-                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#666666")),
+                FontSize = 10,
+                Foreground = SystemColors.ControlDarkDarkBrush,
+                Opacity = 0.75,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
                 TextWrapping = TextWrapping.Wrap,

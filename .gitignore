@@ -389,3 +389,4 @@ KiCad/YMMkeyboard/YMMkeyboard-backups/
 KiCad/YMMkeyboardMX/YMMkeyboardMX-backups/
 /KiCad/testboard/testboard/testboard-backups
 /.codex-dotnet/.dotnet
+/Directory.Build.props
