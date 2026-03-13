@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -104,13 +104,5 @@ namespace YMMKeyboardPlugin.Views
                     yield return nested;
             }
         }
-
-        /*
-        // 旧実装: 単独キーをその場で実行するだけのクリックハンドラでした。
-        // 現在は SwitchButton_OnClick に統合し、複数キー実行モードも同じ入口で扱っています。
-        public void SW01(object sender, RoutedEventArgs e) => MappingConverter.SW01();
-        private void SW02(object sender, RoutedEventArgs e) => MappingConverter.SW02();
-        private void SW03(object sender, RoutedEventArgs e) => MappingConverter.SW03();
-        */
     }
 }

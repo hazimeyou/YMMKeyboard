@@ -19,12 +19,12 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
-            <TextBlock Text="繧ｭ繝ｼ繝懊・繝峨・繝ｩ繧ｰ繧､繝ｳ險ｭ螳・
+            <TextBlock Text="キーボードプラグイン設定"
                        FontSize="16"
                        FontWeight="Bold"/>
             <TextBlock Margin="0,6,0,0"
                        Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                       Text="謗･邯壹☆繧気OM繝昴・繝医∬ｵｷ蜍墓凾縺ｮ閾ｪ蜍墓磁邯壹ゞI繧ｭ繝ｼ繝懊・繝峨→螳滓ｩ溘・蜑ｲ繧雁ｽ薙※繧偵％縺薙°繧芽ｨｭ螳壹〒縺阪∪縺吶・/>
+                       Text="接続するCOMポートと、起動時に接続するポート、キー割り当て設定を管理します。"/>
         </StackPanel>
 
         <Border Grid.Row="2"
@@ -40,7 +40,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="COM繝昴・繝・ FontWeight="Bold"/>
+                    <TextBlock Text="COMポート" FontWeight="Bold"/>
                     <ComboBox x:Name="PortComboBox"
                               Margin="0,8,0,0"
                               MinWidth="180"
@@ -55,21 +55,21 @@
                         Margin="10,20,0,0"
                         Padding="10,5"
                         VerticalAlignment="Top"
-                        Content="蜀崎ｪｭ縺ｿ霎ｼ縺ｿ"
+                        Content="読み込み"
                         Click="ReloadPorts_OnClick"/>
 
                 <Button Grid.Column="2"
                         Margin="10,20,0,0"
                         Padding="10,5"
                         VerticalAlignment="Top"
-                        Content="謗･邯・
+                        Content="接続"
                         Click="Connect_OnClick"/>
 
                 <Button Grid.Column="3"
                         Margin="10,20,0,0"
                         Padding="10,5"
                         VerticalAlignment="Top"
-                        Content="謗･邯夊ｧ｣髯､"
+                        Content="切断"
                         Click="Disconnect_OnClick"/>
             </Grid>
         </Border>
@@ -85,18 +85,18 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="襍ｷ蜍墓凾縺ｫ謗･邯壹☆繧気OM繝昴・繝・ FontWeight="Bold"/>
+                    <TextBlock Text="起動時に接続するCOMポート" FontWeight="Bold"/>
                     <ListBox x:Name="StartupPortsListBox"
                              Margin="0,8,0,0"
                              MinHeight="80"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="10,20,0,0">
                     <Button Padding="10,5"
-                            Content="霑ｽ蜉"
+                            Content="追加"
                             Click="AddStartupPort_OnClick"/>
                     <Button Margin="0,8,0,0"
                             Padding="10,5"
-                            Content="蜑企勁"
+                            Content="削除"
                             Click="RemoveStartupPort_OnClick"/>
                 </StackPanel>
             </Grid>
@@ -109,18 +109,17 @@
                 BorderThickness="1"
                 CornerRadius="8">
             <StackPanel>
-                <TextBlock Text="繧ｭ繝ｼ繝懊・繝峨・蜑ｲ繧雁ｽ薙※" FontWeight="Bold"/>
+                <TextBlock Text="キー割り当て" FontWeight="Bold"/>
                 <TextBlock Margin="0,8,0,0"
                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                           Text="蜑ｲ繧雁ｽ薙※邱ｨ髮・・蛻･繧ｦ繧｣繝ｳ繝峨え縺ｧ髢九″縺ｾ縺吶６I繧ｭ繝ｼ繝懊・繝臥畑縺ｨ螳滓ｩ欟ID逕ｨ繧貞・繧頑崛縺医※邱ｨ髮・〒縺阪∪縺吶・/>
+                           Text="UIキーボードと実機UIDごとの割り当てを編集できます。"/>
                 <Button Margin="0,10,0,0"
                         Width="140"
                         Padding="10,5"
                         HorizontalAlignment="Left"
-                        Content="蜑ｲ繧雁ｽ薙※繧帝幕縺・
+                        Content="割り当てを開く"
                         Click="OpenMappingWindow_OnClick"/>
             </StackPanel>
         </Border>
     </Grid>
 </UserControl>
-

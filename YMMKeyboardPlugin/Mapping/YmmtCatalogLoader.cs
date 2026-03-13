@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Text.Json;
 using YMMKeyboardPlugin.Models;
 
@@ -126,7 +126,7 @@ public static class YmmtCatalogLoader
         return property.ValueKind switch
         {
             JsonValueKind.Number when property.TryGetInt32(out var i32) => i32,
-            JsonValueKind.Number when property.TryGetInt64(out var i64) => (int)i64,
+            JsonValueKind.Number when property.TryGetInt64(out var i64) => i64 > int.MaxValue ? int.MaxValue : i64 < int.MinValue ? int.MinValue : (int)i64,
             JsonValueKind.String when int.TryParse(property.GetString(), out var parsed) => parsed,
             _ => 0,
         };
@@ -160,3 +160,4 @@ public static class YmmtCatalogLoader
         };
     }
 }
+

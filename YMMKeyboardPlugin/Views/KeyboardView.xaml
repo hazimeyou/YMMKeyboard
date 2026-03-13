@@ -29,13 +29,13 @@
 
         <StackPanel Grid.Row="0">
             <TextBlock
-                Text="YMM4繧ｭ繝ｼ繝懊・繝・
+                Text="YMM4キーボード"
                 FontWeight="Bold"
                 FontSize="13"/>
             <TextBlock
                 Margin="0,3,0,0"
                 Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                Text="蜊倡峡繧ｯ繝ｪ繝・け縺ｯ縺昴・繧ｭ繝ｼ繧貞ｮ溯｡後＠縺ｾ縺吶り､・焚繧ｭ繝ｼ螳溯｡後Δ繝ｼ繝峨〒縺ｯ縲√く繝ｼ繧帝∈繧薙〒縺九ｉ縺ｾ縺ｨ繧√※螳溯｡後〒縺阪∪縺吶・/>
+                Text="単独クリックはそのキーを実行します。複数キー実行モードではキーを選んでからまとめて実行できます。"/>
         </StackPanel>
 
         <Grid Grid.Row="2">
@@ -113,31 +113,30 @@
                     Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}">
                 <StackPanel>
                     <CheckBox x:Name="ComboModeCheckBox"
-                              Content="隍・焚繧ｭ繝ｼ螳溯｡後Δ繝ｼ繝・
+                              Content="複数キー実行モード"
                               Checked="ComboModeCheckBox_OnChanged"
                               Unchecked="ComboModeCheckBox_OnChanged"/>
                     <TextBlock Margin="0,8,0,0"
                                FontWeight="Bold"
-                               Text="驕ｸ謚樔ｸｭ"/>
+                               Text="選択中"/>
                     <TextBlock x:Name="SelectedKeysTextBlock"
                                Margin="0,3,0,0"
                                TextWrapping="Wrap"
-                               Text="縺ｪ縺・/>
+                               Text="なし"/>
                     <TextBlock Margin="0,10,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                TextWrapping="Wrap"
-                               Text="縺薙・繝｢繝ｼ繝峨〒縺ｯ繧ｭ繝ｼ繧偵け繝ｪ繝・け縺励※驕ｸ謚槭＠縺ｾ縺吶・縺､莉･荳企∈繧薙□繧峨∪縺ｨ繧√※螳溯｡後〒縺阪∪縺吶・/>
+                               Text="このモードではキーをクリックして選択します。2つ以上選んだらまとめて実行できます。"/>
                     <Button Margin="0,14,0,0"
                             Padding="8,5"
-                            Content="隍・焚繧ｭ繝ｼ繧貞ｮ溯｡・
+                            Content="複数キーを実行"
                             Click="ExecuteCombinationButton_OnClick"/>
                     <Button Margin="0,8,0,0"
                             Padding="8,5"
-                            Content="驕ｸ謚槭ｒ繧ｯ繝ｪ繧｢"
+                            Content="選択をクリア"
                             Click="ClearSelectionButton_OnClick"/>
                 </StackPanel>
             </Border>
         </Grid>
     </Grid>
 </UserControl>
-

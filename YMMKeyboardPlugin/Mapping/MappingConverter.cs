@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using YMMKeyboardPlugin.Actions;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;

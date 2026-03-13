@@ -10,26 +10,43 @@ public static class LoadYmmtCatalogAction
 {
     public static void Execute(string switchName, string? parameter)
     {
-        var rawPath = parameter?.Trim();
-        if (string.IsNullOrWhiteSpace(rawPath))
+        try
         {
-            MessageBox.Show(
-                "Set .ymmt file path in parameter.\nExample: C:\\Users\\<user>\\Downloads\\test.ymmt",
-                "LoadYmmtCatalog");
-            return;
-        }
+            var rawPath = parameter?.Trim();
+            if (string.IsNullOrWhiteSpace(rawPath))
+            {
+                MessageBox.Show(
+                    "Set .ymmt file path in parameter.\nExample: C:\\Users\\<user>\\Downloads\\test.ymmt",
+                    "LoadYmmtCatalog");
+                return;
+            }
 
-        var path = NormalizePath(rawPath);
-        if (!YmmtCatalogLoader.TryLoad(path, out var snapshot, out var error) || snapshot is null)
+            var path = NormalizePath(rawPath);
+            if (!YmmtCatalogLoader.TryLoad(path, out var snapshot, out var error) || snapshot is null)
+            {
+                MessageBox.Show($"Load failed.\nPath: {path}\nError: {error}", "LoadYmmtCatalog");
+                return;
+            }
+
+            string savedPath;
+            try
+            {
+                savedPath = SaveToPluginFolder(path);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Loaded but save failed.\nPath: {path}\nError: {ex.Message}", "LoadYmmtCatalog");
+                return;
+            }
+
+            var message = BuildSummary(snapshot);
+            message += $"\n\nSavedTo: {savedPath}";
+            MessageBox.Show(message, "LoadYmmtCatalog");
+        }
+        catch (Exception ex)
         {
-            MessageBox.Show($"Load failed.\nPath: {path}\nError: {error}", "LoadYmmtCatalog");
-            return;
+            MessageBox.Show($"Unexpected error: {ex.Message}", "LoadYmmtCatalog");
         }
-
-        var savedPath = SaveToPluginFolder(path);
-        var message = BuildSummary(snapshot);
-        message += $"\n\nSavedTo: {savedPath}";
-        MessageBox.Show(message, "LoadYmmtCatalog");
     }
 
     private static string NormalizePath(string rawPath)
