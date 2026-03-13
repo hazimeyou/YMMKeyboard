@@ -3,7 +3,7 @@
 YMMKeyboard は、シリアル接続された外部キーボードを YukkuriMovieMaker 4 から扱うためのプラグインです。
 YMM 上の UI キーボード操作と、実機からの COM ポート入力を分けて設定できます。
 
-## ドキュメント
+## プラグインの説明はコチラから
 
 - プラグイン本体の説明: [`YMMKeyboardPlugin/README.md`](/YMMKeyboardPlugin/README.md)
 
