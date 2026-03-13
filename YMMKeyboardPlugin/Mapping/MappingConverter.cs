@@ -7,11 +7,11 @@ namespace YMMKeyboardPlugin.Mapping
 {
     public static class MappingConverter
     {
-        public const string NoneActionName = "None";
-        public const string TestEventActionName = "TestEvent";
-        public const string PlusSeekFrameActionName = "PlusSeekFrame";
-        public const string MinusSeekFrameActionName = "MinusSeekFrame";
-        public const string LoadYmmtCatalogActionName = "LoadYmmtCatalog";
+        public const string NoneActionName = "なし";
+        public const string TestEventActionName = "テスト本番削除";
+        public const string PlusSeekFrameActionName = "シークバーを進める";
+        public const string MinusSeekFrameActionName = "シークバーを戻す";
+        public const string LoadYmmtCatalogActionName = "ymmt読み込み";
 
         public static IReadOnlyList<string> AvailableActions { get; } = new[]
         {

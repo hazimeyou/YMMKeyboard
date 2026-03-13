@@ -1,5 +1,6 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -125,6 +126,7 @@ namespace YMMKeyboardPlugin.Views
                 LoadSingleSelection();
 
             isUpdatingSelection = false;
+            UpdateYmmtParameterUi();
             RefreshKeyboardButtons();
         }
 
@@ -360,6 +362,7 @@ namespace YMMKeyboardPlugin.Views
                 selectedAssignment.SelectedActionName = ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName;
 
             UpdateSelectionHint();
+            UpdateYmmtParameterUi();
             RefreshKeyboardButtons();
         }
 
@@ -409,6 +412,52 @@ namespace YMMKeyboardPlugin.Views
             Close();
         }
 
+
+        private void BrowseYmmtButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = ".ymmtファイルを選択",
+                Filter = "YMM Template (*.ymmt)|*.ymmt|All Files (*.*)|*.*",
+                CheckFileExists = true,
+                Multiselect = false,
+            };
+
+            var current = ParameterTextBox.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(current))
+            {
+                try
+                {
+                    var fullPath = Path.GetFullPath(current.Trim('"'));
+                    if (File.Exists(fullPath))
+                    {
+                        dialog.InitialDirectory = Path.GetDirectoryName(fullPath);
+                        dialog.FileName = Path.GetFileName(fullPath);
+                    }
+                }
+                catch
+                {
+                    // ignore invalid path and keep default dialog location
+                }
+            }
+
+            if (dialog.ShowDialog(this) == true)
+                ParameterTextBox.Text = dialog.FileName;
+        }
+
+        private void UpdateYmmtParameterUi()
+        {
+            if (YmmtBrowseButton is null)
+                return;
+
+            var selectedAction = ActionComboBox.SelectedItem as string;
+            var isYmmtAction = string.Equals(
+                selectedAction,
+                MappingConverter.LoadYmmtCatalogActionName,
+                StringComparison.Ordinal);
+
+            YmmtBrowseButton.Visibility = isYmmtAction ? Visibility.Visible : Visibility.Collapsed;
+        }
         protected override void OnClosing(CancelEventArgs e)
         {
             SaveCurrentSelection();

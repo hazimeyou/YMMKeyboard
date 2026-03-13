@@ -219,9 +219,22 @@
 
                     <StackPanel Grid.Row="4">
                         <TextBlock Text="パラメータ" FontWeight="Bold"/>
-                        <TextBox x:Name="ParameterTextBox"
-                                 Margin="0,8,0,0"
-                                 TextChanged="ParameterTextBox_OnTextChanged"/>
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ParameterTextBox"
+                                     Grid.Column="0"
+                                     TextChanged="ParameterTextBox_OnTextChanged"/>
+                            <Button x:Name="YmmtBrowseButton"
+                                    Grid.Column="2"
+                                    Padding="8,4"
+                                    Visibility="Collapsed"
+                                    Content="参照..."
+                                    Click="BrowseYmmtButton_OnClick"/>
+                        </Grid>
                     </StackPanel>
 
                     <StackPanel Grid.Row="6">
