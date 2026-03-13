@@ -74,11 +74,11 @@ public static class LoadYmmtCatalogAction
         var skipped = 0;
         var notes = new List<string>();
         var baseFrame = timeline.CurrentFrame;
-        var sourceFps = template.Fps > 0 ? template.Fps : 60;
+        var sourceFps = template.Fps > 0 ? (double)template.Fps : 60.0;
         var targetFps = GetTimelineFps(timeline, sourceFps);
-        var frameScale = (double)targetFps / sourceFps;
+        var frameScale = targetFps / sourceFps;
         if (Math.Abs(frameScale - 1.0) > 0.0001)
-            notes.Add($"FrameScale applied: {sourceFps}fps -> {targetFps}fps (x{frameScale:0.###})");
+            notes.Add($"FrameScale applied: {sourceFps:0.###}fps -> {targetFps:0.###}fps (x{frameScale:0.###})");
 
         foreach (var src in template.Items)
         {
@@ -156,7 +156,7 @@ public static class LoadYmmtCatalogAction
         }
     }
 
-    private static int GetTimelineFps(Timeline timeline, int fallbackFps)
+    private static double GetTimelineFps(Timeline timeline, double fallbackFps)
     {
         try
         {
@@ -164,16 +164,16 @@ public static class LoadYmmtCatalogAction
             var videoInfo = videoInfoProperty?.GetValue(timeline);
             if (videoInfo is not null)
             {
-                var fpsFromVideoInfo = GetPropertyInt(videoInfo, "FPS");
+                var fpsFromVideoInfo = GetPropertyDouble(videoInfo, "FPS");
                 if (fpsFromVideoInfo > 0)
                     return fpsFromVideoInfo;
             }
 
-            var value = GetPropertyInt(timeline, "FPS");
+            var value = GetPropertyDouble(timeline, "FPS");
             if (value > 0)
                 return value;
 
-            value = GetPropertyInt(timeline, "FrameRate");
+            value = GetPropertyDouble(timeline, "FrameRate");
             if (value > 0)
                 return value;
         }
@@ -202,6 +202,25 @@ public static class LoadYmmtCatalogAction
         {
             int i => i,
             long l => l > int.MaxValue ? int.MaxValue : l < int.MinValue ? int.MinValue : (int)l,
+            _ => 0,
+        };
+    }
+
+    private static double GetPropertyDouble(object instance, string propertyName)
+    {
+        var property = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+        if (property is null)
+            return 0;
+
+        var value = property.GetValue(instance);
+        return value switch
+        {
+            double d => d,
+            float f => f,
+            decimal m => (double)m,
+            int i => i,
+            long l => l,
+            string s when double.TryParse(s, out var parsed) => parsed,
             _ => 0,
         };
     }

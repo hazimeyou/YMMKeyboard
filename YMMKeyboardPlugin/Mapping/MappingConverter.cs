@@ -7,11 +7,11 @@ namespace YMMKeyboardPlugin.Mapping
 {
     public static class MappingConverter
     {
-        public const string NoneActionName = "なし";
-        public const string TestEventActionName = "テスト本番削除";
-        public const string PlusSeekFrameActionName = "シークバーを進める";
-        public const string MinusSeekFrameActionName = "シークバーを戻す";
-        public const string LoadYmmtCatalogActionName = "ymmt読み込み";
+        public const string NoneActionName = "None";
+        public const string TestEventActionName = "TestEvent";
+        public const string PlusSeekFrameActionName = "PlusSeekFrame";
+        public const string MinusSeekFrameActionName = "MinusSeekFrame";
+        public const string LoadYmmtCatalogActionName = "LoadYmmtCatalog";
 
         public static IReadOnlyList<string> AvailableActions { get; } = new[]
         {
@@ -49,6 +49,7 @@ namespace YMMKeyboardPlugin.Mapping
 
         public static void ExecuteAction(string actionName, string? parameter, string switchName, string sourceName)
         {
+            actionName = NormalizeActionName(actionName);
             var frameCount = ParseFrameCount(parameter);
 
             switch (actionName)
@@ -78,6 +79,22 @@ namespace YMMKeyboardPlugin.Mapping
         private static int ParseFrameCount(string? parameter)
         {
             return int.TryParse(parameter, out var frames) && frames > 0 ? frames : 1;
+        }
+
+        public static string NormalizeActionName(string? actionName)
+        {
+            if (string.IsNullOrWhiteSpace(actionName))
+                return NoneActionName;
+
+            return actionName.Trim() switch
+            {
+                "なし" => NoneActionName,
+                "テスト本番削除" => TestEventActionName,
+                "シークバーを進める" => PlusSeekFrameActionName,
+                "シークバーを戻す" => MinusSeekFrameActionName,
+                "ymmt読み込み" => LoadYmmtCatalogActionName,
+                _ => actionName.Trim(),
+            };
         }
 
         public static void SW01() => ExecuteUiSwitch("SW01");

@@ -280,6 +280,9 @@ namespace YMMKeyboardPlugin.Settings
                 .Where(pair => !string.IsNullOrWhiteSpace(pair.Key))
                 .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
+            NormalizeActionNames(UiButtonConfigs);
+            NormalizeActionNames(UiComboButtonConfigs);
+
             foreach (var item in SwitchLayout.All)
                 EnsureUiDefault(item.SwitchName);
 
@@ -287,6 +290,16 @@ namespace YMMKeyboardPlugin.Settings
             {
                 EnsureDeviceDefaults(uid);
                 EnsureDeviceComboStore(uid);
+                NormalizeActionNames(DeviceButtonConfigs[uid]);
+                NormalizeActionNames(DeviceComboButtonConfigs[uid]);
+            }
+        }
+
+        private static void NormalizeActionNames(Dictionary<string, ButtonConfig> configs)
+        {
+            foreach (var pair in configs)
+            {
+                pair.Value.ActionName = MappingConverter.NormalizeActionName(pair.Value.ActionName);
             }
         }
 

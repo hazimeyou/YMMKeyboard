@@ -65,7 +65,7 @@ namespace YMMKeyboardPlugin.Views
                 items.Add(new SwitchAssignmentItem
                 {
                     SwitchName = item.SwitchName,
-                    SelectedActionName = config.ActionName,
+                    SelectedActionName = MappingConverter.NormalizeActionName(config.ActionName),
                     Parameter = config.Parameter,
                 });
             }
@@ -98,7 +98,7 @@ namespace YMMKeyboardPlugin.Views
             if (selectedAssignment is null)
                 return;
 
-            selectedAssignment.SelectedActionName = ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName;
+            selectedAssignment.SelectedActionName = MappingConverter.NormalizeActionName(ActionComboBox.SelectedItem as string);
             selectedAssignment.Parameter = ParameterTextBox.Text;
 
             var singleConfig = CreateConfigFromEditor();
@@ -112,7 +112,7 @@ namespace YMMKeyboardPlugin.Views
         {
             return new ButtonConfig
             {
-                ActionName = ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName,
+                ActionName = MappingConverter.NormalizeActionName(ActionComboBox.SelectedItem as string),
                 Parameter = ParameterTextBox.Text,
             };
         }
@@ -143,7 +143,7 @@ namespace YMMKeyboardPlugin.Views
             }
 
             SelectedSwitchTextBlock.Text = selectedAssignment.SwitchName;
-            ActionComboBox.SelectedItem = selectedAssignment.SelectedActionName;
+            ActionComboBox.SelectedItem = MappingConverter.NormalizeActionName(selectedAssignment.SelectedActionName);
             ParameterTextBox.Text = selectedAssignment.Parameter;
             UpdateSelectionHint();
         }
@@ -173,7 +173,7 @@ namespace YMMKeyboardPlugin.Views
                 ? settings.GetUiComboButtonConfig(combinationKey)
                 : settings.GetDeviceComboButtonConfig(currentScope, combinationKey);
 
-            ActionComboBox.SelectedItem = config.ActionName;
+            ActionComboBox.SelectedItem = MappingConverter.NormalizeActionName(config.ActionName);
             ParameterTextBox.Text = config.Parameter;
             UpdateSelectionHint();
         }
@@ -361,7 +361,7 @@ namespace YMMKeyboardPlugin.Views
             SaveCurrentSelection();
 
             if (!IsComboMode && selectedAssignment is not null)
-                selectedAssignment.SelectedActionName = ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName;
+                selectedAssignment.SelectedActionName = MappingConverter.NormalizeActionName(ActionComboBox.SelectedItem as string);
 
             UpdateSelectionHint();
             UpdateYmmtParameterUi();
@@ -453,7 +453,7 @@ namespace YMMKeyboardPlugin.Views
 
             var selectedAction = ActionComboBox.SelectedItem as string;
             var isYmmtAction = string.Equals(
-                selectedAction,
+                MappingConverter.NormalizeActionName(selectedAction),
                 MappingConverter.LoadYmmtCatalogActionName,
                 StringComparison.Ordinal);
 
