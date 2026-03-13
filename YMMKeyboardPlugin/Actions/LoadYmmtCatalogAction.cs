@@ -74,10 +74,17 @@ public static class LoadYmmtCatalogAction
         var skipped = 0;
         var notes = new List<string>();
         var baseFrame = timeline.CurrentFrame;
+        var sourceFps = template.Fps > 0 ? template.Fps : 60;
+        var targetFps = GetTimelineFps(timeline, sourceFps);
+        var frameScale = (double)targetFps / sourceFps;
+        if (Math.Abs(frameScale - 1.0) > 0.0001)
+            notes.Add($"FrameScale applied: {sourceFps}fps -> {targetFps}fps (x{frameScale:0.###})");
 
         foreach (var src in template.Items)
         {
-            if (!TryCreateTimelineItem(src, baseFrame, out var item, out var reason) || item is null)
+            var frame = baseFrame + ScaleFrame(src.Frame, frameScale);
+            var length = ScaleFrame(src.Length, frameScale, minimum: 1);
+            if (!TryCreateTimelineItem(src, frame, length, out var item, out var reason) || item is null)
             {
                 skipped++;
                 if (!string.IsNullOrWhiteSpace(reason) && notes.Count < 5)
@@ -85,12 +92,12 @@ public static class LoadYmmtCatalogAction
                 continue;
             }
 
-            var frame = GetPropertyInt(item, "Frame");
+            var itemFrame = GetPropertyInt(item, "Frame");
             var layer = GetPropertyInt(item, "Layer");
             if (Application.Current is not null)
-                Application.Current.Dispatcher.Invoke(() => timeline.TryAddItems(new IItem[] { item }, frame, layer));
+                Application.Current.Dispatcher.Invoke(() => timeline.TryAddItems(new IItem[] { item }, itemFrame, layer));
             else
-                timeline.TryAddItems(new IItem[] { item }, frame, layer);
+                timeline.TryAddItems(new IItem[] { item }, itemFrame, layer);
             imported++;
         }
 
@@ -98,7 +105,7 @@ public static class LoadYmmtCatalogAction
         return new ImportResult(imported, skipped, noteText);
     }
 
-    private static bool TryCreateTimelineItem(YmmtItemSnapshot src, int baseFrame, out IItem? item, out string reason)
+    private static bool TryCreateTimelineItem(YmmtItemSnapshot src, int frame, int length, out IItem? item, out string reason)
     {
         item = null;
         reason = string.Empty;
@@ -114,9 +121,9 @@ public static class LoadYmmtCatalogAction
                 }
 
                 var audio = new AudioItem(src.FilePath);
-                SetIfWritable(audio, "Frame", baseFrame + Math.Max(0, src.Frame));
+                SetIfWritable(audio, "Frame", frame);
                 SetIfWritable(audio, "Layer", Math.Max(0, src.Layer));
-                SetIfWritable(audio, "Length", Math.Max(1, src.Length));
+                SetIfWritable(audio, "Length", length);
                 item = audio;
                 return true;
             }
@@ -136,9 +143,9 @@ public static class LoadYmmtCatalogAction
                 return false;
             }
 
-            SetIfWritable(instance, "Frame", baseFrame + Math.Max(0, src.Frame));
+            SetIfWritable(instance, "Frame", frame);
             SetIfWritable(instance, "Layer", Math.Max(0, src.Layer));
-            SetIfWritable(instance, "Length", Math.Max(1, src.Length));
+            SetIfWritable(instance, "Length", length);
             item = timelineItem;
             return true;
         }
@@ -147,6 +154,41 @@ public static class LoadYmmtCatalogAction
             reason = $"Skip {src.ItemType}: {ex.Message}";
             return false;
         }
+    }
+
+    private static int GetTimelineFps(Timeline timeline, int fallbackFps)
+    {
+        try
+        {
+            var videoInfoProperty = timeline.GetType().GetProperty("VideoInfo", BindingFlags.Public | BindingFlags.Instance);
+            var videoInfo = videoInfoProperty?.GetValue(timeline);
+            if (videoInfo is not null)
+            {
+                var fpsFromVideoInfo = GetPropertyInt(videoInfo, "FPS");
+                if (fpsFromVideoInfo > 0)
+                    return fpsFromVideoInfo;
+            }
+
+            var value = GetPropertyInt(timeline, "FPS");
+            if (value > 0)
+                return value;
+
+            value = GetPropertyInt(timeline, "FrameRate");
+            if (value > 0)
+                return value;
+        }
+        catch
+        {
+            // fallback
+        }
+
+        return fallbackFps;
+    }
+
+    private static int ScaleFrame(int frame, double scale, int minimum = 0)
+    {
+        var scaled = (int)Math.Round(Math.Max(0, frame) * scale, MidpointRounding.AwayFromZero);
+        return scaled < minimum ? minimum : scaled;
     }
 
     private static int GetPropertyInt(object instance, string propertyName)

@@ -1,9 +1,10 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using Microsoft.Win32;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Microsoft.Win32;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
@@ -229,6 +230,7 @@ namespace YMMKeyboardPlugin.Views
                     button.ClearValue(Control.BorderBrushProperty);
                     button.ClearValue(Control.ForegroundProperty);
                 }
+
                 button.Content = CreateButtonContent(switchName, assignment);
             }
         }
@@ -412,7 +414,6 @@ namespace YMMKeyboardPlugin.Views
             Close();
         }
 
-
         private void BrowseYmmtButton_OnClick(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
@@ -458,6 +459,7 @@ namespace YMMKeyboardPlugin.Views
 
             YmmtBrowseButton.Visibility = isYmmtAction ? Visibility.Visible : Visibility.Collapsed;
         }
+
         protected override void OnClosing(CancelEventArgs e)
         {
             SaveCurrentSelection();
