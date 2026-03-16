@@ -207,11 +207,11 @@ namespace YMMKeyboardPlugin.Views
 
         private void RefreshKeyboardButtons()
         {
+            var itemsBySwitch = items.ToDictionary(item => item.SwitchName, StringComparer.OrdinalIgnoreCase);
             foreach (var button in FindKeyboardButtons(KeyboardSurfaceGrid))
             {
                 var switchName = button.Tag as string ?? string.Empty;
-                var assignment = items.FirstOrDefault(item => item.SwitchName == switchName);
-                if (assignment is null)
+                if (!itemsBySwitch.TryGetValue(switchName, out var assignment))
                     continue;
 
                 var isSelected = IsComboMode

@@ -6,29 +6,29 @@
              xmlns:c="clr-namespace:YukkuriMovieMaker.Controls;assembly=YukkuriMovieMaker.Controls"
              xmlns:theme="clr-namespace:YukkuriMovieMaker.Theme;assembly=YukkuriMovieMaker.Plugin"
              mc:Ignorable="d"
-             MinHeight="320"
-             MinWidth="480">
-    <Grid Margin="12">
+             MinHeight="280"
+             MinWidth="430">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
+            <RowDefinition Height="8"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
+            <RowDefinition Height="8"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
             <TextBlock Text="キーボードプラグイン設定"
-                       FontSize="16"
+                       FontSize="14"
                        FontWeight="Bold"/>
-            <TextBlock Margin="0,6,0,0"
+            <TextBlock Margin="0,4,0,0"
                        Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                        Text="接続するCOMポートと、起動時に接続するポート、キー割り当て設定を管理します。"/>
         </StackPanel>
 
         <Border Grid.Row="2"
-                Padding="10"
+                Padding="8"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                 BorderThickness="1"
                 CornerRadius="8">
@@ -42,32 +42,32 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="COMポート" FontWeight="Bold"/>
                     <ComboBox x:Name="PortComboBox"
-                              Margin="0,8,0,0"
-                              MinWidth="180"
+                              Margin="0,6,0,0"
+                              MinWidth="160"
                               SelectionChanged="PortComboBox_OnSelectionChanged"/>
                     <TextBlock x:Name="PortStatusTextBlock"
-                               Margin="0,8,0,0"
+                               Margin="0,6,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <Button Grid.Column="1"
-                        Margin="10,20,0,0"
-                        Padding="10,5"
+                        Margin="8,18,0,0"
+                        Padding="8,4"
                         VerticalAlignment="Top"
                         Content="読み込み"
                         Click="ReloadPorts_OnClick"/>
 
                 <Button Grid.Column="2"
-                        Margin="10,20,0,0"
-                        Padding="10,5"
+                        Margin="8,18,0,0"
+                        Padding="8,4"
                         VerticalAlignment="Top"
                         Content="接続"
                         Click="Connect_OnClick"/>
 
                 <Button Grid.Column="3"
-                        Margin="10,20,0,0"
-                        Padding="10,5"
+                        Margin="8,18,0,0"
+                        Padding="8,4"
                         VerticalAlignment="Top"
                         Content="切断"
                         Click="Disconnect_OnClick"/>
@@ -75,7 +75,7 @@
         </Border>
 
         <Border Grid.Row="4"
-                Padding="10"
+                Padding="8"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                 BorderThickness="1"
                 CornerRadius="8">
@@ -87,15 +87,15 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="起動時に接続するCOMポート" FontWeight="Bold"/>
                     <ListBox x:Name="StartupPortsListBox"
-                             Margin="0,8,0,0"
-                             MinHeight="80"/>
+                             Margin="0,6,0,0"
+                             MinHeight="68"/>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Margin="10,20,0,0">
-                    <Button Padding="10,5"
+                <StackPanel Grid.Column="1" Margin="8,18,0,0">
+                    <Button Padding="8,4"
                             Content="追加"
                             Click="AddStartupPort_OnClick"/>
                     <Button Margin="0,8,0,0"
-                            Padding="10,5"
+                            Padding="8,4"
                             Content="削除"
                             Click="RemoveStartupPort_OnClick"/>
                 </StackPanel>
@@ -103,19 +103,19 @@
         </Border>
 
         <Border Grid.Row="5"
-                Margin="0,12,0,0"
-                Padding="10"
+                Margin="0,10,0,0"
+                Padding="8"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                 BorderThickness="1"
                 CornerRadius="8">
             <StackPanel>
                 <TextBlock Text="キー割り当て" FontWeight="Bold"/>
-                <TextBlock Margin="0,8,0,0"
+                <TextBlock Margin="0,6,0,0"
                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                            Text="UIキーボードと実機UIDごとの割り当てを編集できます。"/>
-                <Button Margin="0,10,0,0"
-                        Width="140"
-                        Padding="10,5"
+                <Button Margin="0,8,0,0"
+                        Width="124"
+                        Padding="8,4"
                         HorizontalAlignment="Left"
                         Content="割り当てを開く"
                         Click="OpenMappingWindow_OnClick"/>

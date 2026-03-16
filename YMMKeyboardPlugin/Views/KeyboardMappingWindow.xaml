@@ -7,16 +7,16 @@
         xmlns:theme="clr-namespace:YukkuriMovieMaker.Theme;assembly=YukkuriMovieMaker.Plugin"
         mc:Ignorable="d"
         Title="キー割り当て"
-        Height="700"
-        Width="940"
-        MinHeight="560"
-        MinWidth="820">
+        Height="620"
+        Width="860"
+        MinHeight="500"
+        MinWidth="740">
     <Window.Resources>
         <Style x:Key="KeyboardButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="78"/>
-            <Setter Property="Height" Value="56"/>
-            <Setter Property="Margin" Value="4"/>
-            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Width" Value="68"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Padding" Value="4"/>
             <Setter Property="FontFamily" Value="Consolas"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}"/>
@@ -25,28 +25,28 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="14">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="8"/>
+            <RowDefinition Height="6"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="8"/>
+            <RowDefinition Height="6"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="8"/>
+            <RowDefinition Height="6"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
-            <TextBlock Text="キー割り当て"
-                       FontSize="18"
+                       <TextBlock Text="キー割り当て"
+                       FontSize="16"
                        FontWeight="Bold"/>
-            <TextBlock Margin="0,4,0,0"
+            <TextBlock Margin="0,3,0,0"
                        Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                        Text="左のキーボードからキーを選ぶと、右側でそのキーや複数キーの動作を編集できます。"/>
         </StackPanel>
 
         <Border Grid.Row="2"
-                Padding="10"
+                Padding="8"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                 BorderThickness="1"
                 CornerRadius="8">
@@ -58,23 +58,23 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="対象" FontWeight="Bold"/>
                     <ComboBox x:Name="ScopeComboBox"
-                              Margin="0,8,0,0"
+                              Margin="0,6,0,0"
                               IsEditable="True"
                               IsTextSearchEnabled="False"
-                              MinWidth="220"/>
+                              MinWidth="200"/>
                     <CheckBox x:Name="ComboModeCheckBox"
-                              Margin="0,10,0,0"
+                              Margin="0,8,0,0"
                               Content="複数キー編集モード"
                               Checked="ComboModeCheckBox_OnChanged"
                               Unchecked="ComboModeCheckBox_OnChanged"/>
                     <TextBlock x:Name="StatusTextBlock"
-                               Margin="0,8,0,0"
+                               Margin="0,6,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
                 <Button Grid.Column="1"
-                        Margin="10,20,0,0"
-                        Padding="10,5"
+                        Margin="8,18,0,0"
+                        Padding="8,4"
                         VerticalAlignment="Top"
                         Content="対象を開く"
                         Click="OpenScope_OnClick"/>
@@ -84,12 +84,12 @@
         <Grid Grid.Row="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2.1*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="1.2*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="1.15*"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
-                    Padding="12"
+                    Padding="10"
                     Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
                     BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                     BorderThickness="1"
@@ -97,15 +97,15 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="12"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0">
                         <TextBlock Text="キーボード配置"
-                                   FontSize="14"
+                                   FontSize="13"
                                    FontWeight="Bold"/>
-                        <TextBlock Margin="0,4,0,0"
+                        <TextBlock Margin="0,3,0,0"
                                    Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                    Text="単独キーはそのまま選択、複数キー編集モードでは押したい組み合わせを順に選んでください。"/>
                     </StackPanel>
@@ -113,7 +113,7 @@
                     <Grid Grid.Row="2" x:Name="KeyboardSurfaceGrid">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
-                            <RowDefinition Height="12"/>
+                            <RowDefinition Height="10"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
@@ -155,22 +155,22 @@
                         </UniformGrid>
 
                         <Border Grid.Row="2"
-                                Padding="10"
+                                Padding="8"
                                 Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
                                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                                 BorderThickness="1"
                                 CornerRadius="10">
                             <StackPanel>
                                 <TextBlock Text="ロータリー"
-                                           FontSize="14"
+                                           FontSize="13"
                                            FontWeight="Bold"/>
-                                <TextBlock Margin="0,4,0,8"
+                                <TextBlock Margin="0,3,0,6"
                                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                            Text="回転と押し込みも横並びで設定できます。"/>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW36" Click="SwitchButton_OnClick" Width="96"/>
-                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW35" Click="SwitchButton_OnClick" Width="96"/>
-                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW37" Click="SwitchButton_OnClick" Width="96"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW36" Click="SwitchButton_OnClick" Width="84"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW35" Click="SwitchButton_OnClick" Width="84"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW37" Click="SwitchButton_OnClick" Width="84"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -179,7 +179,7 @@
             </Border>
 
             <Border Grid.Column="2"
-                    Padding="12"
+                    Padding="10"
                     Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
                     BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                     BorderThickness="1"
@@ -187,11 +187,11 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="6"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="6"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="6"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="16"/>
                         <RowDefinition Height="Auto"/>
@@ -200,11 +200,11 @@
 
                     <StackPanel Grid.Row="0">
                         <TextBlock Text="選択中のキー"
-                                   FontSize="14"
+                                   FontSize="13"
                                    FontWeight="Bold"/>
                         <TextBlock x:Name="SelectedSwitchTextBlock"
-                                   Margin="0,8,0,0"
-                                   FontSize="20"
+                                   Margin="0,6,0,0"
+                                   FontSize="18"
                                    FontWeight="Bold"
                                    FontFamily="Consolas"
                                    Text="SW01"/>
@@ -213,13 +213,13 @@
                     <StackPanel Grid.Row="2">
                         <TextBlock Text="動作" FontWeight="Bold"/>
                         <ComboBox x:Name="ActionComboBox"
-                                  Margin="0,8,0,0"
+                                  Margin="0,6,0,0"
                                   SelectionChanged="ActionComboBox_OnSelectionChanged"/>
                     </StackPanel>
 
                     <StackPanel Grid.Row="4">
                         <TextBlock Text="パラメータ" FontWeight="Bold"/>
-                        <Grid Margin="0,8,0,0">
+                        <Grid Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="8"/>
@@ -230,7 +230,7 @@
                                      TextChanged="ParameterTextBox_OnTextChanged"/>
                             <Button x:Name="YmmtBrowseButton"
                                     Grid.Column="2"
-                                    Padding="8,4"
+                                    Padding="6,3"
                                     Visibility="Collapsed"
                                     Content="参照..."
                                     Click="BrowseYmmtButton_OnClick"/>
@@ -240,14 +240,14 @@
                     <StackPanel Grid.Row="6">
                         <TextBlock Text="説明" FontWeight="Bold"/>
                         <TextBlock x:Name="SelectionHintTextBlock"
-                                   Margin="0,8,0,0"
+                                   Margin="0,6,0,0"
                                    Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                    TextWrapping="Wrap"
                                    Text="キーを選ぶとここに設定内容が表示されます。"/>
                     </StackPanel>
 
                     <Button Grid.Row="8"
-                            Padding="10,6"
+                            Padding="8,5"
                             Content="この設定をテスト実行"
                             Click="TestSelectedButton_OnClick"/>
                 </Grid>
@@ -257,8 +257,8 @@
         <StackPanel Grid.Row="6"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
-            <Button Width="104"
-                    Padding="10,5"
+            <Button Width="96"
+                    Padding="8,4"
                     Content="閉じる"
                     Click="CloseButton_OnClick"/>
         </StackPanel>
