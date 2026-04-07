@@ -85,6 +85,7 @@ public static class YmmtCatalogLoader
         return new YmmtItemSnapshot
         {
             ItemType = NormalizeTypeName(GetString(item, "$type")),
+            RawJson = item.GetRawText(),
             FilePath = filePath,
             FileName = string.IsNullOrWhiteSpace(filePath) ? null : Path.GetFileName(filePath),
             Frame = GetInt(item, "Frame"),

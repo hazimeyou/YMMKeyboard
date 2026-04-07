@@ -19,6 +19,7 @@ public sealed class YmmtTemplateSnapshot
 public sealed class YmmtItemSnapshot
 {
     public required string ItemType { get; init; }
+    public required string RawJson { get; init; }
     public string? FilePath { get; init; }
     public string? FileName { get; init; }
     public int Frame { get; init; }
