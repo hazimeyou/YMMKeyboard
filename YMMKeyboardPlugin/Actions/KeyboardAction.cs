@@ -9,7 +9,9 @@ namespace YMMKeyboardPlugin.Actions
     public class KeyboardAction : ITimelineToolViewModel, INotifyPropertyChanged
     {
         public static Timeline? TimelineInstance { get; private set; }
+#pragma warning disable CS0169
         private UndoRedoManager? undoRedoManager;
+#pragma warning restore CS0169
 
         public Timeline Timeline { get; set; } = null!;
 
@@ -50,7 +52,9 @@ namespace YMMKeyboardPlugin.Actions
             MinusSeekFrame(frames);
         }
 
+#pragma warning disable CS0067
         public event PropertyChangedEventHandler? PropertyChanged;
+#pragma warning restore CS0067
 
         /*
         // 旧実装: UndoRedoManager を直接保持していたが、現状の操作では未使用。

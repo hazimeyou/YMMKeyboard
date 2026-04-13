@@ -7,23 +7,23 @@
     xmlns:c="clr-namespace:YukkuriMovieMaker.Controls;assembly=YukkuriMovieMaker.Controls"
     xmlns:theme="clr-namespace:YukkuriMovieMaker.Theme;assembly=YukkuriMovieMaker.Plugin"
     mc:Ignorable="d"
-    MinWidth="680"
-    MinHeight="280">
+    MinWidth="620"
+    MinHeight="250">
 
     <UserControl.Resources>
         <Style x:Key="KeyButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="42"/>
-            <Setter Property="Height" Value="36"/>
-            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Width" Value="38"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="2"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}"/>
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="10">
+    <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="10"/>
+            <RowDefinition Height="8"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -31,9 +31,9 @@
             <TextBlock
                 Text="YMM4キーボード"
                 FontWeight="Bold"
-                FontSize="13"/>
+                FontSize="12"/>
             <TextBlock
-                Margin="0,3,0,0"
+                Margin="0,2,0,0"
                 Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                 Text="単独クリックはそのキーを実行します。複数キー実行モードではキーを選んでからまとめて実行できます。"/>
         </StackPanel>
@@ -41,14 +41,14 @@
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition Width="196"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="176"/>
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0" x:Name="KeyboardSurfaceGrid">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="10"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
@@ -90,23 +90,23 @@
                 </UniformGrid>
 
                 <Border Grid.Row="2"
-                        Padding="8"
+                        Padding="6"
                         CornerRadius="8"
                         BorderThickness="1"
                         BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
                     <StackPanel>
-                        <TextBlock Text="Rotary" FontWeight="Bold" Margin="0,0,0,8"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
-                            <Button Style="{StaticResource KeyButtonStyle}" Content="Left" Tag="SW36" Width="62" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyButtonStyle}" Content="Push" Tag="SW35" Width="62" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyButtonStyle}" Content="Right" Tag="SW37" Width="62" Click="SwitchButton_OnClick"/>
+                        <TextBlock Text="Rotary" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="Left" Tag="SW36" Width="56" Click="SwitchButton_OnClick"/>
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="Push" Tag="SW35" Width="56" Click="SwitchButton_OnClick"/>
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="Right" Tag="SW37" Width="56" Click="SwitchButton_OnClick"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
 
             <Border Grid.Column="2"
-                    Padding="10"
+                    Padding="8"
                     CornerRadius="8"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
@@ -116,23 +116,23 @@
                               Content="複数キー実行モード"
                               Checked="ComboModeCheckBox_OnChanged"
                               Unchecked="ComboModeCheckBox_OnChanged"/>
-                    <TextBlock Margin="0,8,0,0"
+                    <TextBlock Margin="0,6,0,0"
                                FontWeight="Bold"
                                Text="選択中"/>
                     <TextBlock x:Name="SelectedKeysTextBlock"
-                               Margin="0,3,0,0"
+                               Margin="0,2,0,0"
                                TextWrapping="Wrap"
                                Text="なし"/>
-                    <TextBlock Margin="0,10,0,0"
+                    <TextBlock Margin="0,8,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                TextWrapping="Wrap"
                                Text="このモードではキーをクリックして選択します。2つ以上選んだらまとめて実行できます。"/>
-                    <Button Margin="0,14,0,0"
-                            Padding="8,5"
+                    <Button Margin="0,10,0,0"
+                            Padding="7,4"
                             Content="複数キーを実行"
                             Click="ExecuteCombinationButton_OnClick"/>
                     <Button Margin="0,8,0,0"
-                            Padding="8,5"
+                            Padding="7,4"
                             Content="選択をクリア"
                             Click="ClearSelectionButton_OnClick"/>
                 </StackPanel>

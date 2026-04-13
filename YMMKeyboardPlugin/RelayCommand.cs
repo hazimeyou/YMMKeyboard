@@ -6,8 +6,11 @@ namespace YMMKeyboardPlugin
         private readonly Action _execute;
         private readonly Func<bool>? _canExecute;
 
-        public RelayCommand(Func<object, Task> test)
+        public RelayCommand(Func<Task> executeAsync, Func<bool>? canExecute = null)
         {
+            ArgumentNullException.ThrowIfNull(executeAsync);
+            _execute = () => _ = executeAsync();
+            _canExecute = canExecute;
         }
 
         public RelayCommand(Action execute, Func<bool>? canExecute = null)
@@ -24,6 +27,6 @@ namespace YMMKeyboardPlugin
 
         public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
 
-       public void Execute(object? parameter) => _execute();
+        public void Execute(object? parameter) => _execute();
     }
 }

@@ -14,7 +14,9 @@ namespace YMMKeyboardPlugin.Mapping
         public static LegacyKeyboardViewModel? Instance { get; private set; }
 
         public static Timeline? TimelineInstance { get; private set; }
+#pragma warning disable CS0169
         private UndoRedoManager? undoRedoManager;
+#pragma warning restore CS0169
         public Timeline Timeline { get; set; } = null!;
 
         public LegacyKeyboardViewModel()
@@ -69,7 +71,9 @@ namespace YMMKeyboardPlugin.Mapping
             KeyboardAction.MinusSeekFrame(1);
         }
 
+#pragma warning disable CS0067
         public event PropertyChangedEventHandler? PropertyChanged;
+#pragma warning restore CS0067
 
         /*
         // 旧実装では _timeline を直接触っていた。

@@ -20,6 +20,11 @@ namespace YMMKeyboardPlugin.Settings
     {
         private const string SettingsDirectoryName = "settings";
         private const string SettingsFileName = "YMMKeyboardSettings.json";
+        private static readonly object saveLock = new();
+        private static readonly JsonSerializerOptions jsonSerializerOptions = new()
+        {
+            WriteIndented = true,
+        };
 
         public static YMMKeyboardSettings Current { get; private set; } = new();
         public static event Action<string>? ConnectionRequested;
@@ -56,13 +61,13 @@ namespace YMMKeyboardPlugin.Settings
         public IReadOnlyList<string> GetKnownDeviceUids()
         {
             NormalizeSettings();
-            return KnownDeviceUids;
+            return KnownDeviceUids.ToArray();
         }
 
         public IReadOnlyList<string> GetStartupPortNames()
         {
             NormalizeSettings();
-            return StartupPortNames;
+            return StartupPortNames.ToArray();
         }
 
         public string GetSettingsFilePath()
@@ -230,26 +235,39 @@ namespace YMMKeyboardPlugin.Settings
             try
             {
                 NormalizeSettings();
-                var directory = GetSettingsDirectoryPath();
-                Directory.CreateDirectory(directory);
+                PersistedSettings data;
+                string settingsFilePath;
+                string tempFilePath;
 
-                var data = new PersistedSettings
+                lock (saveLock)
                 {
-                    PortName = PortName,
-                    StartupPortNames = StartupPortNames,
-                    KnownDeviceUids = KnownDeviceUids,
-                    UiButtonConfigs = UiButtonConfigs,
-                    UiComboButtonConfigs = UiComboButtonConfigs,
-                    DeviceButtonConfigs = DeviceButtonConfigs,
-                    DeviceComboButtonConfigs = DeviceComboButtonConfigs,
-                };
+                    var directory = GetSettingsDirectoryPath();
+                    Directory.CreateDirectory(directory);
+                    settingsFilePath = GetSettingsFilePath();
+                    tempFilePath = settingsFilePath + ".tmp";
 
-                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                });
+                    data = new PersistedSettings
+                    {
+                        PortName = PortName,
+                        StartupPortNames = StartupPortNames.ToList(),
+                        KnownDeviceUids = KnownDeviceUids.ToList(),
+                        UiButtonConfigs = CloneConfigs(UiButtonConfigs),
+                        UiComboButtonConfigs = CloneConfigs(UiComboButtonConfigs),
+                        DeviceButtonConfigs = CloneNestedConfigs(DeviceButtonConfigs),
+                        DeviceComboButtonConfigs = CloneNestedConfigs(DeviceComboButtonConfigs),
+                    };
 
-                File.WriteAllText(GetSettingsFilePath(), json);
+                    var json = JsonSerializer.Serialize(data, jsonSerializerOptions);
+                    File.WriteAllText(tempFilePath, json);
+
+                    if (File.Exists(settingsFilePath))
+                        File.Copy(tempFilePath, settingsFilePath, overwrite: true);
+                    else
+                        File.Move(tempFilePath, settingsFilePath);
+
+                    if (File.Exists(tempFilePath))
+                        File.Delete(tempFilePath);
+                }
             }
             catch (Exception ex)
             {
@@ -328,6 +346,27 @@ namespace YMMKeyboardPlugin.Settings
         {
             if (!DeviceComboButtonConfigs.ContainsKey(uid))
                 DeviceComboButtonConfigs[uid] = new Dictionary<string, ButtonConfig>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static Dictionary<string, ButtonConfig> CloneConfigs(Dictionary<string, ButtonConfig> source)
+        {
+            return source.ToDictionary(
+                pair => pair.Key,
+                pair => new ButtonConfig
+                {
+                    ActionName = pair.Value.ActionName,
+                    Parameter = pair.Value.Parameter,
+                },
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static Dictionary<string, Dictionary<string, ButtonConfig>> CloneNestedConfigs(
+            Dictionary<string, Dictionary<string, ButtonConfig>> source)
+        {
+            return source.ToDictionary(
+                pair => pair.Key,
+                pair => CloneConfigs(pair.Value),
+                StringComparer.OrdinalIgnoreCase);
         }
 
         private class PersistedSettings
