@@ -171,4 +171,4 @@ dotnet build "YMMKeyboardPlugin\YMMKeyboardPlugin.csproj" /p:YMM4DirPath="C:\Pat
 
 ## ライセンス
 
-ライセンスは [`LICENSE.txt`](/C:/Users/hazimeyou/source/repos/hazimeyou/YMMKeyboard/LICENSE.txt) を参照してください。
+ライセンスは [`LICENSE.txt`](/YMMKeyboard/LICENSE.txt) を参照してください。
