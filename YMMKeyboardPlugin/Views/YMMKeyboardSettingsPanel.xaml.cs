@@ -2,6 +2,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Win32;
 using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Views
@@ -38,7 +39,7 @@ namespace YMMKeyboardPlugin.Views
                 ? null
                 : ports.FirstOrDefault(name => string.Equals(name, settings.PortName, StringComparison.OrdinalIgnoreCase));
 
-            PortStatusTextBlock.Text = !serialPortSupported
+            PortStatusTextBlock.Text = (!serialPortSupported && ports.Count == 0)
                 ? "この実行環境ではシリアルポート機能を利用できません。"
                 : ports.Count == 0
                 ? "利用可能なCOMポートが見つかりません。機器を接続してから再読み込みしてください。"
@@ -52,11 +53,45 @@ namespace YMMKeyboardPlugin.Views
             try
             {
                 serialPortSupported = true;
-                return SerialPort.GetPortNames();
+                var ports = SerialPort.GetPortNames();
+                if (ports.Length > 0)
+                    return ports;
+
+                // 一部環境では System.IO.Ports 側で空配列が返ることがあるため、
+                // Windows のシリアルポートマップをフォールバックとして参照する。
+                return GetPortNamesFromRegistry();
             }
             catch (PlatformNotSupportedException)
             {
                 serialPortSupported = false;
+                return GetPortNamesFromRegistry();
+            }
+            catch
+            {
+                return GetPortNamesFromRegistry();
+            }
+        }
+
+        private static IEnumerable<string> GetPortNamesFromRegistry()
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM");
+                if (key is null)
+                    return Array.Empty<string>();
+
+                var ports = key.GetValueNames()
+                    .Select(name => key.GetValue(name)?.ToString())
+                    .Where(value => !string.IsNullOrWhiteSpace(value))
+                    .Select(value => value!)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                return ports;
+            }
+            catch
+            {
                 return Array.Empty<string>();
             }
         }
@@ -83,12 +118,6 @@ namespace YMMKeyboardPlugin.Views
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
         {
-            if (!serialPortSupported)
-            {
-                PortStatusTextBlock.Text = "この実行環境ではシリアル接続を開始できません。";
-                return;
-            }
-
             if (string.IsNullOrWhiteSpace(settings.PortName))
             {
                 PortStatusTextBlock.Text = "先に接続するCOMポートを選択してください。";
