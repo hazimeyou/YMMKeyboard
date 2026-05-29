@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
@@ -17,8 +16,6 @@ namespace YMMKeyboardPlugin
         private const int SingleKeyDelayMs = 120;
 
         private readonly Dictionary<string, SerialKeyboardLink> links = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, Dictionary<int, Action>> macros = new();
-        private readonly LegacyKeyboardViewModel mp3Vm = new();
         private readonly Dictionary<string, HashSet<string>> pressedSwitches = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, HashSet<string>> consumedSwitches = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Dictionary<string, CancellationTokenSource>> pendingSingleActions = new(StringComparer.OrdinalIgnoreCase);
@@ -103,7 +100,6 @@ namespace YMMKeyboardPlugin
             foreach (var uid in knownUids)
             {
                 ClearDeviceState(uid);
-                macros.Remove(uid);
             }
         }
 
@@ -117,28 +113,6 @@ namespace YMMKeyboardPlugin
         {
             Debug.WriteLine($"[Keymacro] DeviceDetected UID={device.Uid}");
             YMMKeyboardSettings.Current.RegisterKnownDeviceUid(device.Uid);
-
-            if (!macros.ContainsKey(device.Uid))
-            {
-                Debug.WriteLine("[Keymacro] Create mapping");
-                macros[device.Uid] = CreateDeviceMap(device.Uid);
-            }
-            else
-            {
-                Debug.WriteLine("[Keymacro] Mapping already exists");
-            }
-        }
-
-        private static Dictionary<int, Action> CreateDeviceMap(string uid)
-        {
-            var map = new Dictionary<int, Action>();
-            foreach (var item in SwitchLayout.All)
-            {
-                var switchName = item.SwitchName;
-                map[item.SwitchId] = () => MappingConverter.ExecuteDeviceSwitch(uid, switchName);
-            }
-
-            return map;
         }
 
         private void OnKeyEventReceived(SerialKeyboardDevice device, KeyEvent e)
@@ -319,14 +293,6 @@ namespace YMMKeyboardPlugin
                 pressedSwitches.Remove(uid);
                 consumedSwitches.Remove(uid);
             }
-        }
-
-        public static void ShowToast(string message)
-        {
-            Debug.WriteLine("[Toast] " + message);
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-            });
         }
 
         public void Dispose()
