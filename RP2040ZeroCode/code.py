@@ -82,9 +82,11 @@ keyboard.modules = [Layers(), serial_keys, encoder_handler]
 # =====================================================
 # 6. キーマップ (必要に応じて書き換えてください)
 # =====================================================
-# シリアル通信で制御する場合は、全て KC.NO でも動作します
+# マトリクスキーは HID 出力しないダミーキーに割り当てる。
+# 一部環境で KC.NO だと処理フックに到達しないケースを避けるため。
+SERIAL_ONLY = make_key(names=('SERIAL_ONLY',), on_press=lambda *args: None, on_release=lambda *args: None)
 keyboard.keymap = [
-    [KC.NO] * 35, # レイヤー0
+    [SERIAL_ONLY] * 35, # レイヤー0
 ]
 
 if __name__ == "__main__":

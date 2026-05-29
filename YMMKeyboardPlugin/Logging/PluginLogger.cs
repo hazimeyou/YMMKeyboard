@@ -7,6 +7,7 @@ public static class PluginLogger
 {
     private static readonly object sync = new();
     private static bool resetDone;
+    private const string DiagnosticsDirectoryRelativePath = @"C:\Users\yu-za-hazimeyou\source\repos\YMMKeyboard\_diagnostics";
 
     public static string LogDirectoryPath
     {
@@ -23,6 +24,15 @@ public static class PluginLogger
         {
             var fileName = $"YMMKeyboardPlugin_{DateTime.Now:yyyyMMdd}.log";
             return Path.Combine(LogDirectoryPath, fileName);
+        }
+    }
+
+    public static string DiagnosticsLogFilePath
+    {
+        get
+        {
+            var fileName = $"YMMKeyboardPlugin_{DateTime.Now:yyyyMMdd}.log";
+            return Path.Combine(DiagnosticsDirectoryRelativePath, fileName);
         }
     }
 
@@ -44,6 +54,10 @@ public static class PluginLogger
                 Directory.CreateDirectory(LogDirectoryPath);
                 if (File.Exists(CurrentLogFilePath))
                     File.Delete(CurrentLogFilePath);
+
+                Directory.CreateDirectory(DiagnosticsDirectoryRelativePath);
+                if (File.Exists(DiagnosticsLogFilePath))
+                    File.Delete(DiagnosticsLogFilePath);
             }
             catch
             {
@@ -84,6 +98,9 @@ public static class PluginLogger
             {
                 Directory.CreateDirectory(LogDirectoryPath);
                 File.AppendAllText(CurrentLogFilePath, line + Environment.NewLine, Encoding.UTF8);
+
+                Directory.CreateDirectory(DiagnosticsDirectoryRelativePath);
+                File.AppendAllText(DiagnosticsLogFilePath, line + Environment.NewLine, Encoding.UTF8);
             }
         }
         catch

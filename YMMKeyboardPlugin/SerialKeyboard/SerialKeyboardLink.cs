@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using YMMKeyboardPlugin.Key;
+using YMMKeyboardPlugin.Logging;
 
 namespace YMMKeyboardPlugin
 {
@@ -55,6 +56,7 @@ namespace YMMKeyboardPlugin
             };
 
             _port.Open();
+            PluginLogger.Info("SerialKeyboardLink", $"Port opened: {_portName}");
             Task.Run(() => ReadLoop(_cts.Token));
         }
 
@@ -71,6 +73,7 @@ namespace YMMKeyboardPlugin
                         continue;
 
                     Debug.WriteLine($"[SERIAL] {line}");
+                    PluginLogger.Info("SerialKeyboardLink", $"RX {_portName}: {line}");
 
                     var parts = line.Split(':');
                     if (parts.Length != 3)
@@ -103,7 +106,10 @@ namespace YMMKeyboardPlugin
                     }
 
                     if (isNewDevice)
+                    {
+                        PluginLogger.Info("SerialKeyboardLink", $"Device detected on {_portName}: {uid}");
                         DeviceDetected?.Invoke(device);
+                    }
 
                     var keyEvent = new KeyEvent
                     {
@@ -124,6 +130,7 @@ namespace YMMKeyboardPlugin
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"[SerialKeyboardLink] Error: {ex.Message}");
+                    PluginLogger.Error("SerialKeyboardLink", $"Read loop error on {_portName}", ex);
                 }
             }
 
@@ -139,6 +146,7 @@ namespace YMMKeyboardPlugin
                 try { _port.Close(); } catch { }
                 _port.Dispose();
                 _port = null;
+                PluginLogger.Info("SerialKeyboardLink", $"Port closed: {_portName}");
             }
         }
 

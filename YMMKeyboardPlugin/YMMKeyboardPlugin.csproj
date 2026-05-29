@@ -11,6 +11,7 @@
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<YMM4DirPath Condition="'$(YMM4DirPath)'=='' and Exists('$(USERPROFILE)\Desktop\YukkuriMovieMaker_v4_Lite\YukkuriMovieMaker.Plugin.dll')">$(USERPROFILE)\Desktop\YukkuriMovieMaker_v4_Lite</YMM4DirPath>
 		<YMM4DirPath Condition="'$(YMM4DirPath)'==''">$(MSBuildThisFileDirectory)..\libs\YMM4</YMM4DirPath>
+		<SystemIOPortsRuntimePath>$(NuGetPackageRoot)system.io.ports\10.0.2\runtimes\win\lib\net10.0\System.IO.Ports.dll</SystemIOPortsRuntimePath>
 	</PropertyGroup>
 
 
@@ -43,9 +44,14 @@
 		<!-- コピー対象（プラグイン本体のみ） -->
 		<ItemGroup>
 			<PluginFiles Include="$(TargetPath)" />
+			<PluginFiles Include="$(SystemIOPortsRuntimePath)" Condition="Exists('$(SystemIOPortsRuntimePath)')" />
 		</ItemGroup>
 		<!-- コピー -->
 		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" />
+	</Target>
+
+	<Target Name="CopyCodePyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\RP2040ZeroCode\code.py')">
+		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\RP2040ZeroCode\code.py" DestinationFiles="D:\code.py" OverwriteReadOnlyFiles="true" />
 	</Target>
 
 </Project>
