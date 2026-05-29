@@ -40,10 +40,9 @@
 		<!-- フォルダ作成 -->
 		<MakeDir Directories="$(PluginOutputDir)" Condition="!Exists('$(PluginOutputDir)')" />
 
-		<!-- コピー対象（必要なDLLのみ） -->
+		<!-- コピー対象（プラグイン本体のみ） -->
 		<ItemGroup>
 			<PluginFiles Include="$(TargetPath)" />
-			<PluginFiles Include="$(TargetDir)System.IO.Ports.dll" Condition="Exists('$(TargetDir)System.IO.Ports.dll')" />
 		</ItemGroup>
 		<!-- コピー -->
 		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" />
