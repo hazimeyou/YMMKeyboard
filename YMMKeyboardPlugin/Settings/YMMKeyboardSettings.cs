@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
@@ -18,6 +19,7 @@ namespace YMMKeyboardPlugin.Settings
     [DataContract]
     public class YMMKeyboardSettings : SettingsBase<YMMKeyboardSettings>
     {
+        private static readonly Regex uidPattern = new("^[0-9a-fA-F]{8,64}$", RegexOptions.Compiled);
         private const string SettingsDirectoryName = "settings";
         private const string SettingsFileName = "YMMKeyboardSettings.json";
         private static readonly object saveLock = new();
@@ -77,8 +79,10 @@ namespace YMMKeyboardPlugin.Settings
 
         public void RegisterKnownDeviceUid(string uid)
         {
-            if (string.IsNullOrWhiteSpace(uid))
+            if (!IsValidUid(uid))
                 return;
+
+            uid = uid.Trim().ToLowerInvariant();
 
             var added = false;
             if (!KnownDeviceUids.Contains(uid, StringComparer.OrdinalIgnoreCase))
@@ -290,9 +294,18 @@ namespace YMMKeyboardPlugin.Settings
                 .ToList();
 
             KnownDeviceUids = KnownDeviceUids
-                .Where(uid => !string.IsNullOrWhiteSpace(uid))
+                .Where(IsValidUid)
+                .Select(uid => uid.Trim().ToLowerInvariant())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            DeviceButtonConfigs = DeviceButtonConfigs
+                .Where(pair => IsValidUid(pair.Key))
+                .ToDictionary(pair => pair.Key.Trim().ToLowerInvariant(), pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+
+            DeviceComboButtonConfigs = DeviceComboButtonConfigs
+                .Where(pair => IsValidUid(pair.Key))
+                .ToDictionary(pair => pair.Key.Trim().ToLowerInvariant(), pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
             UiComboButtonConfigs = UiComboButtonConfigs
                 .Where(pair => !string.IsNullOrWhiteSpace(pair.Key))
@@ -319,6 +332,12 @@ namespace YMMKeyboardPlugin.Settings
             {
                 pair.Value.ActionName = MappingConverter.NormalizeActionName(pair.Value.ActionName);
             }
+        }
+
+        private static bool IsValidUid(string? uid)
+        {
+            var normalized = uid?.Trim();
+            return !string.IsNullOrWhiteSpace(normalized) && uidPattern.IsMatch(normalized);
         }
 
         private void EnsureUiDefault(string switchName)
@@ -381,3 +400,5 @@ namespace YMMKeyboardPlugin.Settings
         }
     }
 }
+
+
