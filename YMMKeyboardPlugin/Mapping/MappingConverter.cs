@@ -7,11 +7,11 @@ namespace YMMKeyboardPlugin.Mapping
 {
     public static class MappingConverter
     {
-        public const string NoneActionName = "None";
-        public const string TestEventActionName = "TestEvent";
-        public const string PlusSeekFrameActionName = "PlusSeekFrame";
-        public const string MinusSeekFrameActionName = "MinusSeekFrame";
-        public const string LoadYmmtCatalogActionName = "LoadYmmtCatalog";
+        public const string NoneActionName = "なし";
+        public const string TestEventActionName = "テストイベント";
+        public const string PlusSeekFrameActionName = "シークバーを進める";
+        public const string MinusSeekFrameActionName = "シークバーを戻す";
+        public const string LoadYmmtCatalogActionName = "YMMT読み込み";
 
         public static IReadOnlyList<string> AvailableActions { get; } = new[]
         {
@@ -89,11 +89,17 @@ namespace YMMKeyboardPlugin.Mapping
             return actionName.Trim() switch
             {
                 "なし" => NoneActionName,
+                "None" => NoneActionName,
                 "テストイベント" => TestEventActionName,
+                "TestEvent" => TestEventActionName,
                 "テスト本番削除" => TestEventActionName, // 旧設定との互換
                 "シークバーを進める" => PlusSeekFrameActionName,
+                "PlusSeekFrame" => PlusSeekFrameActionName,
                 "シークバーを戻す" => MinusSeekFrameActionName,
+                "MinusSeekFrame" => MinusSeekFrameActionName,
+                "YMMT読み込み" => LoadYmmtCatalogActionName,
                 "ymmt読み込み" => LoadYmmtCatalogActionName,
+                "LoadYmmtCatalog" => LoadYmmtCatalogActionName,
                 _ => actionName.Trim(),
             };
         }
