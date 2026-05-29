@@ -7,7 +7,7 @@ public static class PluginLogger
 {
     private static readonly object sync = new();
     private static bool resetDone;
-    private const string DiagnosticsDirectoryRelativePath = @"C:\Users\yu-za-hazimeyou\source\repos\YMMKeyboard\_diagnostics";
+    private static readonly string diagnosticsDirectoryPath = ResolveDiagnosticsDirectoryPath();
 
     public static string LogDirectoryPath
     {
@@ -32,7 +32,7 @@ public static class PluginLogger
         get
         {
             var fileName = $"YMMKeyboardPlugin_{DateTime.Now:yyyyMMdd}.log";
-            return Path.Combine(DiagnosticsDirectoryRelativePath, fileName);
+            return Path.Combine(diagnosticsDirectoryPath, fileName);
         }
     }
 
@@ -55,7 +55,7 @@ public static class PluginLogger
                 if (File.Exists(CurrentLogFilePath))
                     File.Delete(CurrentLogFilePath);
 
-                Directory.CreateDirectory(DiagnosticsDirectoryRelativePath);
+                Directory.CreateDirectory(diagnosticsDirectoryPath);
                 if (File.Exists(DiagnosticsLogFilePath))
                     File.Delete(DiagnosticsLogFilePath);
             }
@@ -99,7 +99,7 @@ public static class PluginLogger
                 Directory.CreateDirectory(LogDirectoryPath);
                 File.AppendAllText(CurrentLogFilePath, line + Environment.NewLine, Encoding.UTF8);
 
-                Directory.CreateDirectory(DiagnosticsDirectoryRelativePath);
+                Directory.CreateDirectory(diagnosticsDirectoryPath);
                 File.AppendAllText(DiagnosticsLogFilePath, line + Environment.NewLine, Encoding.UTF8);
             }
         }
@@ -107,5 +107,17 @@ public static class PluginLogger
         {
             // logging should never break plugin execution
         }
+    }
+
+    private static string ResolveDiagnosticsDirectoryPath()
+    {
+        // 任意指定: 環境変数があれば最優先
+        var envPath = Environment.GetEnvironmentVariable("YMMK_DIAGNOSTICS_DIR");
+        if (!string.IsNullOrWhiteSpace(envPath))
+            return envPath;
+
+        // 既定: ユーザー環境依存しないローカルアプリデータ配下
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(localAppData, "YMMKeyboard", "_diagnostics");
     }
 }

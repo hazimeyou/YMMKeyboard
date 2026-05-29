@@ -10,6 +10,9 @@ namespace YMMKeyboardPlugin.Actions
     public class KeyboardAction : ITimelineToolViewModel, INotifyPropertyChanged
     {
         public static Timeline? TimelineInstance { get; private set; }
+        private static readonly object seekCacheLock = new();
+        private static object? cachedSeekCommand;
+        private static MethodInfo? cachedSeekInvokeMethod;
 #pragma warning disable CS0169
         private UndoRedoManager? undoRedoManager;
 #pragma warning restore CS0169
@@ -72,27 +75,16 @@ namespace YMMKeyboardPlugin.Actions
         {
             try
             {
-                var seekCommand = ResolveSeekCommand();
-                if (seekCommand is null)
+                var seek = ResolveSeekCommandAndMethod();
+                if (seek is null)
                     return false;
 
-                var invokeMethod = seekCommand.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                    .FirstOrDefault(m =>
-                    {
-                        if (!string.Equals(m.Name, "Invoke", StringComparison.Ordinal))
-                            return false;
-                        var p = m.GetParameters();
-                        return p.Length == 1 && (p[0].ParameterType == typeof(int) || p[0].ParameterType == typeof(TimeSpan) || p[0].ParameterType == typeof(object));
-                    });
-                if (invokeMethod is null)
-                    return false;
-
-                var parameterType = invokeMethod.GetParameters()[0].ParameterType;
+                var parameterType = seek.Value.InvokeMethod.GetParameters()[0].ParameterType;
                 object argument = parameterType == typeof(TimeSpan)
-                    ? TimeSpan.FromMilliseconds(frameDelta)
+                    ? FrameDeltaToTimeSpan(frameDelta)
                     : frameDelta;
 
-                invokeMethod.Invoke(seekCommand, new[] { argument });
+                seek.Value.InvokeMethod.Invoke(seek.Value.Command, new[] { argument });
                 return true;
             }
             catch (Exception ex)
@@ -102,8 +94,14 @@ namespace YMMKeyboardPlugin.Actions
             }
         }
 
-        private static object? ResolveSeekCommand()
+        private static (object Command, MethodInfo InvokeMethod)? ResolveSeekCommandAndMethod()
         {
+            lock (seekCacheLock)
+            {
+                if (cachedSeekCommand is not null && cachedSeekInvokeMethod is not null)
+                    return (cachedSeekCommand, cachedSeekInvokeMethod);
+            }
+
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 Type[] types;
@@ -134,12 +132,91 @@ namespace YMMKeyboardPlugin.Actions
                         continue;
 
                     var seekCommand = indexer.GetValue(settingsInstance, new object[] { "Seek" });
-                    if (seekCommand is not null)
-                        return seekCommand;
+                    if (seekCommand is null)
+                        continue;
+
+                    var invokeMethod = seekCommand.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                        .FirstOrDefault(m =>
+                        {
+                            if (!string.Equals(m.Name, "Invoke", StringComparison.Ordinal))
+                                return false;
+                            var p = m.GetParameters();
+                            return p.Length == 1 && (p[0].ParameterType == typeof(int) || p[0].ParameterType == typeof(TimeSpan) || p[0].ParameterType == typeof(object));
+                        });
+                    if (invokeMethod is null)
+                        continue;
+
+                    lock (seekCacheLock)
+                    {
+                        cachedSeekCommand = seekCommand;
+                        cachedSeekInvokeMethod = invokeMethod;
+                    }
+                    return (seekCommand, invokeMethod);
                 }
             }
 
             return null;
+        }
+
+        private static TimeSpan FrameDeltaToTimeSpan(int frameDelta)
+        {
+            var timeline = TimelineInstance;
+            if (timeline is null)
+                return TimeSpan.Zero;
+
+            var fps = GetTimelineFps(timeline);
+            if (fps <= 0)
+                fps = 60.0;
+
+            return TimeSpan.FromSeconds(frameDelta / fps);
+        }
+
+        private static double GetTimelineFps(Timeline timeline)
+        {
+            try
+            {
+                var videoInfoProperty = timeline.GetType().GetProperty("VideoInfo", BindingFlags.Public | BindingFlags.Instance);
+                var videoInfo = videoInfoProperty?.GetValue(timeline);
+                if (videoInfo is not null)
+                {
+                    var fpsValue = GetPropertyDouble(videoInfo, "FPS");
+                    if (fpsValue > 0)
+                        return fpsValue;
+                }
+
+                var directFps = GetPropertyDouble(timeline, "FPS");
+                if (directFps > 0)
+                    return directFps;
+
+                var frameRate = GetPropertyDouble(timeline, "FrameRate");
+                if (frameRate > 0)
+                    return frameRate;
+            }
+            catch
+            {
+                // fallback below
+            }
+
+            return 60.0;
+        }
+
+        private static double GetPropertyDouble(object instance, string propertyName)
+        {
+            var property = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (property is null)
+                return 0;
+
+            var value = property.GetValue(instance);
+            return value switch
+            {
+                double d => d,
+                float f => f,
+                decimal m => (double)m,
+                int i => i,
+                long l => l,
+                string s when double.TryParse(s, out var parsed) => parsed,
+                _ => 0,
+            };
         }
 
 #pragma warning disable CS0067
