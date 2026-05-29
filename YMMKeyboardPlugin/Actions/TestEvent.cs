@@ -10,7 +10,7 @@ namespace YMMKeyboardPlugin.Actions
                 ? $"{switchName} で TestEvent を実行しました。"
                 : $"{switchName} で TestEvent を実行しました。\nパラメータ: {parameter}";
 
-            MessageBox.Show(message, "TestEvent");
+            MessageBox.Show(message, "テストイベント");
         }
     }
 }

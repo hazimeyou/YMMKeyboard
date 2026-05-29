@@ -95,11 +95,11 @@
                         BorderThickness="1"
                         BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
                     <StackPanel>
-                        <TextBlock Text="Rotary" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <TextBlock Text="ロータリー" FontWeight="Bold" Margin="0,0,0,6"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
-                            <Button Style="{StaticResource KeyButtonStyle}" Content="Left" Tag="SW36" Width="56" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyButtonStyle}" Content="Push" Tag="SW35" Width="56" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyButtonStyle}" Content="Right" Tag="SW37" Width="56" Click="SwitchButton_OnClick"/>
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="左回転" Tag="SW36" Width="56" Click="SwitchButton_OnClick"/>
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="押し込み" Tag="SW35" Width="56" Click="SwitchButton_OnClick"/>
+                            <Button Style="{StaticResource KeyButtonStyle}" Content="右回転" Tag="SW37" Width="56" Click="SwitchButton_OnClick"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>

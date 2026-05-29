@@ -38,8 +38,8 @@ public static class LoadYmmtCatalogAction
             {
                 LogWarn("Parameter is empty.");
                 MessageBox.Show(
-                    "Set .ymmt file path in parameter.\nExample: C:\\Users\\<user>\\Downloads\\test.ymmt",
-                    "LoadYmmtCatalog");
+                    "パラメータに .ymmt ファイルパスを設定してください。\n例: C:\\Users\\<user>\\Downloads\\test.ymmt",
+                    "YMMT読み込み");
                 return;
             }
 
@@ -48,7 +48,7 @@ public static class LoadYmmtCatalogAction
             if (!YmmtCatalogLoader.TryLoad(path, out var snapshot, out var error) || snapshot is null)
             {
                 LogError($"TryLoad failed. path={path}, error={error}");
-                MessageBox.Show($"Load failed.\nPath: {path}\nError: {error}", "LoadYmmtCatalog");
+                MessageBox.Show($"読み込みに失敗しました。\nパス: {path}\n詳細: {error}", "YMMT読み込み");
                 return;
             }
 
@@ -60,7 +60,7 @@ public static class LoadYmmtCatalogAction
             catch (Exception ex)
             {
                 LogError($"SaveToPluginFolder failed. source={path}", ex);
-                MessageBox.Show($"Loaded but save failed.\nPath: {path}\nError: {ex.Message}", "LoadYmmtCatalog");
+                MessageBox.Show($"読み込みは成功しましたが保存に失敗しました。\nパス: {path}\n詳細: {ex.Message}", "YMMT読み込み");
                 return;
             }
 
@@ -68,15 +68,15 @@ public static class LoadYmmtCatalogAction
             LogInfo($"Import finished. source={snapshot.SourcePath}, templates={snapshot.Templates.Count}, imported={importResult.Imported}, skipped={importResult.Skipped}, note={importResult.Note}");
 
             var message = BuildSummary(snapshot, importResult);
-            message += $"\n\nSavedTo: {savedPath}";
-            message += $"\nLogFile: {PluginLogger.CurrentLogFilePath}";
-            message += $"\nOperationId: {opId}";
-            MessageBox.Show(message, "LoadYmmtCatalog");
+            message += $"\n\n保存先: {savedPath}";
+            message += $"\nログ: {PluginLogger.CurrentLogFilePath}";
+            message += $"\n操作ID: {opId}";
+            MessageBox.Show(message, "YMMT読み込み");
         }
         catch (Exception ex)
         {
             LogError("Execute unexpected error.", ex);
-            MessageBox.Show($"Unexpected error: {ex.Message}", "LoadYmmtCatalog");
+            MessageBox.Show($"予期しないエラーが発生しました: {ex.Message}", "YMMT読み込み");
         }
         finally
         {
@@ -99,14 +99,14 @@ public static class LoadYmmtCatalogAction
         if (timeline is null)
         {
             LogWarn("Timeline is not available.");
-            return new ImportResult(0, 0, "Timeline is not available.");
+            return new ImportResult(0, 0, "タイムラインが利用できません。");
         }
 
         var template = snapshot.Templates.FirstOrDefault();
         if (template is null)
         {
             LogWarn("No template found.");
-            return new ImportResult(0, 0, "No template found in .ymmt.");
+            return new ImportResult(0, 0, ".ymmt 内にテンプレートが見つかりません。");
         }
 
         var imported = 0;
@@ -117,7 +117,7 @@ public static class LoadYmmtCatalogAction
         var targetFps = GetTimelineFps(timeline, sourceFps);
         var frameScale = targetFps / sourceFps;
         if (Math.Abs(frameScale - 1.0) > 0.0001)
-            notes.Add($"FrameScale applied: {sourceFps:0.###}fps -> {targetFps:0.###}fps (x{frameScale:0.###})");
+            notes.Add($"フレームレート補正: {sourceFps:0.###}fps -> {targetFps:0.###}fps (x{frameScale:0.###})");
 
         for (var i = 0; i < template.Items.Count; i++)
         {
@@ -162,7 +162,7 @@ public static class LoadYmmtCatalogAction
             {
                 if (string.IsNullOrWhiteSpace(src.FilePath) || !File.Exists(src.FilePath))
                 {
-                    reason = $"Skip AudioItem: file not found ({src.FileName ?? "-"})";
+                    reason = $"AudioItem をスキップ: ファイルが見つかりません ({src.FileName ?? "-"})";
                     return false;
                 }
 
@@ -178,7 +178,7 @@ public static class LoadYmmtCatalogAction
             var type = itemsAssembly.GetType($"YukkuriMovieMaker.Project.Items.{src.ItemType}");
             if (type is null)
             {
-                reason = $"Skip {src.ItemType}: unknown type";
+                reason = $"{src.ItemType} をスキップ: 未対応の型です";
                 return false;
             }
 
@@ -186,15 +186,15 @@ public static class LoadYmmtCatalogAction
             var instance = deserializedItem ?? Activator.CreateInstance(type);
             if (instance is not IItem timelineItem)
             {
-                reason = $"Skip {src.ItemType}: cannot create item";
+                reason = $"{src.ItemType} をスキップ: アイテムを生成できません";
                 return false;
             }
             if (deserializedItem is null)
             {
                 if (!TryApplyRawProperties(timelineItem, src.RawJson, out var appliedPropertyCount, out var applyDetail))
-                    reason = $"Warn {src.ItemType}: internal parameters may not be fully restored";
+                    reason = $"{src.ItemType}: 内部パラメータを完全には復元できない可能性があります";
                 else
-                    reason = $"Recovered {src.ItemType}: applied {appliedPropertyCount} properties from raw JSON ({applyDetail})";
+                    reason = $"{src.ItemType}: 生JSONから {appliedPropertyCount} 個のプロパティを復元しました ({applyDetail})";
             }
 
             SetIfWritable(timelineItem, "Frame", frame);
@@ -211,7 +211,7 @@ public static class LoadYmmtCatalogAction
         }
         catch (Exception ex)
         {
-            reason = $"Skip {src.ItemType}: {ex.Message}";
+            reason = $"{src.ItemType} をスキップ: {ex.Message}";
             return false;
         }
     }
@@ -1026,26 +1026,26 @@ public static class LoadYmmtCatalogAction
     private static string BuildSummary(YmmtProjectSnapshot snapshot, ImportResult importResult)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("YMMT load succeeded");
-        sb.AppendLine($"Source: {snapshot.SourcePath}");
-        sb.AppendLine($"Templates: {snapshot.Templates.Count}");
-        sb.AppendLine($"Imported: {importResult.Imported}");
-        sb.AppendLine($"Skipped: {importResult.Skipped}");
+        sb.AppendLine("YMMT の読み込みに成功しました");
+        sb.AppendLine($"読み込み元: {snapshot.SourcePath}");
+        sb.AppendLine($"テンプレート数: {snapshot.Templates.Count}");
+        sb.AppendLine($"追加件数: {importResult.Imported}");
+        sb.AppendLine($"スキップ件数: {importResult.Skipped}");
         if (!string.IsNullOrWhiteSpace(importResult.Note))
-            sb.AppendLine($"Notes:\n{importResult.Note}");
+            sb.AppendLine($"補足:\n{importResult.Note}");
 
         for (var i = 0; i < snapshot.Templates.Count; i++)
         {
             var template = snapshot.Templates[i];
             sb.AppendLine();
-            sb.AppendLine($"[{i}] {template.Name} / Scene={template.SceneName} / {template.Width}x{template.Height} / FPS={template.Fps}");
-            sb.AppendLine($"Items: {template.Items.Count}");
+            sb.AppendLine($"[{i}] {template.Name} / シーン={template.SceneName} / {template.Width}x{template.Height} / FPS={template.Fps}");
+            sb.AppendLine($"アイテム数: {template.Items.Count}");
 
             var groups = template.Items
                 .GroupBy(item => item.ItemType)
                 .OrderByDescending(group => group.Count())
                 .Select(group => $"{group.Key}:{group.Count()}");
-            sb.AppendLine($"Types: {string.Join(", ", groups)}");
+            sb.AppendLine($"型内訳: {string.Join(", ", groups)}");
         }
 
         return sb.ToString();
