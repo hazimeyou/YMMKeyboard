@@ -94,10 +94,17 @@ namespace YMMKeyboardPlugin
             if (!links.TryGetValue(portName, out var link))
                 return;
 
+            var knownUids = link.KnownUids.ToArray();
             link.DeviceDetected -= OnDeviceDetected;
             link.KeyEventReceived -= OnKeyEventReceived;
             link.Dispose();
             links.Remove(portName);
+
+            foreach (var uid in knownUids)
+            {
+                ClearDeviceState(uid);
+                macros.Remove(uid);
+            }
         }
 
         private void DisconnectAll()
@@ -296,6 +303,22 @@ namespace YMMKeyboardPlugin
             pendingByUid.Remove(switchName);
             if (pendingByUid.Count == 0)
                 pendingSingleActions.Remove(uid);
+        }
+
+        private void ClearDeviceState(string uid)
+        {
+            lock (stateLock)
+            {
+                if (pendingSingleActions.TryGetValue(uid, out var pendingByUid))
+                {
+                    foreach (var cts in pendingByUid.Values)
+                        cts.Cancel();
+                    pendingSingleActions.Remove(uid);
+                }
+
+                pressedSwitches.Remove(uid);
+                consumedSwitches.Remove(uid);
+            }
         }
 
         public static void ShowToast(string message)

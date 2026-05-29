@@ -1,5 +1,6 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Windows;
 using YukkuriMovieMaker.Plugin;
 using YukkuriMovieMaker.Project;
 using YukkuriMovieMaker.UndoRedo;
@@ -31,7 +32,10 @@ namespace YMMKeyboardPlugin.Actions
             if (TimelineInstance is null)
                 return;
 
-            TimelineInstance.CurrentFrame += frames;
+            if (Application.Current?.Dispatcher is { } dispatcher)
+                dispatcher.Invoke(() => TimelineInstance.CurrentFrame += frames);
+            else
+                TimelineInstance.CurrentFrame += frames;
         }
 
         public static void MinusSeekFrame(int frames)
@@ -39,7 +43,10 @@ namespace YMMKeyboardPlugin.Actions
             if (TimelineInstance is null)
                 return;
 
-            TimelineInstance.CurrentFrame -= frames;
+            if (Application.Current?.Dispatcher is { } dispatcher)
+                dispatcher.Invoke(() => TimelineInstance.CurrentFrame -= frames);
+            else
+                TimelineInstance.CurrentFrame -= frames;
         }
 
         public static void PlusFrame(int frames)

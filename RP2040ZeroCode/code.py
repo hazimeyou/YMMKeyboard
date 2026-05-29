@@ -61,8 +61,13 @@ keyboard.coord_mapping = [
 # 4. エンコーダー設定
 # =====================================================
 # 回転時のシリアル出力 (SW_36, SW_37)
-ENC_CW = make_key(names=('ENC_CW',), on_press=lambda *args: print(f"{DEVICE_UID}:P:SW_36"))
-ENC_CCW = make_key(names=('ENC_CCW',), on_press=lambda *args: print(f"{DEVICE_UID}:P:SW_37"))
+# エンコーダは通常 on_release が発生しないため、1ノッチを疑似タップとして P/R を連続送信する。
+def _emit_tap(sw_id):
+    print(f"{DEVICE_UID}:P:SW_{sw_id}")
+    print(f"{DEVICE_UID}:R:SW_{sw_id}")
+
+ENC_CW = make_key(names=('ENC_CW',), on_press=lambda *args: _emit_tap(36))
+ENC_CCW = make_key(names=('ENC_CCW',), on_press=lambda *args: _emit_tap(37))
 
 encoder_handler = EncoderHandler()
 encoder_handler.pins = ((board.GP0, board.GP1, None, False),)

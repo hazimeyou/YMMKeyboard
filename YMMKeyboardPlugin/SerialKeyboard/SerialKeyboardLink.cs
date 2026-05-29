@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Ports;
@@ -16,12 +16,21 @@ namespace YMMKeyboardPlugin
         private CancellationTokenSource? _cts;
 
         private readonly Dictionary<string, SerialKeyboardDevice> _devices = new();
+        private readonly object _devicesLock = new();
 
-        // ★ デバイス検出イベント
         public event Action<SerialKeyboardDevice>? DeviceDetected;
-
-        // ★ キーイベント受信
         public event Action<SerialKeyboardDevice, KeyEvent>? KeyEventReceived;
+
+        public IReadOnlyList<string> KnownUids
+        {
+            get
+            {
+                lock (_devicesLock)
+                {
+                    return _devices.Keys.ToList();
+                }
+            }
+        }
 
         public SerialKeyboardLink(string portName)
         {
@@ -46,7 +55,6 @@ namespace YMMKeyboardPlugin
             };
 
             _port.Open();
-
             Task.Run(() => ReadLoop(_cts.Token));
         }
 
@@ -58,36 +66,44 @@ namespace YMMKeyboardPlugin
             {
                 try
                 {
-                    string line = _port!.ReadLine().Trim();
+                    var line = _port!.ReadLine().Trim();
                     if (string.IsNullOrEmpty(line))
                         continue;
 
                     Debug.WriteLine($"[SERIAL] {line}");
 
-                    // 例: 504434042839481c:P:SW_12
                     var parts = line.Split(':');
                     if (parts.Length != 3)
                         continue;
 
-                    string uid = parts[0];
-                    string state = parts[1];
-                    string sw = parts[2];
+                    var uid = parts[0];
+                    var state = parts[1];
+                    var sw = parts[2];
 
                     if (!sw.StartsWith("SW_"))
                         continue;
 
-                    if (!int.TryParse(sw.Substring(3), out int switchId))
+                    if (!int.TryParse(sw.Substring(3), out var switchId))
                         continue;
 
-                    // ★ 初めて見るUIDなら即デバイス登録
-                    if (!_devices.TryGetValue(uid, out var device))
+                    SerialKeyboardDevice device;
+                    bool isNewDevice;
+                    lock (_devicesLock)
                     {
-                        device = new SerialKeyboardDevice(uid);
-                        _devices[uid] = device;
-                        //
-                        //MessageBox.Show("デバイス検出: " + uid);
-                        DeviceDetected?.Invoke(device);
+                        if (!_devices.TryGetValue(uid, out device!))
+                        {
+                            device = new SerialKeyboardDevice(uid);
+                            _devices[uid] = device;
+                            isNewDevice = true;
+                        }
+                        else
+                        {
+                            isNewDevice = false;
+                        }
                     }
+
+                    if (isNewDevice)
+                        DeviceDetected?.Invoke(device);
 
                     var keyEvent = new KeyEvent
                     {
@@ -100,7 +116,6 @@ namespace YMMKeyboardPlugin
                 }
                 catch (TimeoutException)
                 {
-                    // 正常（無視）
                 }
                 catch (OperationCanceledException)
                 {
