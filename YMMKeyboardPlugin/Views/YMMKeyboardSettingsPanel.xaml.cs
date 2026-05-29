@@ -9,6 +9,7 @@ namespace YMMKeyboardPlugin.Views
     public partial class YMMKeyboardSettingsPanel : UserControl
     {
         private readonly YMMKeyboardSettings settings;
+        private bool serialPortSupported = true;
 
         public YMMKeyboardSettingsPanel()
             : this(YMMKeyboardSettings.Current)
@@ -25,7 +26,7 @@ namespace YMMKeyboardPlugin.Views
 
         private void LoadPorts()
         {
-            var ports = SerialPort.GetPortNames()
+            var ports = GetPortNamesSafe()
                 .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -37,11 +38,27 @@ namespace YMMKeyboardPlugin.Views
                 ? null
                 : ports.FirstOrDefault(name => string.Equals(name, settings.PortName, StringComparison.OrdinalIgnoreCase));
 
-            PortStatusTextBlock.Text = ports.Count == 0
+            PortStatusTextBlock.Text = !serialPortSupported
+                ? "この実行環境ではシリアルポート機能を利用できません。"
+                : ports.Count == 0
                 ? "利用可能なCOMポートが見つかりません。機器を接続してから再読み込みしてください。"
                 : string.IsNullOrWhiteSpace(settings.PortName)
                     ? "接続するCOMポートを選択してください。"
                     : $"現在の設定: {settings.PortName}";
+        }
+
+        private IEnumerable<string> GetPortNamesSafe()
+        {
+            try
+            {
+                serialPortSupported = true;
+                return SerialPort.GetPortNames();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                serialPortSupported = false;
+                return Array.Empty<string>();
+            }
         }
 
         private void LoadStartupPorts()
@@ -66,6 +83,12 @@ namespace YMMKeyboardPlugin.Views
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
         {
+            if (!serialPortSupported)
+            {
+                PortStatusTextBlock.Text = "この実行環境ではシリアル接続を開始できません。";
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(settings.PortName))
             {
                 PortStatusTextBlock.Text = "先に接続するCOMポートを選択してください。";
