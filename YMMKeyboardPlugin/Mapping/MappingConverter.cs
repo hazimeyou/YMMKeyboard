@@ -25,7 +25,7 @@ namespace YMMKeyboardPlugin.Mapping
         public static void ExecuteUiSwitch(string switchName)
         {
             var config = YMMKeyboardSettings.Current.GetUiButtonConfig(switchName);
-            ExecuteAction(config.ActionName, config.Parameter, switchName, "UI Keyboard");
+            ExecuteAction(config.ActionName, config.Parameter, switchName, "UIキーボード");
         }
 
         public static void ExecuteUiCombination(IEnumerable<string> switchNames)
@@ -35,7 +35,7 @@ namespace YMMKeyboardPlugin.Mapping
                 return;
 
             var config = YMMKeyboardSettings.Current.GetUiComboButtonConfig(combinationKey);
-            ExecuteAction(config.ActionName, config.Parameter, combinationKey, "UI Keyboard");
+            ExecuteAction(config.ActionName, config.Parameter, combinationKey, "UIキーボード");
         }
 
         public static void ExecuteDeviceSwitch(string uid, string switchName)
@@ -89,7 +89,8 @@ namespace YMMKeyboardPlugin.Mapping
             return actionName.Trim() switch
             {
                 "なし" => NoneActionName,
-                "テスト本番削除" => TestEventActionName,
+                "テストイベント" => TestEventActionName,
+                "テスト本番削除" => TestEventActionName, // 旧設定との互換
                 "シークバーを進める" => PlusSeekFrameActionName,
                 "シークバーを戻す" => MinusSeekFrameActionName,
                 "ymmt読み込み" => LoadYmmtCatalogActionName,
