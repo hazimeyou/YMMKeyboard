@@ -8,20 +8,20 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Version Condition="'$(Version)'==''">0.0.0</Version>
 		<Platforms>AnyCPU;x64</Platforms>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<YMM4DirPath Condition="'$(YMM4DirPath)'==''">$(MSBuildThisFileDirectory)..\libs\YMM4</YMM4DirPath>
 	</PropertyGroup>
 
 
 	<ItemGroup Condition="Exists('$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll')">
 		<Reference Include="YukkuriMovieMaker.Plugin" HintPath="$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll" Private="false" ExcludeAssets="runtime" />
 		<Reference Include="YukkuriMovieMaker.Controls" HintPath="$(YMM4DirPath)\YukkuriMovieMaker.Controls.dll" Private="false" ExcludeAssets="runtime" />
-		<Reference Include="YukkuriMovieMaker.Controls" HintPath="$(YMM4DirPath)\YukkuriMovieMaker.dll" Private="false" ExcludeAssets="runtime" />
+		<Reference Include="YukkuriMovieMaker" HintPath="$(YMM4DirPath)\YukkuriMovieMaker.dll" Private="false" ExcludeAssets="runtime" />
 	</ItemGroup>
 
-	<ItemGroup Condition="!Exists('$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll')">
-		<Reference Include="YukkuriMovieMaker.Plugin" HintPath="..\libs\YukkuriMovieMaker.Plugin.dll" Private="false" ExcludeAssets="runtime" />
-		<Reference Include="YukkuriMovieMaker.Controls" HintPath="..\libs\YukkuriMovieMaker.Controls.dll" Private="false" ExcludeAssets="runtime" />
-		<Reference Include="YukkuriMovieMaker.Controls" HintPath="..\libs\YukkuriMovieMaker.dll" Private="false" ExcludeAssets="runtime" />
-	</ItemGroup>
+	<Target Name="ValidateYMM4DirPath" BeforeTargets="ResolveReferences" Condition="!Exists('$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll')">
+		<Error Text="YMM4 libraries were not found at '$(YMM4DirPath)'. Run scripts/fetch-ymm4-libs.ps1 or specify /p:YMM4DirPath=&lt;YMM4 folder&gt;." />
+	</Target>
 
 
 	<ItemGroup>
@@ -39,12 +39,9 @@
 		<!-- フォルダ作成 -->
 		<MakeDir Directories="$(PluginOutputDir)" Condition="!Exists('$(PluginOutputDir)')" />
 
-		<!-- コピー対象（自分のDLLのみ） -->
+		<!-- コピー対象（プラグイン本体 + 依存DLL） -->
 		<ItemGroup>
-			<PluginFiles Include="$(TargetDir)$(AssemblyName).dll" />
-		</ItemGroup>
-		<ItemGroup>
-			<PluginFiles Include="$(TargetDir)$(AssemblyName).dll" />
+			<PluginFiles Include="$(TargetDir)*.dll" />
 		</ItemGroup>
 		<!-- コピー -->
 		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" />
