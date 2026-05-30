@@ -385,12 +385,12 @@ venv/
 *.user
 *.userosscache
 *.sln.docstates
-KiCad/YMMkeyboard/YMMkeyboard-backups/
-KiCad/YMMkeyboardMX/YMMkeyboardMX-backups/
-/KiCad/testboard/testboard/testboard-backups
+hardware/pcb/KiCad/YMMkeyboard/YMMkeyboard-backups/
+hardware/pcb/KiCad/YMMkeyboardMX/YmmKeyboardMX-backups/
+/hardware/pcb/KiCad/testboard/testboard/testboard-backups
 /.codex-dotnet/.dotnet
 /Directory.Build.props
-/KiCad/YMMkeyboardRP/YMMkeyboardRP/YMMkeyboardRP-backups
+/hardware/pcb/KiCad/YMMkeyboardRP/YMMkeyboardRP/YMMkeyboardRP-backups
 /_inspect/InspectYmm
 *.zip
-libs/YMM4/
+ymm-plugin/libs/YMM4/

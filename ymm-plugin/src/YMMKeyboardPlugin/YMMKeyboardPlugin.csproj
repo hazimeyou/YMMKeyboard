@@ -10,7 +10,7 @@
 		<Platforms>AnyCPU;x64</Platforms>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<YMM4DirPath Condition="'$(YMM4DirPath)'=='' and Exists('$(USERPROFILE)\Desktop\YukkuriMovieMaker_v4_Lite\YukkuriMovieMaker.Plugin.dll')">$(USERPROFILE)\Desktop\YukkuriMovieMaker_v4_Lite</YMM4DirPath>
-		<YMM4DirPath Condition="'$(YMM4DirPath)'==''">$(MSBuildThisFileDirectory)..\libs\YMM4</YMM4DirPath>
+		<YMM4DirPath Condition="'$(YMM4DirPath)'==''">$(MSBuildThisFileDirectory)..\..\libs\YMM4</YMM4DirPath>
 		<SystemIOPortsRuntimePath>$(PkgSystem_IO_Ports)\runtimes\win\lib\net10.0\System.IO.Ports.dll</SystemIOPortsRuntimePath>
 	</PropertyGroup>
 
@@ -22,7 +22,7 @@
 	</ItemGroup>
 
 	<Target Name="ValidateYMM4DirPath" BeforeTargets="ResolveReferences" Condition="!Exists('$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll')">
-		<Error Text="YMM4 libraries were not found at '$(YMM4DirPath)'. Run scripts/fetch-ymm4-libs.ps1 or specify /p:YMM4DirPath=&lt;YMM4 folder&gt;." />
+		<Error Text="YMM4 libraries were not found at '$(YMM4DirPath)'. Run tools/scripts/fetch-ymm4-libs.ps1 or specify /p:YMM4DirPath=&lt;YMM4 folder&gt;." />
 	</Target>
 
 
@@ -50,8 +50,8 @@
 		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" />
 	</Target>
 
-	<Target Name="CopyCodePyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\RP2040ZeroCode\code.py')">
-		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\RP2040ZeroCode\code.py" DestinationFiles="D:\code.py" OverwriteReadOnlyFiles="true" />
+	<Target Name="CopyCodePyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py')">
+		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py" DestinationFiles="D:\code.py" OverwriteReadOnlyFiles="true" />
 	</Target>
 
 </Project>

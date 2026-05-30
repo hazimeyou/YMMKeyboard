@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using YMMKeyboardPlugin.Key;
@@ -12,6 +13,13 @@ namespace YMMKeyboardPlugin
 {
     public class SerialKeyboardLink : IDisposable
     {
+        private static readonly Regex serialEventPattern = new(
+            @"(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",
+            RegexOptions.Compiled);
+        private static readonly Regex ansiEscapePattern = new(
+            @"\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\a]*(?:\a|\x1B\\))",
+            RegexOptions.Compiled);
+
         private readonly string _portName;
         private SerialPort? _port;
         private CancellationTokenSource? _cts;
@@ -72,21 +80,17 @@ namespace YMMKeyboardPlugin
                     if (string.IsNullOrEmpty(line))
                         continue;
 
-                    Debug.WriteLine($"[SERIAL] {line}");
-                    PluginLogger.Info("SerialKeyboardLink", $"RX {_portName}: {line}");
+                    var normalizedLine = NormalizeSerialLine(line);
+                    Debug.WriteLine($"[SERIAL] {normalizedLine}");
+                    PluginLogger.Info("SerialKeyboardLink", $"RX {_portName}: {normalizedLine}");
 
-                    var parts = line.Split(':');
-                    if (parts.Length != 3)
+                    var match = serialEventPattern.Match(normalizedLine);
+                    if (!match.Success)
                         continue;
 
-                    var uid = parts[0];
-                    var state = parts[1];
-                    var sw = parts[2];
-
-                    if (!sw.StartsWith("SW_"))
-                        continue;
-
-                    if (!int.TryParse(sw.Substring(3), out var switchId))
+                    var uid = match.Groups["uid"].Value.ToLowerInvariant();
+                    var state = match.Groups["state"].Value;
+                    if (!int.TryParse(match.Groups["switch"].Value, out var switchId))
                         continue;
 
                     SerialKeyboardDevice device;
@@ -135,6 +139,20 @@ namespace YMMKeyboardPlugin
             }
 
             Debug.WriteLine($"[SerialKeyboardLink] Stop reading {_portName}");
+        }
+
+        private static string NormalizeSerialLine(string line)
+        {
+            // ターミナル制御シーケンスや不可視文字が混入してもイベント行を抽出できるよう正規化する。
+            var stripped = ansiEscapePattern.Replace(line, string.Empty);
+            var sb = new StringBuilder(stripped.Length);
+            foreach (var ch in stripped)
+            {
+                if (!char.IsControl(ch) || ch == '\t')
+                    sb.Append(ch);
+            }
+
+            return sb.ToString().Trim();
         }
 
         public void Stop()

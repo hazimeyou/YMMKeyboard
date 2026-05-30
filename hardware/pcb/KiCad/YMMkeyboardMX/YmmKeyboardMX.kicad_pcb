@@ -114,7 +114,7 @@
 			(mirror no)
 			(drillshape 0)
 			(scaleselection 1)
-			(outputdirectory "../../jww/dxf/")
+			(outputdirectory "../../docs/jww/dxf/")
 		)
 	)
 	(net 0 "")
