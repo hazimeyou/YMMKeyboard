@@ -19,6 +19,8 @@ namespace YMMKeyboardPlugin
         private static readonly Regex ansiEscapePattern = new(
             @"\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\a]*(?:\a|\x1B\\))",
             RegexOptions.Compiled);
+        private static readonly bool verboseSerialLog =
+            string.Equals(Environment.GetEnvironmentVariable("YMMK_VERBOSE_SERIAL"), "1", StringComparison.Ordinal);
 
         private readonly string _portName;
         private SerialPort? _port;
@@ -82,7 +84,8 @@ namespace YMMKeyboardPlugin
 
                     var normalizedLine = NormalizeSerialLine(line);
                     Debug.WriteLine($"[SERIAL] {normalizedLine}");
-                    PluginLogger.Info("SerialKeyboardLink", $"RX {_portName}: {normalizedLine}");
+                    if (verboseSerialLog)
+                        PluginLogger.Info("SerialKeyboardLink", $"RX {_portName}: {normalizedLine}");
 
                     var match = serialEventPattern.Match(normalizedLine);
                     if (!match.Success)
@@ -119,7 +122,8 @@ namespace YMMKeyboardPlugin
                     {
                         Uid = uid,
                         IsPressed = state == "P",
-                        SwitchId = switchId
+                        SwitchId = switchId,
+                        ReceivedAtUtc = DateTime.UtcNow
                     };
 
                     KeyEventReceived?.Invoke(device, keyEvent);

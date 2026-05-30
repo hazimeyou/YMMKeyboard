@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using YMMKeyboardPlugin.Key;
+using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
@@ -13,7 +14,14 @@ namespace YMMKeyboardPlugin
 {
     public class Keymacro : IDisposable
     {
-        private const int SingleKeyDelayMs = 120;
+        private const int SingleKeyDelayMs = 35;
+        private static readonly HashSet<string> immediateSwitches = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "SW36", // rotary clockwise
+            "SW37", // rotary counter-clockwise
+        };
+        private static readonly bool verboseLatencyLog =
+            string.Equals(Environment.GetEnvironmentVariable("YMMK_VERBOSE_LATENCY"), "1", StringComparison.Ordinal);
 
         private readonly Dictionary<string, SerialKeyboardLink> links = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, HashSet<string>> pressedSwitches = new(StringComparer.OrdinalIgnoreCase);
@@ -126,12 +134,12 @@ namespace YMMKeyboardPlugin
             }
 
             if (e.IsPressed)
-                HandleKeyPressed(device.Uid, switchName);
+                HandleKeyPressed(device.Uid, switchName, e.ReceivedAtUtc);
             else
                 HandleKeyReleased(device.Uid, switchName);
         }
 
-        private void HandleKeyPressed(string uid, string switchName)
+        private void HandleKeyPressed(string uid, string switchName, DateTime receivedAtUtc)
         {
             ButtonConfig? comboConfig = null;
             string combinationKey = string.Empty;
@@ -143,7 +151,15 @@ namespace YMMKeyboardPlugin
 
                 if (pressed.Count == 1)
                 {
-                    ScheduleSingleAction(uid, switchName);
+                    if (immediateSwitches.Contains(switchName))
+                    {
+                        CancelPendingSingles(uid, pressed);
+                        LogLatency($"Immediate action uid={uid} switch={switchName}", receivedAtUtc);
+                        MappingConverter.ExecuteDeviceSwitch(uid, switchName);
+                        return;
+                    }
+
+                    ScheduleSingleAction(uid, switchName, receivedAtUtc);
                     return;
                 }
 
@@ -159,7 +175,10 @@ namespace YMMKeyboardPlugin
             }
 
             if (comboConfig is not null)
+            {
+                LogLatency($"Combo action uid={uid} combo={combinationKey}", receivedAtUtc);
                 MappingConverter.ExecuteAction(comboConfig.ActionName, comboConfig.Parameter, combinationKey, uid);
+            }
         }
 
         private void HandleKeyReleased(string uid, string switchName)
@@ -182,7 +201,7 @@ namespace YMMKeyboardPlugin
             }
         }
 
-        private void ScheduleSingleAction(string uid, string switchName)
+        private void ScheduleSingleAction(string uid, string switchName, DateTime receivedAtUtc)
         {
             var pendingByUid = GetOrCreatePendingSingles(uid);
             if (pendingByUid.TryGetValue(switchName, out var existing))
@@ -211,6 +230,7 @@ namespace YMMKeyboardPlugin
                         RemovePendingSingle(uid, switchName);
                     }
 
+                    LogLatency($"Single action uid={uid} switch={switchName}", receivedAtUtc);
                     MappingConverter.ExecuteDeviceSwitch(uid, switchName);
                 }
                 catch (TaskCanceledException)
@@ -221,6 +241,19 @@ namespace YMMKeyboardPlugin
                     cts.Dispose();
                 }
             });
+        }
+
+        private static int GetLatencyMs(DateTime receivedAtUtc)
+        {
+            var elapsed = DateTime.UtcNow - receivedAtUtc;
+            return elapsed <= TimeSpan.Zero ? 0 : (int)elapsed.TotalMilliseconds;
+        }
+
+        private static void LogLatency(string prefix, DateTime receivedAtUtc)
+        {
+            if (!verboseLatencyLog)
+                return;
+            PluginLogger.Info("Keymacro", $"{prefix} latencyMs={GetLatencyMs(receivedAtUtc)}");
         }
 
         private void CancelPendingSingles(string uid, IEnumerable<string> switchNames)

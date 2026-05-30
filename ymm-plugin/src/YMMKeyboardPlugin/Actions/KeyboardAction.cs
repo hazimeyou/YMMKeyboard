@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Input;
 using YukkuriMovieMaker.Plugin;
 using YukkuriMovieMaker.Project;
 using YukkuriMovieMaker.UndoRedo;
@@ -13,6 +14,7 @@ namespace YMMKeyboardPlugin.Actions
         private static readonly object seekCacheLock = new();
         private static object? cachedSeekCommand;
         private static MethodInfo? cachedSeekInvokeMethod;
+        private static ICommand? cachedWindowSeekCommand;
 #pragma warning disable CS0169
         private UndoRedoManager? undoRedoManager;
 #pragma warning restore CS0169
@@ -55,13 +57,13 @@ namespace YMMKeyboardPlugin.Actions
             if (frames == 0)
                 return;
 
-            var timeline = TimelineInstance;
-            if (timeline is null)
-                return;
-
             void Action()
             {
-                if (!TryInvokeSeekCommand(frames))
+                if (TryInvokeSeekCommand(frames))
+                    return;
+
+                var timeline = TimelineInstance;
+                if (timeline is not null)
                     timeline.CurrentFrame += frames;
             }
 
@@ -75,16 +77,18 @@ namespace YMMKeyboardPlugin.Actions
         {
             try
             {
+                if (TryInvokeSeekByWindowCommand(frameDelta))
+                    return true;
+
                 var seek = ResolveSeekCommandAndMethod();
                 if (seek is null)
                     return false;
 
-                var parameterType = seek.Value.InvokeMethod.GetParameters()[0].ParameterType;
-                object argument = parameterType == typeof(TimeSpan)
-                    ? FrameDeltaToTimeSpan(frameDelta)
-                    : frameDelta;
+                var args = CreateSeekArguments(seek.Value.InvokeMethod, frameDelta);
+                if (args is null)
+                    return false;
 
-                seek.Value.InvokeMethod.Invoke(seek.Value.Command, new[] { argument });
+                seek.Value.InvokeMethod.Invoke(seek.Value.Command, args);
                 return true;
             }
             catch (Exception ex)
@@ -92,6 +96,82 @@ namespace YMMKeyboardPlugin.Actions
                 Debug.WriteLine($"[KeyboardAction] Seek command invoke failed: {ex.Message}");
                 return false;
             }
+        }
+
+        private static bool TryInvokeSeekByWindowCommand(int frameDelta)
+        {
+            var cmd = ResolveWindowSeekCommand();
+            if (cmd is null)
+                return false;
+
+            var args = new object?[]
+            {
+                frameDelta,
+                FrameDeltaToTimeSpan(frameDelta),
+                null
+            };
+
+            foreach (var arg in args)
+            {
+                try
+                {
+                    if (!cmd.CanExecute(arg))
+                        continue;
+                    cmd.Execute(arg);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[KeyboardAction] Window seek command failed for arg={arg ?? "null"}: {ex.Message}");
+                }
+            }
+
+            return false;
+        }
+
+        private static ICommand? ResolveWindowSeekCommand()
+        {
+            lock (seekCacheLock)
+            {
+                if (cachedWindowSeekCommand is not null)
+                    return cachedWindowSeekCommand;
+            }
+
+            var window = Application.Current?.MainWindow;
+            if (window is null)
+                return null;
+
+            ICommand? found = null;
+            foreach (CommandBinding binding in window.CommandBindings)
+            {
+                var cmd = binding.Command;
+                var name = GetCommandName(cmd);
+                if (string.Equals(name, "ScrollToFrame", StringComparison.Ordinal) ||
+                    string.Equals(name, "シーク", StringComparison.Ordinal) ||
+                    name.Contains("ScrollToFrame", StringComparison.OrdinalIgnoreCase))
+                {
+                    found = cmd;
+                    break;
+                }
+            }
+
+            if (found is null)
+                return null;
+
+            lock (seekCacheLock)
+            {
+                cachedWindowSeekCommand = found;
+            }
+            return found;
+        }
+
+        private static string GetCommandName(ICommand command)
+        {
+            if (command is RoutedUICommand rui && !string.IsNullOrWhiteSpace(rui.Name))
+                return rui.Name;
+            if (command is RoutedCommand rc && !string.IsNullOrWhiteSpace(rc.Name))
+                return rc.Name;
+            return command.GetType().FullName ?? command.GetType().Name;
         }
 
         private static (object Command, MethodInfo InvokeMethod)? ResolveSeekCommandAndMethod()
@@ -102,58 +182,157 @@ namespace YMMKeyboardPlugin.Actions
                     return (cachedSeekCommand, cachedSeekInvokeMethod);
             }
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var commandSettingsType in ResolveCommandSettingsTypes())
             {
-                Type[] types;
-                try
-                {
-                    types = assembly.GetTypes();
-                }
-                catch
-                {
+                if (!TryResolveSeekFromCommandSettings(commandSettingsType, out var seekCommand, out var invokeMethod))
                     continue;
-                }
 
-                foreach (var type in types)
+                lock (seekCacheLock)
                 {
-                    if (!type.Name.Contains("CommandSettings", StringComparison.Ordinal))
+                    cachedSeekCommand = seekCommand;
+                    cachedSeekInvokeMethod = invokeMethod;
+                }
+                return (cachedSeekCommand!, cachedSeekInvokeMethod!);
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<Type> ResolveCommandSettingsTypes()
+        {
+            var directTypeNames = new[]
+            {
+                "YukkuriMovieMaker.Settings.CommandSettings, YukkuriMovieMaker.Settings",
+                "YukkuriMovieMaker.Settings.CommandSettings, YukkuriMovieMaker.Plugin",
+                "YukkuriMovieMaker.Settings.CommandSettings, YukkuriMovieMaker",
+            };
+
+            foreach (var typeName in directTypeNames)
+            {
+                var type = Type.GetType(typeName, throwOnError: false);
+                if (type is not null)
+                    yield return type;
+            }
+
+            foreach (var assembly in GetPreferredAssemblies())
+            {
+                foreach (var type in GetLoadableTypes(assembly))
+                {
+                    if (!string.Equals(type.Name, "CommandSettings", StringComparison.Ordinal))
                         continue;
 
-                    var defaultProperty = type.GetProperty("Default", BindingFlags.Public | BindingFlags.Static);
-                    if (defaultProperty is null)
+                    if (!type.FullName?.Contains("YukkuriMovieMaker.Settings", StringComparison.Ordinal) ?? true)
                         continue;
 
-                    var settingsInstance = defaultProperty.GetValue(null);
-                    if (settingsInstance is null)
-                        continue;
-
-                    var indexer = type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance, null, null, new[] { typeof(string) }, null);
-                    if (indexer is null)
-                        continue;
-
-                    var seekCommand = indexer.GetValue(settingsInstance, new object[] { "Seek" });
-                    if (seekCommand is null)
-                        continue;
-
-                    var invokeMethod = seekCommand.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                        .FirstOrDefault(m =>
-                        {
-                            if (!string.Equals(m.Name, "Invoke", StringComparison.Ordinal))
-                                return false;
-                            var p = m.GetParameters();
-                            return p.Length == 1 && (p[0].ParameterType == typeof(int) || p[0].ParameterType == typeof(TimeSpan) || p[0].ParameterType == typeof(object));
-                        });
-                    if (invokeMethod is null)
-                        continue;
-
-                    lock (seekCacheLock)
-                    {
-                        cachedSeekCommand = seekCommand;
-                        cachedSeekInvokeMethod = invokeMethod;
-                    }
-                    return (seekCommand, invokeMethod);
+                    yield return type;
                 }
             }
+        }
+
+        private static IEnumerable<Assembly> GetPreferredAssemblies()
+        {
+            var loaded = AppDomain.CurrentDomain.GetAssemblies();
+            var pluginAsm = loaded.FirstOrDefault(a => string.Equals(a.GetName().Name, "YukkuriMovieMaker.Plugin", StringComparison.Ordinal));
+            if (pluginAsm is not null)
+                yield return pluginAsm;
+            else
+            {
+                var loadedFromFile = TryLoadYmmPluginAssemblyFromFile();
+                if (loadedFromFile is not null)
+                    yield return loadedFromFile;
+            }
+
+            foreach (var assembly in loaded)
+            {
+                if (ReferenceEquals(assembly, pluginAsm))
+                    continue;
+                yield return assembly;
+            }
+        }
+
+        private static Assembly? TryLoadYmmPluginAssemblyFromFile()
+        {
+            try
+            {
+                var path = Path.Combine(AppContext.BaseDirectory, "YukkuriMovieMaker.Plugin.dll");
+                if (!File.Exists(path))
+                    return null;
+
+                return Assembly.LoadFrom(path);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                return ex.Types.Where(t => t is not null)!;
+            }
+            catch
+            {
+                return Array.Empty<Type>();
+            }
+        }
+
+        private static bool TryResolveSeekFromCommandSettings(Type commandSettingsType, out object? seekCommand, out MethodInfo? invokeMethod)
+        {
+            seekCommand = null;
+            invokeMethod = null;
+
+            var defaultProperty = commandSettingsType.GetProperty("Default", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            var settingsInstance = defaultProperty?.GetValue(null);
+            if (settingsInstance is null)
+                return false;
+
+            var instanceType = settingsInstance.GetType();
+            var indexer = instanceType.GetProperty("Item", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, null, new[] { typeof(string) }, null);
+            if (indexer is null)
+                return false;
+
+            seekCommand = indexer.GetValue(settingsInstance, new object[] { "Seek" })
+                ?? indexer.GetValue(settingsInstance, new object[] { "[Seek]" });
+            if (seekCommand is null)
+                return false;
+
+            invokeMethod = seekCommand.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(m =>
+                {
+                    if (!string.Equals(m.Name, "Invoke", StringComparison.Ordinal) &&
+                        !string.Equals(m.Name, "Execute", StringComparison.Ordinal))
+                        return false;
+                    var p = m.GetParameters();
+                    if (p.Length == 1)
+                        return p[0].ParameterType == typeof(int) || p[0].ParameterType == typeof(TimeSpan) || p[0].ParameterType == typeof(object);
+                    if (p.Length == 2)
+                        return p[0].ParameterType == typeof(object) && typeof(IInputElement).IsAssignableFrom(p[1].ParameterType);
+                    return false;
+                });
+
+            return invokeMethod is not null;
+        }
+
+        private static object?[]? CreateSeekArguments(MethodInfo invokeMethod, int frameDelta)
+        {
+            var parameters = invokeMethod.GetParameters();
+            if (parameters.Length == 1)
+            {
+                var parameterType = parameters[0].ParameterType;
+                object value = parameterType == typeof(TimeSpan)
+                    ? FrameDeltaToTimeSpan(frameDelta)
+                    : frameDelta;
+                return new object?[] { value };
+            }
+
+            if (parameters.Length == 2)
+                return new object?[] { frameDelta, Application.Current?.MainWindow };
 
             return null;
         }
