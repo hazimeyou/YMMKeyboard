@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
@@ -10,6 +10,8 @@ namespace YMMKeyboardPlugin.Actions
 {
     public class KeyboardAction : ITimelineToolViewModel, INotifyPropertyChanged
     {
+        private static readonly string[] WindowSeekCommandNames = { "ScrollToFrame", "シーク" };
+
         public static Timeline? TimelineInstance { get; private set; }
         private static readonly object seekCacheLock = new();
         private static object? cachedSeekCommand;
@@ -57,7 +59,7 @@ namespace YMMKeyboardPlugin.Actions
             if (frames == 0)
                 return;
 
-            void Action()
+            void SeekCore()
             {
                 if (TryInvokeSeekCommand(frames))
                     return;
@@ -68,9 +70,9 @@ namespace YMMKeyboardPlugin.Actions
             }
 
             if (Application.Current?.Dispatcher is { } dispatcher)
-                dispatcher.Invoke(Action);
+                dispatcher.Invoke(SeekCore);
             else
-                Action();
+                SeekCore();
         }
 
         private static bool TryInvokeSeekCommand(int frameDelta)
@@ -146,8 +148,7 @@ namespace YMMKeyboardPlugin.Actions
             {
                 var cmd = binding.Command;
                 var name = GetCommandName(cmd);
-                if (string.Equals(name, "ScrollToFrame", StringComparison.Ordinal) ||
-                    string.Equals(name, "シーク", StringComparison.Ordinal) ||
+                if (WindowSeekCommandNames.Any(n => string.Equals(name, n, StringComparison.Ordinal)) ||
                     name.Contains("ScrollToFrame", StringComparison.OrdinalIgnoreCase))
                 {
                     found = cmd;
@@ -401,10 +402,7 @@ namespace YMMKeyboardPlugin.Actions
 #pragma warning disable CS0067
         public event PropertyChangedEventHandler? PropertyChanged;
 #pragma warning restore CS0067
-
-        /*
-        // 旧実装: UndoRedoManager を直接保持していたが、現状の操作では未使用。
-        // 将来アンドゥ対応を戻す場合はここから再利用できるようフィールドは残している。
-        */
     }
 }
+
+
