@@ -1,5 +1,5 @@
 param(
-    [string]$OutputDir = "libs/YMM4"
+    [string]$OutputDir = "ymm-plugin/libs/YMM4"
 )
 
 $ErrorActionPreference = 'Stop'
