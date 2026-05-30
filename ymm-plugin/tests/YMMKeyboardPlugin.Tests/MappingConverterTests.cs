@@ -34,10 +34,10 @@ public class MappingConverterTests
         var actions = MappingConverter.AvailableActions;
 
         Assert.Contains(MappingConverter.NoneActionName, actions);
-        Assert.Contains(MappingConverter.TestEventActionName, actions);
+        Assert.DoesNotContain(MappingConverter.TestEventActionName, actions);
         Assert.Contains(MappingConverter.PlusSeekFrameActionName, actions);
         Assert.Contains(MappingConverter.MinusSeekFrameActionName, actions);
         Assert.Contains(MappingConverter.LoadYmmtCatalogActionName, actions);
-        Assert.Equal(5, actions.Count);
+        Assert.Equal(4, actions.Count);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using YMMKeyboardPlugin.Actions;
+using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
 
@@ -12,11 +13,13 @@ namespace YMMKeyboardPlugin.Mapping
         public const string PlusSeekFrameActionName = "シークバーを進める";
         public const string MinusSeekFrameActionName = "シークバーを戻す";
         public const string LoadYmmtCatalogActionName = "YMMT読み込み";
+        private static readonly bool allowTestEvent =
+            string.Equals(Environment.GetEnvironmentVariable("YMMK_ENABLE_TEST_EVENT"), "1", StringComparison.Ordinal);
+        private static readonly HashSet<string> warnedUnknownActions = new(StringComparer.Ordinal);
 
         public static IReadOnlyList<string> AvailableActions { get; } = new[]
         {
             NoneActionName,
-            TestEventActionName,
             PlusSeekFrameActionName,
             MinusSeekFrameActionName,
             LoadYmmtCatalogActionName,
@@ -55,7 +58,10 @@ namespace YMMKeyboardPlugin.Mapping
             switch (actionName)
             {
                 case TestEventActionName:
-                    TestEvent.Execute($"{switchName} ({sourceName})", parameter);
+                    if (allowTestEvent)
+                    {
+                        TestEvent.Execute($"{switchName} ({sourceName})", parameter);
+                    }
                     break;
                 case PlusSeekFrameActionName:
                     KeyboardAction.PlusSeekFrame(frameCount);
@@ -71,7 +77,8 @@ namespace YMMKeyboardPlugin.Mapping
                 case null:
                     break;
                 default:
-                    MessageBox.Show($"未対応のアクションです: {actionName}", "キーボード設定");
+                    if (warnedUnknownActions.Add(actionName))
+                        PluginLogger.Warn("MappingConverter", $"Unsupported action was ignored: {actionName}");
                     break;
             }
         }

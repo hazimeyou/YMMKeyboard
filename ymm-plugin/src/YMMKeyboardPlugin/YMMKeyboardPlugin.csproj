@@ -47,11 +47,11 @@
 			<PluginFiles Include="$(SystemIOPortsRuntimePath)" Condition="Exists('$(SystemIOPortsRuntimePath)')" />
 		</ItemGroup>
 		<!-- コピー -->
-		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" />
+		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" ContinueOnError="WarnAndContinue" />
 	</Target>
 
 	<Target Name="CopyCodePyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py')">
-		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py" DestinationFiles="D:\code.py" OverwriteReadOnlyFiles="true" />
+		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py" DestinationFiles="D:\code.py" OverwriteReadOnlyFiles="true" ContinueOnError="WarnAndContinue" />
 	</Target>
 
 </Project>

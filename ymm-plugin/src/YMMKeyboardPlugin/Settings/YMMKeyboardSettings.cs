@@ -2,6 +2,7 @@
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Views;
@@ -27,6 +28,8 @@ namespace YMMKeyboardPlugin.Settings
         {
             WriteIndented = true,
         };
+        private static bool hasShownLoadError;
+        private static bool hasShownSaveError;
 
         public static YMMKeyboardSettings Current { get; private set; } = new();
         public static event Action<string>? ConnectionRequested;
@@ -231,6 +234,12 @@ namespace YMMKeyboardPlugin.Settings
             catch (Exception ex)
             {
                 Debug.WriteLine($"[YMMKeyboardSettings] Load failed: {ex}");
+                PluginLogger.Error("YMMKeyboardSettings", "Load failed.", ex);
+                if (!hasShownLoadError)
+                {
+                    hasShownLoadError = true;
+                    MessageBox.Show($"設定の読み込みに失敗しました。\n{ex.Message}", "キーボード設定");
+                }
             }
         }
 
@@ -276,6 +285,12 @@ namespace YMMKeyboardPlugin.Settings
             catch (Exception ex)
             {
                 Debug.WriteLine($"[YMMKeyboardSettings] Save failed: {ex}");
+                PluginLogger.Error("YMMKeyboardSettings", "Save failed.", ex);
+                if (!hasShownSaveError)
+                {
+                    hasShownSaveError = true;
+                    MessageBox.Show($"設定の保存に失敗しました。\n{ex.Message}", "キーボード設定");
+                }
             }
         }
 
@@ -400,5 +415,7 @@ namespace YMMKeyboardPlugin.Settings
         }
     }
 }
+
+
 
 

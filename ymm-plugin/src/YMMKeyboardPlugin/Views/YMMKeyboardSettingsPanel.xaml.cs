@@ -1,4 +1,4 @@
-using System.IO.Ports;
+﻿using System.IO.Ports;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,12 +40,12 @@ namespace YMMKeyboardPlugin.Views
                 : ports.FirstOrDefault(name => string.Equals(name, settings.PortName, StringComparison.OrdinalIgnoreCase));
 
             PortStatusTextBlock.Text = (!serialPortSupported && ports.Count == 0)
-                ? "この実行環境ではシリアルポート機能を利用できません。"
+                ? "この環境ではシリアルポート列挙APIが利用できません。"
                 : ports.Count == 0
-                ? "利用可能なCOMポートが見つかりません。機器を接続してから再読み込みしてください。"
-                : string.IsNullOrWhiteSpace(settings.PortName)
-                    ? "接続するCOMポートを選択してください。"
-                    : $"現在の設定: {settings.PortName}";
+                    ? "利用可能なCOMポートが見つかりません。接続後に再読み込みしてください。"
+                    : string.IsNullOrWhiteSpace(settings.PortName)
+                        ? "接続するCOMポートを選択してください。"
+                        : $"現在の設定: {settings.PortName}";
         }
 
         private IEnumerable<string> GetPortNamesSafe()
@@ -57,8 +57,8 @@ namespace YMMKeyboardPlugin.Views
                 if (ports.Length > 0)
                     return ports;
 
-                // 一部環境では System.IO.Ports 側で空配列が返ることがあるため、
-                // Windows のシリアルポートマップをフォールバックとして参照する。
+                // 一部環境では System.IO.Ports が空を返すことがあるため、
+                // Windows のシリアルポート情報をレジストリから補完する。
                 return GetPortNamesFromRegistry();
             }
             catch (PlatformNotSupportedException)
@@ -125,26 +125,26 @@ namespace YMMKeyboardPlugin.Views
             }
 
             settings.RequestConnection();
-            PortStatusTextBlock.Text = $"{settings.PortName} の監視を開始しました。キー入力を受けるとUIDを取得します。";
+            PortStatusTextBlock.Text = $"{settings.PortName} への接続を開始しました。キー入力でUIDを自動登録します。";
         }
 
         private void Disconnect_OnClick(object sender, RoutedEventArgs e)
         {
             settings.RequestDisconnection();
-            PortStatusTextBlock.Text = "シリアル通信の監視を停止しました。";
+            PortStatusTextBlock.Text = "シリアル接続の切断を要求しました。";
         }
 
         private void AddStartupPort_OnClick(object sender, RoutedEventArgs e)
         {
             if (PortComboBox.SelectedItem is not string selectedPort)
             {
-                PortStatusTextBlock.Text = "起動時接続に追加するCOMポートを選択してください。";
+                PortStatusTextBlock.Text = "追加する起動時接続ポートを選択してください。";
                 return;
             }
 
             settings.AddStartupPort(selectedPort);
             LoadStartupPorts();
-            PortStatusTextBlock.Text = $"{selectedPort} を起動時接続に追加しました。";
+            PortStatusTextBlock.Text = $"{selectedPort} を起動時接続ポートに追加しました。";
         }
 
         private void RemoveStartupPort_OnClick(object sender, RoutedEventArgs e)
@@ -157,7 +157,7 @@ namespace YMMKeyboardPlugin.Views
 
             settings.RemoveStartupPort(selectedPort);
             LoadStartupPorts();
-            PortStatusTextBlock.Text = $"{selectedPort} を起動時接続から外しました。";
+            PortStatusTextBlock.Text = $"{selectedPort} を起動時接続ポートから削除しました。";
         }
 
         private void OpenMappingWindow_OnClick(object sender, RoutedEventArgs e)
