@@ -21,6 +21,8 @@ public sealed class HidKeyboardLink : IKeyboardLink
     private readonly Dictionary<string, Task> workers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> failedPathCooldownUntilUtc = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> failedPathLastLoggedAtUtc = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> failedPathCount = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> excludedPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly object lockObj = new();
     private CancellationTokenSource? cts;
     private DateTime lastManagerErrorAtUtc = DateTime.MinValue;
@@ -120,6 +122,8 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 var path = d.DevicePath ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(path))
                     continue;
+                if (IsPathExcluded(path))
+                    continue;
                 if (IsPathInCooldown(path))
                     continue;
 
@@ -167,6 +171,14 @@ public sealed class HidKeyboardLink : IKeyboardLink
             }
 
             return true;
+        }
+    }
+
+    private bool IsPathExcluded(string path)
+    {
+        lock (lockObj)
+        {
+            return excludedPaths.Contains(path);
         }
     }
 
@@ -370,16 +382,27 @@ public sealed class HidKeyboardLink : IKeyboardLink
     private void RegisterPathFailure(string path, Exception ex)
     {
         var now = DateTime.UtcNow;
+        var excluded = false;
+        var failCount = 0;
         lock (lockObj)
         {
             totalWorkerErrorCount++;
             failedPathCooldownUntilUtc[path] = now.AddSeconds(60);
+            failedPathCount.TryGetValue(path, out failCount);
+            failCount++;
+            failedPathCount[path] = failCount;
+            if (failCount >= 3)
+            {
+                excludedPaths.Add(path);
+                excluded = true;
+            }
         }
 
         if (ShouldLogPathFailure(path, now))
         {
+            var mode = excluded ? "excluded=session" : "cooldown=60s";
             PluginLogger.Error("HidKeyboardLink",
-                $"HID worker failed. path={path}. cooldown=60s", ex);
+                $"HID worker failed. path={path}. {mode}. failCount={failCount}", ex);
         }
     }
 
@@ -413,12 +436,14 @@ public sealed class HidKeyboardLink : IKeyboardLink
         {
             int activeWorkers;
             int cooldownCount;
+            int excludedCount;
             int knownDeviceCount;
             int errorCount;
             lock (lockObj)
             {
                 activeWorkers = workers.Count;
                 cooldownCount = failedPathCooldownUntilUtc.Count;
+                excludedCount = excludedPaths.Count;
                 knownDeviceCount = devices.Count;
                 errorCount = totalWorkerErrorCount;
             }
@@ -429,6 +454,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 $"manager_loop_count={managerLoopCount}",
                 $"active_workers={activeWorkers}",
                 $"cooldown_paths={cooldownCount}",
+                $"excluded_paths={excludedCount}",
                 $"known_devices={knownDeviceCount}",
                 $"worker_error_count={errorCount}",
             });
