@@ -10,7 +10,7 @@ namespace YMMKeyboardPlugin.Hid;
 public sealed class HidKeyboardLink : IKeyboardLink
 {
     private static readonly Regex serialEventPattern = new(
-        @"(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",
+        @"(?:YMMK:)?(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",
         RegexOptions.Compiled);
 
     private readonly int? vendorId;
@@ -115,7 +115,67 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 (d.GetManufacturer() ?? string.Empty).Contains(manufacturerFilter, StringComparison.OrdinalIgnoreCase));
         }
 
+        // When no explicit filter is set, prefer our custom HID interface.
+        if (!vendorId.HasValue
+            && !productId.HasValue
+            && string.IsNullOrWhiteSpace(productNameFilter)
+            && string.IsNullOrWhiteSpace(manufacturerFilter))
+        {
+            list = list.Where(IsLikelyYmmKeyboardDevice);
+        }
+
         return list.ToArray();
+    }
+
+    private static bool IsLikelyYmmKeyboardDevice(HidDevice d)
+    {
+        if (TryGetUsagePageAndUsage(d, out var page, out var usage))
+        {
+            if (page == 0xFF00 && usage == 0x0001)
+                return true;
+        }
+
+        var product = d.GetProductName() ?? string.Empty;
+        var maker = d.GetManufacturer() ?? string.Empty;
+        if (product.Contains("CircuitPython HID", StringComparison.OrdinalIgnoreCase)
+            || maker.Contains("Waveshare", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return d.GetMaxInputReportLength() == 64 && d.GetMaxOutputReportLength() == 64;
+    }
+
+    private static bool TryGetUsagePageAndUsage(HidDevice d, out int usagePage, out int usage)
+    {
+        usagePage = 0;
+        usage = 0;
+
+        try
+        {
+            var t = d.GetType();
+
+            var upProp = t.GetProperty("UsagePage");
+            var uProp = t.GetProperty("Usage");
+            if (upProp is not null && uProp is not null)
+            {
+                usagePage = Convert.ToInt32(upProp.GetValue(d) ?? 0);
+                usage = Convert.ToInt32(uProp.GetValue(d) ?? 0);
+                return true;
+            }
+
+            var upMethod = t.GetMethod("GetUsagePage", Type.EmptyTypes);
+            var uMethod = t.GetMethod("GetUsage", Type.EmptyTypes);
+            if (upMethod is not null && uMethod is not null)
+            {
+                usagePage = Convert.ToInt32(upMethod.Invoke(d, null) ?? 0);
+                usage = Convert.ToInt32(uMethod.Invoke(d, null) ?? 0);
+                return true;
+            }
+        }
+        catch
+        {
+        }
+
+        return false;
     }
 
     private async Task ReadDeviceLoop(HidDevice hidDevice, string path, CancellationToken token)

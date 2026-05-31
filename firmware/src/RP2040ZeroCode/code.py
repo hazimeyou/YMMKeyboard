@@ -29,6 +29,7 @@ CUSTOM_HID = _find_custom_hid()
 def emit_event(state, switch_id):
     # PC plugin parses this text format: UID:P:SW_01
     line = f"{DEVICE_UID}:{state}:SW_{switch_id:02d}"
+    hid_line = f"YMMK:{line}"
 
     # Serial (existing path)
     print(line)
@@ -36,7 +37,7 @@ def emit_event(state, switch_id):
     # HID (new path): ASCII + zero padding into 64-byte report
     if CUSTOM_HID is not None:
         try:
-            payload = line.encode("ascii", "ignore")
+            payload = hid_line.encode("ascii", "ignore")
             if len(payload) > 64:
                 payload = payload[:64]
             report = payload + bytes(64 - len(payload))
