@@ -13,17 +13,24 @@ namespace YMMKeyboardPlugin.Mapping
         public const string PlusSeekFrameActionName = "シークバーを進める";
         public const string MinusSeekFrameActionName = "シークバーを戻す";
         public const string LoadYmmtCatalogActionName = "YMMT読み込み";
-        private static readonly bool allowTestEvent =
-            string.Equals(Environment.GetEnvironmentVariable("YMMK_ENABLE_TEST_EVENT"), "1", StringComparison.Ordinal);
         private static readonly HashSet<string> warnedUnknownActions = new(StringComparer.Ordinal);
 
-        public static IReadOnlyList<string> AvailableActions { get; } = new[]
+        public static IReadOnlyList<string> AvailableActions { get; } = BuildAvailableActions();
+
+        private static IReadOnlyList<string> BuildAvailableActions()
         {
-            NoneActionName,
-            PlusSeekFrameActionName,
-            MinusSeekFrameActionName,
-            LoadYmmtCatalogActionName,
-        };
+            var actions = new List<string>
+            {
+                NoneActionName,
+                PlusSeekFrameActionName,
+                MinusSeekFrameActionName,
+                LoadYmmtCatalogActionName,
+            };
+
+            actions.Add(TestEventActionName);
+
+            return actions;
+        }
 
         public static void ExecuteUiSwitch(string switchName)
         {
@@ -58,10 +65,7 @@ namespace YMMKeyboardPlugin.Mapping
             switch (actionName)
             {
                 case TestEventActionName:
-                    if (allowTestEvent)
-                    {
-                        TestEvent.Execute($"{switchName} ({sourceName})", parameter);
-                    }
+                    TestEvent.Execute($"{switchName} ({sourceName})", parameter);
                     break;
                 case PlusSeekFrameActionName:
                     KeyboardAction.PlusSeekFrame(frameCount);
