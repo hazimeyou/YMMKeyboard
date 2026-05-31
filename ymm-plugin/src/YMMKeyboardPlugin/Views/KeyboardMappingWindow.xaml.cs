@@ -8,6 +8,7 @@ using Microsoft.Win32;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
+using YukkuriMovieMaker.Settings;
 
 namespace YMMKeyboardPlugin.Views
 {
@@ -18,6 +19,7 @@ namespace YMMKeyboardPlugin.Views
         private readonly YMMKeyboardSettings settings;
         private readonly ObservableCollection<SwitchAssignmentItem> items = new();
         private readonly ObservableCollection<string> scopeOptions = new();
+        private readonly ObservableCollection<string> templateOptions = new();
         private readonly HashSet<string> selectedCombination = new(StringComparer.OrdinalIgnoreCase);
         private string currentScope = UiScopeLabel;
         private SwitchAssignmentItem? selectedAssignment;
@@ -29,6 +31,7 @@ namespace YMMKeyboardPlugin.Views
             InitializeComponent();
             ScopeComboBox.ItemsSource = scopeOptions;
             ActionComboBox.ItemsSource = MappingConverter.AvailableActions;
+            TemplateComboBox.ItemsSource = templateOptions;
             LoadScopes();
         }
 
@@ -99,7 +102,7 @@ namespace YMMKeyboardPlugin.Views
                 return;
 
             selectedAssignment.SelectedActionName = MappingConverter.NormalizeActionName(ActionComboBox.SelectedItem as string);
-            selectedAssignment.Parameter = ParameterTextBox.Text;
+            selectedAssignment.Parameter = GetEditedParameter();
 
             var singleConfig = CreateConfigFromEditor();
             if (IsUiScope(currentScope))
@@ -113,7 +116,7 @@ namespace YMMKeyboardPlugin.Views
             return new ButtonConfig
             {
                 ActionName = MappingConverter.NormalizeActionName(ActionComboBox.SelectedItem as string),
-                Parameter = ParameterTextBox.Text,
+                Parameter = GetEditedParameter(),
             };
         }
 
@@ -145,6 +148,7 @@ namespace YMMKeyboardPlugin.Views
             SelectedSwitchTextBlock.Text = selectedAssignment.SwitchName;
             ActionComboBox.SelectedItem = MappingConverter.NormalizeActionName(selectedAssignment.SelectedActionName);
             ParameterTextBox.Text = selectedAssignment.Parameter;
+            RestoreTemplateUiFromParameter(selectedAssignment.Parameter);
             UpdateSelectionHint();
         }
 
@@ -175,6 +179,7 @@ namespace YMMKeyboardPlugin.Views
 
             ActionComboBox.SelectedItem = MappingConverter.NormalizeActionName(config.ActionName);
             ParameterTextBox.Text = config.Parameter;
+            RestoreTemplateUiFromParameter(config.Parameter);
             UpdateSelectionHint();
         }
 
@@ -392,7 +397,7 @@ namespace YMMKeyboardPlugin.Views
 
                 MappingConverter.ExecuteAction(
                     ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName,
-                    ParameterTextBox.Text,
+                    GetEditedParameter(),
                     SwitchLayout.NormalizeCombination(selectedCombination),
                     currentScope);
                 return;
@@ -403,7 +408,7 @@ namespace YMMKeyboardPlugin.Views
 
             MappingConverter.ExecuteAction(
                 ActionComboBox.SelectedItem as string ?? MappingConverter.NoneActionName,
-                ParameterTextBox.Text,
+                GetEditedParameter(),
                 selectedAssignment.SwitchName,
                 currentScope);
         }
@@ -448,7 +453,7 @@ namespace YMMKeyboardPlugin.Views
 
         private void UpdateYmmtParameterUi()
         {
-            if (YmmtBrowseButton is null)
+            if (YmmtBrowseButton is null || TemplateParameterPanel is null || ParameterTextBox is null)
                 return;
 
             var selectedAction = ActionComboBox.SelectedItem as string;
@@ -457,7 +462,129 @@ namespace YMMKeyboardPlugin.Views
                 MappingConverter.LoadYmmtCatalogActionName,
                 StringComparison.Ordinal);
 
-            YmmtBrowseButton.Visibility = isYmmtAction ? Visibility.Visible : Visibility.Collapsed;
+            var hasTemplateSelection = isYmmtAction && templateOptions.Count > 0;
+
+            YmmtBrowseButton.Visibility = isYmmtAction && !hasTemplateSelection ? Visibility.Visible : Visibility.Collapsed;
+            TemplateParameterPanel.Visibility = hasTemplateSelection ? Visibility.Visible : Visibility.Collapsed;
+            ParameterTextBox.Visibility = hasTemplateSelection ? Visibility.Collapsed : Visibility.Visible;
+
+            if (isYmmtAction)
+            {
+                RefreshTemplateOptions();
+                hasTemplateSelection = templateOptions.Count > 0;
+                YmmtBrowseButton.Visibility = isYmmtAction && !hasTemplateSelection ? Visibility.Visible : Visibility.Collapsed;
+                TemplateParameterPanel.Visibility = hasTemplateSelection ? Visibility.Visible : Visibility.Collapsed;
+                ParameterTextBox.Visibility = hasTemplateSelection ? Visibility.Collapsed : Visibility.Visible;
+                if (hasTemplateSelection && TemplateComboBox.SelectedItem is null && templateOptions.Count > 0)
+                    TemplateComboBox.SelectedItem = templateOptions[0];
+
+                if (hasTemplateSelection)
+                    ParameterTextBox.Text = BuildTemplateParameter();
+            }
+        }
+
+        private static bool IsTemplateModeAction(string? actionName)
+        {
+            return string.Equals(
+                MappingConverter.NormalizeActionName(actionName),
+                MappingConverter.LoadYmmtCatalogActionName,
+                StringComparison.Ordinal);
+        }
+
+        private string GetEditedParameter()
+        {
+            if (!IsTemplateModeAction(ActionComboBox.SelectedItem as string))
+                return ParameterTextBox.Text;
+            if (TemplateParameterPanel.Visibility != Visibility.Visible)
+                return ParameterTextBox.Text;
+            return BuildTemplateParameter();
+        }
+
+        private string BuildTemplateParameter()
+        {
+            var template = TemplateComboBox.SelectedItem as string;
+            if (string.IsNullOrWhiteSpace(template))
+                return ParameterTextBox.Text;
+            var apply = TemplateApplyCheckBox.IsChecked == true ? "true" : "false";
+            return $"template={template};apply={apply}";
+        }
+
+        private void RefreshTemplateOptions()
+        {
+            templateOptions.Clear();
+            try
+            {
+                var templates = ItemSettings.Default?.Templates;
+                if (templates is null)
+                    return;
+                foreach (var template in templates
+                    .Select(t => t.Name)
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase))
+                {
+                    templateOptions.Add(template);
+                }
+            }
+            catch
+            {
+                // keep fallback textbox mode
+            }
+        }
+
+        private void RestoreTemplateUiFromParameter(string parameter)
+        {
+            if (string.IsNullOrWhiteSpace(parameter))
+                return;
+
+            var raw = parameter.Trim();
+            var tokens = raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var token in tokens)
+            {
+                var kv = token.Split('=', 2, StringSplitOptions.TrimEntries);
+                if (kv.Length != 2)
+                    continue;
+                var key = kv[0];
+                var val = kv[1].Trim('"');
+                if (key.Equals("template", StringComparison.OrdinalIgnoreCase) || key.Equals("name", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (templateOptions.Count > 0 && templateOptions.Contains(val))
+                        TemplateComboBox.SelectedItem = val;
+                    else
+                        TemplateComboBox.Text = val;
+                }
+                else if (key.Equals("apply", StringComparison.OrdinalIgnoreCase) || key.Equals("insert", StringComparison.OrdinalIgnoreCase))
+                {
+                    TemplateApplyCheckBox.IsChecked =
+                        val.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+                        val.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                        val.Equals("yes", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        private void TemplateComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdatingSelection)
+                return;
+            if (!IsTemplateModeAction(ActionComboBox.SelectedItem as string))
+                return;
+
+            ParameterTextBox.Text = BuildTemplateParameter();
+            SaveCurrentSelection();
+            UpdateSelectionHint();
+        }
+
+        private void TemplateApplyCheckBox_OnChanged(object sender, RoutedEventArgs e)
+        {
+            if (isUpdatingSelection)
+                return;
+            if (!IsTemplateModeAction(ActionComboBox.SelectedItem as string))
+                return;
+
+            ParameterTextBox.Text = BuildTemplateParameter();
+            SaveCurrentSelection();
+            UpdateSelectionHint();
         }
 
         protected override void OnClosing(CancelEventArgs e)

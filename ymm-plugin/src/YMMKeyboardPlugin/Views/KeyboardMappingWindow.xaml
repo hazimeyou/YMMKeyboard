@@ -235,6 +235,23 @@
                                     Content="参照..."
                                     Click="BrowseYmmtButton_OnClick"/>
                         </Grid>
+                        <StackPanel x:Name="TemplateParameterPanel"
+                                    Margin="0,6,0,0"
+                                    Visibility="Collapsed">
+                            <TextBlock Text="テンプレート"/>
+                            <ComboBox x:Name="TemplateComboBox"
+                                      Margin="0,4,0,0"
+                                      SelectionChanged="TemplateComboBox_OnSelectionChanged"/>
+                            <CheckBox x:Name="TemplateApplyCheckBox"
+                                      Margin="0,6,0,0"
+                                      Content="タイムラインへ追加する"
+                                      IsChecked="True"
+                                      Checked="TemplateApplyCheckBox_OnChanged"
+                                      Unchecked="TemplateApplyCheckBox_OnChanged"/>
+                            <TextBlock Margin="0,4,0,0"
+                                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                                       Text="FPSは実行時に現在のタイムライン設定から自動取得します。"/>
+                        </StackPanel>
                     </StackPanel>
 
                     <StackPanel Grid.Row="6">

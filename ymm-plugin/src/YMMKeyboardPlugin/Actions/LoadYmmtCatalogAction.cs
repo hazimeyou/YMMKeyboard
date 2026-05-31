@@ -10,6 +10,7 @@ using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YukkuriMovieMaker.Project;
 using YukkuriMovieMaker.Project.Items;
+using YukkuriMovieMaker.Settings;
 
 namespace YMMKeyboardPlugin.Actions;
 
@@ -33,12 +34,18 @@ public static class LoadYmmtCatalogAction
         LogInfo($"Execute start. switch={switchName}, parameter={parameter ?? "(null)"}");
         try
         {
+            if (TryExecuteTemplateParameter(parameter, out var templateMessage))
+            {
+                MessageBox.Show(templateMessage, "YMMT読み込み");
+                return;
+            }
+
             var rawPath = parameter?.Trim();
             if (string.IsNullOrWhiteSpace(rawPath))
             {
                 LogWarn("Parameter is empty.");
                 MessageBox.Show(
-                    "パラメータに .ymmt ファイルパスを設定してください。\n例: C:\\Users\\<user>\\Downloads\\test.ymmt",
+                    "パラメータに .ymmt ファイルパス、または template=テンプレート名 を設定してください。\n例1: C:\\Users\\<user>\\Downloads\\test.ymmt\n例2: template=実験用;apply=true",
                     "YMMT読み込み");
                 return;
             }
@@ -91,6 +98,145 @@ public static class LoadYmmtCatalogAction
         var path = rawPath.Trim().Trim('"');
         path = Environment.ExpandEnvironmentVariables(path);
         return Path.GetFullPath(path);
+    }
+
+    private static bool TryExecuteTemplateParameter(string? parameter, out string message)
+    {
+        message = string.Empty;
+        var parsed = ParseTemplateParameter(parameter);
+        if (string.IsNullOrWhiteSpace(parsed.TemplateName))
+            return false;
+
+        var itemSettings = ItemSettings.Default;
+        var templates = itemSettings?.Templates?.ToList();
+        if (templates is null || templates.Count == 0)
+        {
+            message = "テンプレート一覧を取得できませんでした。";
+            return true;
+        }
+
+        var template = templates.FirstOrDefault(t =>
+            string.Equals(t.Name, parsed.TemplateName, StringComparison.OrdinalIgnoreCase) ||
+            t.Name.Contains(parsed.TemplateName, StringComparison.OrdinalIgnoreCase));
+        if (template is null)
+        {
+            message = $"テンプレート '{parsed.TemplateName}' が見つかりません。";
+            return true;
+        }
+
+        var timeline = KeyboardAction.TimelineInstance;
+        if (timeline is null)
+        {
+            message = "タイムラインが利用できません。";
+            return true;
+        }
+
+        var timelineFps = (int)Math.Round(GetTimelineFps(timeline, YMMSettings.Default.DefaultVideoFPS), MidpointRounding.AwayFromZero);
+        var targetFps = timelineFps > 0 ? timelineFps : 60;
+        var items = template.CreateItemsAsync(targetFps).GetAwaiter().GetResult().ToList();
+        LogInfo($"Template create success. template={template.Name}, fps={targetFps}, items={items.Count}");
+
+        var applied = 0;
+        if (parsed.ApplyTimeline && items.Count > 0)
+            applied = TryAddGeneratedItemsToTimeline(timeline, items);
+
+        message =
+            $"テンプレート実行に成功しました。\nテンプレート: {template.Name}\n生成アイテム: {items.Count}\nFPS: {targetFps}\nタイムライン追加: {(parsed.ApplyTimeline ? $"{applied}/{items.Count}" : "スキップ")}";
+        return true;
+    }
+
+    private static int TryAddGeneratedItemsToTimeline(Timeline timeline, List<IItem> items)
+    {
+        if (items.Count == 0)
+            return 0;
+
+        var frame = timeline.CurrentFrame;
+        var layer = 1;
+        var timelineType = timeline.GetType();
+        var methods = timelineType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => string.Equals(m.Name, "TryAddItems", StringComparison.Ordinal))
+            .OrderBy(m => m.GetParameters().Length)
+            .ToArray();
+
+        foreach (var method in methods)
+        {
+            var ps = method.GetParameters();
+            if (ps.Length == 0 || !ps[0].ParameterType.IsArray)
+                continue;
+
+            var elementType = ps[0].ParameterType.GetElementType();
+            if (elementType is null)
+                continue;
+
+            var compatible = items.Where(i => elementType.IsInstanceOfType(i)).ToList();
+            if (compatible.Count == 0)
+                continue;
+
+            var typedArray = Array.CreateInstance(elementType, compatible.Count);
+            for (var i = 0; i < compatible.Count; i++)
+                typedArray.SetValue(compatible[i], i);
+
+            var args = new object?[ps.Length];
+            args[0] = typedArray;
+            for (var i = 1; i < ps.Length; i++)
+            {
+                var pt = ps[i].ParameterType;
+                if (pt == typeof(int))
+                    args[i] = i == 1 ? frame : layer;
+                else if (pt == typeof(bool))
+                    args[i] = false;
+                else if (pt == typeof(CancellationToken))
+                    args[i] = CancellationToken.None;
+                else if (ps[i].HasDefaultValue)
+                    args[i] = ps[i].DefaultValue;
+                else if (!pt.IsValueType || Nullable.GetUnderlyingType(pt) is not null)
+                    args[i] = null;
+                else
+                    args[i] = Activator.CreateInstance(pt);
+            }
+
+            try
+            {
+                if (Application.Current is not null)
+                    Application.Current.Dispatcher.Invoke(() => method.Invoke(timeline, args));
+                else
+                    method.Invoke(timeline, args);
+                LogInfo($"TryAddItems success. method={method.Name}, count={compatible.Count}, frame={frame}, layer={layer}");
+                return compatible.Count;
+            }
+            catch (Exception ex)
+            {
+                LogWarn($"TryAddItems failed. method={method.Name}, reason={ex.InnerException?.Message ?? ex.Message}");
+            }
+        }
+
+        return 0;
+    }
+
+    private static (string? TemplateName, bool ApplyTimeline) ParseTemplateParameter(string? parameter)
+    {
+        string? templateName = null;
+        var apply = true;
+        if (string.IsNullOrWhiteSpace(parameter))
+            return (templateName, apply);
+
+        foreach (var token in parameter.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var kv = token.Split('=', 2, StringSplitOptions.TrimEntries);
+            if (kv.Length != 2)
+                continue;
+
+            var key = kv[0];
+            var value = kv[1].Trim('"');
+            if (key.Equals("template", StringComparison.OrdinalIgnoreCase) || key.Equals("name", StringComparison.OrdinalIgnoreCase))
+                templateName = value;
+            else if (key.Equals("apply", StringComparison.OrdinalIgnoreCase) || key.Equals("insert", StringComparison.OrdinalIgnoreCase))
+                apply = value.Equals("1", StringComparison.OrdinalIgnoreCase)
+                    || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+                    || value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return (templateName, apply);
     }
 
     private static ImportResult ImportToTimeline(YmmtProjectSnapshot snapshot)
