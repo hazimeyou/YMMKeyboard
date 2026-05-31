@@ -463,22 +463,24 @@ namespace YMMKeyboardPlugin.Views
                 StringComparison.Ordinal);
 
             var hasTemplateSelection = isYmmtAction && templateOptions.Count > 0;
+            var preferTemplateMode = IsTemplateParameter(ParameterTextBox.Text) || string.IsNullOrWhiteSpace(ParameterTextBox.Text);
 
-            YmmtBrowseButton.Visibility = isYmmtAction && !hasTemplateSelection ? Visibility.Visible : Visibility.Collapsed;
-            TemplateParameterPanel.Visibility = hasTemplateSelection ? Visibility.Visible : Visibility.Collapsed;
-            ParameterTextBox.Visibility = hasTemplateSelection ? Visibility.Collapsed : Visibility.Visible;
+            YmmtBrowseButton.Visibility = isYmmtAction && (!hasTemplateSelection || !preferTemplateMode) ? Visibility.Visible : Visibility.Collapsed;
+            TemplateParameterPanel.Visibility = hasTemplateSelection && preferTemplateMode ? Visibility.Visible : Visibility.Collapsed;
+            ParameterTextBox.Visibility = hasTemplateSelection && preferTemplateMode ? Visibility.Collapsed : Visibility.Visible;
 
             if (isYmmtAction)
             {
                 RefreshTemplateOptions();
                 hasTemplateSelection = templateOptions.Count > 0;
-                YmmtBrowseButton.Visibility = isYmmtAction && !hasTemplateSelection ? Visibility.Visible : Visibility.Collapsed;
-                TemplateParameterPanel.Visibility = hasTemplateSelection ? Visibility.Visible : Visibility.Collapsed;
-                ParameterTextBox.Visibility = hasTemplateSelection ? Visibility.Collapsed : Visibility.Visible;
+                preferTemplateMode = IsTemplateParameter(ParameterTextBox.Text) || string.IsNullOrWhiteSpace(ParameterTextBox.Text);
+                YmmtBrowseButton.Visibility = isYmmtAction && (!hasTemplateSelection || !preferTemplateMode) ? Visibility.Visible : Visibility.Collapsed;
+                TemplateParameterPanel.Visibility = hasTemplateSelection && preferTemplateMode ? Visibility.Visible : Visibility.Collapsed;
+                ParameterTextBox.Visibility = hasTemplateSelection && preferTemplateMode ? Visibility.Collapsed : Visibility.Visible;
                 if (hasTemplateSelection && TemplateComboBox.SelectedItem is null && templateOptions.Count > 0)
                     TemplateComboBox.SelectedItem = templateOptions[0];
 
-                if (hasTemplateSelection)
+                if (hasTemplateSelection && preferTemplateMode)
                     ParameterTextBox.Text = BuildTemplateParameter();
             }
         }
@@ -489,6 +491,14 @@ namespace YMMKeyboardPlugin.Views
                 MappingConverter.NormalizeActionName(actionName),
                 MappingConverter.LoadYmmtCatalogActionName,
                 StringComparison.Ordinal);
+        }
+
+        private static bool IsTemplateParameter(string? parameter)
+        {
+            if (string.IsNullOrWhiteSpace(parameter))
+                return false;
+            return parameter.Contains("template=", StringComparison.OrdinalIgnoreCase)
+                   || parameter.Contains("name=", StringComparison.OrdinalIgnoreCase);
         }
 
         private string GetEditedParameter()

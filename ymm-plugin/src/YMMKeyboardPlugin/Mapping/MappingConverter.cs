@@ -27,8 +27,6 @@ namespace YMMKeyboardPlugin.Mapping
                 LoadYmmtCatalogActionName,
             };
 
-            actions.Add(TestEventActionName);
-
             return actions;
         }
 
