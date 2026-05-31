@@ -156,7 +156,50 @@ public sealed class HidKeyboardLink : IKeyboardLink
             }
         }
 
-        return result;
+        // For each physical-looking group, keep only the most promising interface.
+        var reduced = result
+            .GroupBy(d => BuildInterfaceGroupKey(d))
+            .Select(g => g.OrderByDescending(ScoreDeviceForInput).First())
+            .ToArray();
+
+        if (reduced.Length > 0)
+        {
+            var picked = string.Join(", ", reduced.Select(d =>
+                $"{d.VendorID:X4}:{d.ProductID:X4}/in{SafeGetInputLen(d)}/out{SafeGetOutputLen(d)}"));
+            ThrottledManagerWarn($"HID candidate interfaces selected: {picked}");
+        }
+
+        return reduced;
+    }
+
+    private static string BuildInterfaceGroupKey(HidDevice d)
+    {
+        var maker = SafeGetManufacturer(d);
+        var product = SafeGetProductName(d);
+        return $"{d.VendorID:X4}:{d.ProductID:X4}|{maker}|{product}";
+    }
+
+    private static int ScoreDeviceForInput(HidDevice d)
+    {
+        var inLen = SafeGetInputLen(d);
+        var outLen = SafeGetOutputLen(d);
+        var score = 0;
+
+        // Most custom/bidirectional HID endpoints expose output reports.
+        if (outLen > 0) score += 1000;
+
+        // Prefer wider report sizes (e.g., 64-byte vendor reports).
+        score += inLen * 10;
+        score += outLen * 5;
+
+        // Boost explicit custom HID usage if available.
+        if (TryGetUsagePageAndUsage(d, out var page, out var usage) && page == 0xFF00 && usage == 0x0001)
+            score += 5000;
+
+        // Penalize tiny report endpoints that are often non-target collections.
+        if (inLen <= 3 && outLen == 0) score -= 200;
+
+        return score;
     }
 
     private bool IsPathInCooldown(string path)
@@ -243,6 +286,18 @@ public sealed class HidKeyboardLink : IKeyboardLink
     {
         try { return d.GetManufacturer() ?? string.Empty; }
         catch { return string.Empty; }
+    }
+
+    private static int SafeGetInputLen(HidDevice d)
+    {
+        try { return d.GetMaxInputReportLength(); }
+        catch { return 0; }
+    }
+
+    private static int SafeGetOutputLen(HidDevice d)
+    {
+        try { return d.GetMaxOutputReportLength(); }
+        catch { return 0; }
     }
 
     private void ThrottledManagerWarn(string message)
