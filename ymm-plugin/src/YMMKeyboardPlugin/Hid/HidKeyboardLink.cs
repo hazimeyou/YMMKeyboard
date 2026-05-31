@@ -19,9 +19,14 @@ public sealed class HidKeyboardLink : IKeyboardLink
     private readonly string manufacturerFilter;
     private readonly Dictionary<string, SerialKeyboardDevice> devices = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Task> workers = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DateTime> failedPathCooldownUntilUtc = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DateTime> failedPathLastLoggedAtUtc = new(StringComparer.OrdinalIgnoreCase);
     private readonly object lockObj = new();
     private CancellationTokenSource? cts;
     private DateTime lastManagerErrorAtUtc = DateTime.MinValue;
+    private DateTime lastSummaryWrittenAtUtc = DateTime.MinValue;
+    private int managerLoopCount;
+    private int totalWorkerErrorCount;
 
     public event Action<SerialKeyboardDevice>? DeviceDetected;
     public event Action<SerialKeyboardDevice, KeyEvent>? KeyEventReceived;
@@ -77,6 +82,9 @@ public sealed class HidKeyboardLink : IKeyboardLink
                         workers[path] = Task.Run(() => ReadDeviceLoop(hidDevice, path, token), token);
                     }
                 }
+
+                managerLoopCount++;
+                TryWriteSummary();
             }
             catch (Exception ex)
             {
@@ -109,6 +117,12 @@ public sealed class HidKeyboardLink : IKeyboardLink
         {
             try
             {
+                var path = d.DevicePath ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(path))
+                    continue;
+                if (IsPathInCooldown(path))
+                    continue;
+
                 if (vendorId.HasValue && d.VendorID != vendorId.Value)
                     continue;
                 if (productId.HasValue && d.ProductID != productId.Value)
@@ -137,6 +151,23 @@ public sealed class HidKeyboardLink : IKeyboardLink
         }
 
         return result;
+    }
+
+    private bool IsPathInCooldown(string path)
+    {
+        lock (lockObj)
+        {
+            if (!failedPathCooldownUntilUtc.TryGetValue(path, out var until))
+                return false;
+
+            if (DateTime.UtcNow >= until)
+            {
+                failedPathCooldownUntilUtc.Remove(path);
+                return false;
+            }
+
+            return true;
+        }
     }
 
     private static bool IsLikelyYmmKeyboardDevice(HidDevice d, string product, string maker)
@@ -253,7 +284,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
         }
         catch (Exception ex)
         {
-            PluginLogger.Error("HidKeyboardLink", $"HID worker failed. path={path}", ex);
+            RegisterPathFailure(path, ex);
         }
         finally
         {
@@ -333,6 +364,82 @@ public sealed class HidKeyboardLink : IKeyboardLink
             var completed = workers.Where(x => x.Value.IsCompleted).Select(x => x.Key).ToArray();
             foreach (var path in completed)
                 workers.Remove(path);
+        }
+    }
+
+    private void RegisterPathFailure(string path, Exception ex)
+    {
+        var now = DateTime.UtcNow;
+        lock (lockObj)
+        {
+            totalWorkerErrorCount++;
+            failedPathCooldownUntilUtc[path] = now.AddSeconds(60);
+        }
+
+        if (ShouldLogPathFailure(path, now))
+        {
+            PluginLogger.Error("HidKeyboardLink",
+                $"HID worker failed. path={path}. cooldown=60s", ex);
+        }
+    }
+
+    private bool ShouldLogPathFailure(string path, DateTime nowUtc)
+    {
+        lock (lockObj)
+        {
+            if (!failedPathLastLoggedAtUtc.TryGetValue(path, out var last))
+            {
+                failedPathLastLoggedAtUtc[path] = nowUtc;
+                return true;
+            }
+
+            if ((nowUtc - last).TotalSeconds < 60)
+                return false;
+
+            failedPathLastLoggedAtUtc[path] = nowUtc;
+            return true;
+        }
+    }
+
+    private void TryWriteSummary()
+    {
+        var now = DateTime.UtcNow;
+        if ((now - lastSummaryWrittenAtUtc).TotalSeconds < 30)
+            return;
+
+        lastSummaryWrittenAtUtc = now;
+
+        try
+        {
+            int activeWorkers;
+            int cooldownCount;
+            int knownDeviceCount;
+            int errorCount;
+            lock (lockObj)
+            {
+                activeWorkers = workers.Count;
+                cooldownCount = failedPathCooldownUntilUtc.Count;
+                knownDeviceCount = devices.Count;
+                errorCount = totalWorkerErrorCount;
+            }
+
+            var summary = string.Join(Environment.NewLine, new[]
+            {
+                $"time_utc={DateTime.UtcNow:O}",
+                $"manager_loop_count={managerLoopCount}",
+                $"active_workers={activeWorkers}",
+                $"cooldown_paths={cooldownCount}",
+                $"known_devices={knownDeviceCount}",
+                $"worker_error_count={errorCount}",
+            });
+
+            Directory.CreateDirectory(PluginLogger.DiagnosticsDirectoryPath);
+            var path = Path.Combine(PluginLogger.DiagnosticsDirectoryPath, "hid_runtime_summary.txt");
+            File.WriteAllText(path, summary, Encoding.UTF8);
+        }
+        catch
+        {
+            // best effort
         }
     }
 

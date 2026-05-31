@@ -36,6 +36,8 @@ public static class PluginLogger
         }
     }
 
+    public static string DiagnosticsDirectoryPath => diagnosticsDirectoryPath;
+
     public static void Info(string category, string message) => Write("INFO", category, message, null);
 
     public static void Warn(string category, string message) => Write("WARN", category, message, null);
