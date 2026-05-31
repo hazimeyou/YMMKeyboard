@@ -5,6 +5,7 @@ using System.Text.Json;
 using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
+using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Views;
 using YukkuriMovieMaker.Plugin;
 
@@ -42,6 +43,9 @@ namespace YMMKeyboardPlugin.Settings
         public override object? SettingView => new YMMKeyboardSettingsPanel(this);
 
         [DataMember] public string PortName { get; set; } = string.Empty;
+        [DataMember] public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Auto;
+        [DataMember] public string HidVendorIdHex { get; set; } = string.Empty;
+        [DataMember] public string HidProductIdHex { get; set; } = string.Empty;
         [DataMember] public List<string> StartupPortNames { get; set; } = new();
         [DataMember] public List<string> KnownDeviceUids { get; set; } = new();
         [DataMember] public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new();
@@ -172,6 +176,23 @@ namespace YMMKeyboardPlugin.Settings
             SaveToPluginDirectory();
         }
 
+        public void UpdateConnectionMode(ConnectionMode mode)
+        {
+            ConnectionMode = mode;
+            SaveToPluginDirectory();
+        }
+
+        public void UpdateHidFilter(string vendorIdHex, string productIdHex)
+        {
+            HidVendorIdHex = NormalizeHex(vendorIdHex);
+            HidProductIdHex = NormalizeHex(productIdHex);
+            SaveToPluginDirectory();
+        }
+
+        public int? GetHidVendorId() => TryParseHex16(HidVendorIdHex);
+
+        public int? GetHidProductId() => TryParseHex16(HidProductIdHex);
+
         public void AddStartupPort(string portName)
         {
             if (string.IsNullOrWhiteSpace(portName))
@@ -223,6 +244,9 @@ namespace YMMKeyboardPlugin.Settings
                     return;
 
                 PortName = data.PortName ?? string.Empty;
+                ConnectionMode = data.ConnectionMode;
+                HidVendorIdHex = data.HidVendorIdHex ?? string.Empty;
+                HidProductIdHex = data.HidProductIdHex ?? string.Empty;
                 StartupPortNames = data.StartupPortNames ?? new();
                 KnownDeviceUids = data.KnownDeviceUids ?? new();
                 UiButtonConfigs = data.UiButtonConfigs ?? new();
@@ -262,6 +286,9 @@ namespace YMMKeyboardPlugin.Settings
                     data = new PersistedSettings
                     {
                         PortName = PortName,
+                        ConnectionMode = ConnectionMode,
+                        HidVendorIdHex = HidVendorIdHex,
+                        HidProductIdHex = HidProductIdHex,
                         StartupPortNames = StartupPortNames.ToList(),
                         KnownDeviceUids = KnownDeviceUids.ToList(),
                         UiButtonConfigs = CloneConfigs(UiButtonConfigs),
@@ -303,6 +330,9 @@ namespace YMMKeyboardPlugin.Settings
 
         private void NormalizeSettings()
         {
+            HidVendorIdHex = NormalizeHex(HidVendorIdHex);
+            HidProductIdHex = NormalizeHex(HidProductIdHex);
+
             StartupPortNames = StartupPortNames
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -353,6 +383,26 @@ namespace YMMKeyboardPlugin.Settings
         {
             var normalized = uid?.Trim();
             return !string.IsNullOrWhiteSpace(normalized) && uidPattern.IsMatch(normalized);
+        }
+
+        private static int? TryParseHex16(string? hex)
+        {
+            if (string.IsNullOrWhiteSpace(hex))
+                return null;
+
+            var s = NormalizeHex(hex);
+            return int.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out var value) ? value : null;
+        }
+
+        private static string NormalizeHex(string? hex)
+        {
+            if (string.IsNullOrWhiteSpace(hex))
+                return string.Empty;
+
+            var s = hex.Trim();
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                s = s[2..];
+            return s.ToUpperInvariant();
         }
 
         private void EnsureUiDefault(string switchName)
@@ -406,6 +456,9 @@ namespace YMMKeyboardPlugin.Settings
         private class PersistedSettings
         {
             public string? PortName { get; set; }
+            public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Auto;
+            public string? HidVendorIdHex { get; set; }
+            public string? HidProductIdHex { get; set; }
             public List<string>? StartupPortNames { get; set; }
             public List<string>? KnownDeviceUids { get; set; }
             public Dictionary<string, ButtonConfig>? UiButtonConfigs { get; set; }

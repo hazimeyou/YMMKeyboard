@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using Microsoft.Win32;
 using YMMKeyboardPlugin.Hid;
 using YMMKeyboardPlugin.Logging;
+using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Views
@@ -23,8 +24,25 @@ namespace YMMKeyboardPlugin.Views
         {
             this.settings = settings;
             InitializeComponent();
+            LoadConnectionSettings();
             LoadPorts();
             LoadStartupPorts();
+        }
+
+        private void LoadConnectionSettings()
+        {
+            var targetTag = settings.ConnectionMode.ToString();
+            foreach (var item in ConnectionModeComboBox.Items.OfType<ComboBoxItem>())
+            {
+                if (string.Equals(item.Tag?.ToString(), targetTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    ConnectionModeComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            HidVendorIdTextBox.Text = settings.HidVendorIdHex;
+            HidProductIdTextBox.Text = settings.HidProductIdHex;
         }
 
         private void LoadPorts()
@@ -116,6 +134,26 @@ namespace YMMKeyboardPlugin.Views
 
             settings.UpdatePortName(selectedPort);
             PortStatusTextBlock.Text = $"現在の設定: {selectedPort}";
+        }
+
+        private void ConnectionModeComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ConnectionModeComboBox.SelectedItem is not ComboBoxItem selected)
+                return;
+
+            if (!Enum.TryParse<ConnectionMode>(selected.Tag?.ToString(), ignoreCase: true, out var mode))
+                return;
+
+            settings.UpdateConnectionMode(mode);
+            PortStatusTextBlock.Text = $"接続モードを {selected.Content} に設定しました。";
+        }
+
+        private void ApplyHidFilter_OnClick(object sender, RoutedEventArgs e)
+        {
+            settings.UpdateHidFilter(HidVendorIdTextBox.Text, HidProductIdTextBox.Text);
+            HidVendorIdTextBox.Text = settings.HidVendorIdHex;
+            HidProductIdTextBox.Text = settings.HidProductIdHex;
+            PortStatusTextBlock.Text = $"HIDフィルタを設定しました。VID={settings.HidVendorIdHex}, PID={settings.HidProductIdHex}";
         }
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)

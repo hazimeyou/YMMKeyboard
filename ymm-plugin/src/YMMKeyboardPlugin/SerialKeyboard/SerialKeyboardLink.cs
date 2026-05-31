@@ -11,7 +11,7 @@ using YMMKeyboardPlugin.Logging;
 
 namespace YMMKeyboardPlugin
 {
-    public class SerialKeyboardLink : IDisposable
+    public class SerialKeyboardLink : IKeyboardLink
     {
         private static readonly Regex serialEventPattern = new(
             @"(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",

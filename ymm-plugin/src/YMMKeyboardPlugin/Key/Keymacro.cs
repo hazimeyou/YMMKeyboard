@@ -9,6 +9,7 @@ using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
+using YMMKeyboardPlugin.Hid;
 
 namespace YMMKeyboardPlugin
 {
@@ -23,7 +24,7 @@ namespace YMMKeyboardPlugin
         private static readonly bool verboseLatencyLog =
             string.Equals(Environment.GetEnvironmentVariable("YMMK_VERBOSE_LATENCY"), "1", StringComparison.Ordinal);
 
-        private readonly Dictionary<string, SerialKeyboardLink> links = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, IKeyboardLink> links = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, HashSet<string>> pressedSwitches = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, HashSet<string>> consumedSwitches = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Dictionary<string, CancellationTokenSource>> pendingSingleActions = new(StringComparer.OrdinalIgnoreCase);
@@ -35,13 +36,42 @@ namespace YMMKeyboardPlugin
             YMMKeyboardSettings.ConnectionRequested += OnConnectionRequested;
             YMMKeyboardSettings.DisconnectionRequested += OnDisconnectionRequested;
             YMMKeyboardSettings.SettingsLoaded += OnSettingsLoaded;
+            StartHidIfConfigured();
             ConnectStartupPorts();
             Debug.WriteLine("[Keymacro] Initialize END");
         }
 
         private void OnSettingsLoaded()
         {
+            StartHidIfConfigured();
             ConnectStartupPorts();
+        }
+
+        private void StartHidIfConfigured()
+        {
+            var mode = YMMKeyboardSettings.Current.ConnectionMode;
+            if (mode == ConnectionMode.Com)
+                return;
+
+            const string hidLinkKey = "__hid__";
+            if (links.ContainsKey(hidLinkKey))
+                return;
+
+            try
+            {
+                var hid = new HidKeyboardLink(
+                    YMMKeyboardSettings.Current.GetHidVendorId(),
+                    YMMKeyboardSettings.Current.GetHidProductId());
+                hid.DeviceDetected += OnDeviceDetected;
+                hid.KeyEventReceived += OnKeyEventReceived;
+                hid.Start();
+                links[hidLinkKey] = hid;
+                PluginLogger.Info("Keymacro", "HID link started.");
+            }
+            catch (Exception ex)
+            {
+                PluginLogger.Error("Keymacro", "Failed to start HID link.", ex);
+            }
         }
 
         private void ConnectStartupPorts()
@@ -69,6 +99,12 @@ namespace YMMKeyboardPlugin
                 return;
             }
 
+            if (YMMKeyboardSettings.Current.ConnectionMode == ConnectionMode.Hid)
+            {
+                PluginLogger.Info("Keymacro", "COM connect request ignored because mode is HID only.");
+                return;
+            }
+
             if (links.ContainsKey(portName))
             {
                 Debug.WriteLine($"[Keymacro] Already connected: {portName}");
@@ -77,7 +113,7 @@ namespace YMMKeyboardPlugin
 
             try
             {
-                var link = new SerialKeyboardLink(portName);
+                IKeyboardLink link = new SerialKeyboardLink(portName);
                 link.DeviceDetected += OnDeviceDetected;
                 link.KeyEventReceived += OnKeyEventReceived;
                 link.Start();

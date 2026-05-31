@@ -41,10 +41,28 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="COMポート" FontWeight="Bold"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock VerticalAlignment="Center" Text="接続モード:"/>
+                        <ComboBox x:Name="ConnectionModeComboBox"
+                                  Margin="8,0,0,0"
+                                  Width="120"
+                                  SelectionChanged="ConnectionModeComboBox_OnSelectionChanged">
+                            <ComboBoxItem Content="自動" Tag="Auto"/>
+                            <ComboBoxItem Content="COM" Tag="Com"/>
+                            <ComboBoxItem Content="HID" Tag="Hid"/>
+                        </ComboBox>
+                    </StackPanel>
                     <ComboBox x:Name="PortComboBox"
                               Margin="0,6,0,0"
                               MinWidth="160"
                               SelectionChanged="PortComboBox_OnSelectionChanged"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock VerticalAlignment="Center" Text="VID(16進):"/>
+                        <TextBox x:Name="HidVendorIdTextBox" Width="72" Margin="6,0,0,0"/>
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Text="PID(16進):"/>
+                        <TextBox x:Name="HidProductIdTextBox" Width="72" Margin="6,0,0,0"/>
+                        <Button Margin="8,0,0,0" Padding="8,2" Content="適用" Click="ApplyHidFilter_OnClick"/>
+                    </StackPanel>
                     <TextBlock x:Name="PortStatusTextBlock"
                                Margin="0,6,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
