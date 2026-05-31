@@ -248,6 +248,15 @@
                                       IsChecked="True"
                                       Checked="TemplateApplyCheckBox_OnChanged"
                                       Unchecked="TemplateApplyCheckBox_OnChanged"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBlock Text="配置レイヤー"
+                                           Width="80"
+                                           VerticalAlignment="Center"/>
+                                <TextBox x:Name="TemplateLayerTextBox"
+                                         Width="80"
+                                         Text="1"
+                                         TextChanged="TemplateLayerTextBox_OnTextChanged"/>
+                            </StackPanel>
                             <TextBlock Margin="0,4,0,0"
                                        Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                        Text="FPSは実行時に現在のタイムライン設定から自動取得します。"/>

@@ -516,7 +516,8 @@ namespace YMMKeyboardPlugin.Views
             if (string.IsNullOrWhiteSpace(template))
                 return ParameterTextBox.Text;
             var apply = TemplateApplyCheckBox.IsChecked == true ? "true" : "false";
-            return $"template={template};apply={apply}";
+            var layer = ParseLayerOrDefault(TemplateLayerTextBox.Text, 1);
+            return $"template={template};apply={apply};layer={layer}";
         }
 
         private void RefreshTemplateOptions()
@@ -570,6 +571,10 @@ namespace YMMKeyboardPlugin.Views
                         val.Equals("true", StringComparison.OrdinalIgnoreCase) ||
                         val.Equals("yes", StringComparison.OrdinalIgnoreCase);
                 }
+                else if (key.Equals("layer", StringComparison.OrdinalIgnoreCase) && int.TryParse(val, out var layer))
+                {
+                    TemplateLayerTextBox.Text = Math.Max(0, layer).ToString();
+                }
             }
         }
 
@@ -595,6 +600,33 @@ namespace YMMKeyboardPlugin.Views
             ParameterTextBox.Text = BuildTemplateParameter();
             SaveCurrentSelection();
             UpdateSelectionHint();
+        }
+
+        private void TemplateLayerTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (isUpdatingSelection)
+                return;
+            if (!IsTemplateModeAction(ActionComboBox.SelectedItem as string))
+                return;
+
+            var normalized = ParseLayerOrDefault(TemplateLayerTextBox.Text, 1).ToString();
+            if (!string.Equals(TemplateLayerTextBox.Text, normalized, StringComparison.Ordinal))
+            {
+                var caret = TemplateLayerTextBox.CaretIndex;
+                TemplateLayerTextBox.Text = normalized;
+                TemplateLayerTextBox.CaretIndex = Math.Min(caret, TemplateLayerTextBox.Text.Length);
+            }
+
+            ParameterTextBox.Text = BuildTemplateParameter();
+            SaveCurrentSelection();
+            UpdateSelectionHint();
+        }
+
+        private static int ParseLayerOrDefault(string? text, int fallback)
+        {
+            if (!int.TryParse(text, out var layer))
+                return fallback;
+            return Math.Max(0, layer);
         }
 
         protected override void OnClosing(CancelEventArgs e)

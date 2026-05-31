@@ -138,20 +138,20 @@ public static class LoadYmmtCatalogAction
 
         var applied = 0;
         if (parsed.ApplyTimeline && items.Count > 0)
-            applied = TryAddGeneratedItemsToTimeline(timeline, items);
+            applied = TryAddGeneratedItemsToTimeline(timeline, items, parsed.TargetLayer);
 
         message =
-            $"テンプレート実行に成功しました。\nテンプレート: {template.Name}\n生成アイテム: {items.Count}\nFPS: {targetFps}\nタイムライン追加: {(parsed.ApplyTimeline ? $"{applied}/{items.Count}" : "スキップ")}";
+            $"テンプレート実行に成功しました。\nテンプレート: {template.Name}\n生成アイテム: {items.Count}\nFPS: {targetFps}\n配置レイヤー: {parsed.TargetLayer}\nタイムライン追加: {(parsed.ApplyTimeline ? $"{applied}/{items.Count}" : "スキップ")}";
         return true;
     }
 
-    private static int TryAddGeneratedItemsToTimeline(Timeline timeline, List<IItem> items)
+    private static int TryAddGeneratedItemsToTimeline(Timeline timeline, List<IItem> items, int targetLayer)
     {
         if (items.Count == 0)
             return 0;
 
         var frame = timeline.CurrentFrame;
-        var layer = 1;
+        var layer = Math.Max(0, targetLayer);
         var timelineType = timeline.GetType();
         var methods = timelineType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Where(m => string.Equals(m.Name, "TryAddItems", StringComparison.Ordinal))
@@ -213,12 +213,13 @@ public static class LoadYmmtCatalogAction
         return 0;
     }
 
-    private static (string? TemplateName, bool ApplyTimeline) ParseTemplateParameter(string? parameter)
+    private static (string? TemplateName, bool ApplyTimeline, int TargetLayer) ParseTemplateParameter(string? parameter)
     {
         string? templateName = null;
         var apply = true;
+        var layer = 1;
         if (string.IsNullOrWhiteSpace(parameter))
-            return (templateName, apply);
+            return (templateName, apply, layer);
 
         foreach (var token in parameter.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
@@ -234,9 +235,11 @@ public static class LoadYmmtCatalogAction
                 apply = value.Equals("1", StringComparison.OrdinalIgnoreCase)
                     || value.Equals("true", StringComparison.OrdinalIgnoreCase)
                     || value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+            else if (key.Equals("layer", StringComparison.OrdinalIgnoreCase) && int.TryParse(value, out var parsedLayer))
+                layer = Math.Max(0, parsedLayer);
         }
 
-        return (templateName, apply);
+        return (templateName, apply, layer);
     }
 
     private static ImportResult ImportToTimeline(YmmtProjectSnapshot snapshot)
