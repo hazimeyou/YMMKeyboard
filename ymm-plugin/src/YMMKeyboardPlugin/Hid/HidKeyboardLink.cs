@@ -156,10 +156,27 @@ public sealed class HidKeyboardLink : IKeyboardLink
             }
         }
 
-        // For each physical-looking group, keep only the most promising interface.
+        // For CircuitPython/Waveshare groups, keep multiple interfaces and try them in score order.
+        // For other groups, keep only the top-scored interface.
         var reduced = result
             .GroupBy(d => BuildInterfaceGroupKey(d))
-            .Select(g => g.OrderByDescending(ScoreDeviceForInput).First())
+            .SelectMany(g =>
+            {
+                var ordered = g.OrderByDescending(ScoreDeviceForInput).ToArray();
+                var first = ordered.FirstOrDefault();
+                if (first is null)
+                    return Array.Empty<HidDevice>();
+
+                var product = SafeGetProductName(first);
+                var maker = SafeGetManufacturer(first);
+                if (product.Contains("CircuitPython HID", StringComparison.OrdinalIgnoreCase)
+                    || maker.Contains("Waveshare", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ordered;
+                }
+
+                return new[] { first };
+            })
             .ToArray();
 
         if (reduced.Length > 0)
@@ -314,7 +331,10 @@ public sealed class HidKeyboardLink : IKeyboardLink
         try
         {
             if (!hidDevice.TryOpen(out var stream))
+            {
+                ThrottledManagerWarn($"TryOpen failed. path={path}");
                 return;
+            }
 
             using (stream)
             {
