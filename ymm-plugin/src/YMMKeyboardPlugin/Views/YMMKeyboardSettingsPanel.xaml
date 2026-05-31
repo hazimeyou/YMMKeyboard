@@ -61,6 +61,12 @@
                         <TextBox x:Name="HidVendorIdTextBox" Width="72" Margin="6,0,0,0"/>
                         <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Text="PID(16進):"/>
                         <TextBox x:Name="HidProductIdTextBox" Width="72" Margin="6,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock VerticalAlignment="Center" Text="製品名:"/>
+                        <TextBox x:Name="HidProductNameFilterTextBox" Width="130" Margin="6,0,0,0"/>
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Text="メーカー:"/>
+                        <TextBox x:Name="HidManufacturerFilterTextBox" Width="130" Margin="6,0,0,0"/>
                         <Button Margin="8,0,0,0" Padding="8,2" Content="適用" Click="ApplyHidFilter_OnClick"/>
                     </StackPanel>
                     <TextBlock x:Name="PortStatusTextBlock"

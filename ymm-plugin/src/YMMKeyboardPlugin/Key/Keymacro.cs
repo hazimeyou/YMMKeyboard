@@ -61,7 +61,9 @@ namespace YMMKeyboardPlugin
             {
                 var hid = new HidKeyboardLink(
                     YMMKeyboardSettings.Current.GetHidVendorId(),
-                    YMMKeyboardSettings.Current.GetHidProductId());
+                    YMMKeyboardSettings.Current.GetHidProductId(),
+                    YMMKeyboardSettings.Current.HidProductNameFilter,
+                    YMMKeyboardSettings.Current.HidManufacturerFilter);
                 hid.DeviceDetected += OnDeviceDetected;
                 hid.KeyEventReceived += OnKeyEventReceived;
                 hid.Start();

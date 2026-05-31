@@ -15,8 +15,11 @@ public sealed class HidKeyboardLink : IKeyboardLink
 
     private readonly int? vendorId;
     private readonly int? productId;
+    private readonly string productNameFilter;
+    private readonly string manufacturerFilter;
     private readonly Dictionary<string, SerialKeyboardDevice> devices = new(StringComparer.OrdinalIgnoreCase);
-    private readonly object devicesLock = new();
+    private readonly Dictionary<string, Task> workers = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object lockObj = new();
     private CancellationTokenSource? cts;
 
     public event Action<SerialKeyboardDevice>? DeviceDetected;
@@ -26,17 +29,19 @@ public sealed class HidKeyboardLink : IKeyboardLink
     {
         get
         {
-            lock (devicesLock)
+            lock (lockObj)
             {
                 return devices.Keys.ToArray();
             }
         }
     }
 
-    public HidKeyboardLink(int? vendorId, int? productId)
+    public HidKeyboardLink(int? vendorId, int? productId, string productNameFilter, string manufacturerFilter)
     {
         this.vendorId = vendorId;
         this.productId = productId;
+        this.productNameFilter = (productNameFilter ?? string.Empty).Trim();
+        this.manufacturerFilter = (manufacturerFilter ?? string.Empty).Trim();
     }
 
     public void Start()
@@ -59,13 +64,25 @@ public sealed class HidKeyboardLink : IKeyboardLink
                     if (token.IsCancellationRequested)
                         break;
 
-                    await ReadDeviceAsync(hidDevice, token);
+                    var path = hidDevice.DevicePath ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(path))
+                        continue;
+
+                    lock (lockObj)
+                    {
+                        if (workers.ContainsKey(path))
+                            continue;
+
+                        workers[path] = Task.Run(() => ReadDeviceLoop(hidDevice, path, token), token);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                PluginLogger.Error("HidKeyboardLink", "HID read loop failed.", ex);
+                PluginLogger.Error("HidKeyboardLink", "HID manager loop failed.", ex);
             }
+
+            CleanupCompletedWorkers();
 
             try
             {
@@ -85,45 +102,73 @@ public sealed class HidKeyboardLink : IKeyboardLink
             list = list.Where(d => d.VendorID == vendorId.Value);
         if (productId.HasValue)
             list = list.Where(d => d.ProductID == productId.Value);
+
+        if (!string.IsNullOrWhiteSpace(productNameFilter))
+        {
+            list = list.Where(d =>
+                (d.GetProductName() ?? string.Empty).Contains(productNameFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(manufacturerFilter))
+        {
+            list = list.Where(d =>
+                (d.GetManufacturer() ?? string.Empty).Contains(manufacturerFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
         return list.ToArray();
     }
 
-    private async Task ReadDeviceAsync(HidDevice hidDevice, CancellationToken token)
+    private async Task ReadDeviceLoop(HidDevice hidDevice, string path, CancellationToken token)
     {
-        if (!hidDevice.TryOpen(out var stream))
-            return;
-
-        using (stream)
+        try
         {
-            var uid = BuildSyntheticUid(hidDevice.DevicePath ?? $"{hidDevice.VendorID:X4}:{hidDevice.ProductID:X4}");
-            var device = GetOrCreateDevice(uid, out var isNew);
-            if (isNew)
+            if (!hidDevice.TryOpen(out var stream))
+                return;
+
+            using (stream)
             {
-                PluginLogger.Info("HidKeyboardLink", $"HID device detected: {uid} ({hidDevice.VendorID:X4}:{hidDevice.ProductID:X4})");
-                DeviceDetected?.Invoke(device);
+                var stableUid = BuildStableSyntheticUid(hidDevice);
+                var device = GetOrCreateDevice(stableUid, out var isNew);
+                if (isNew)
+                {
+                    PluginLogger.Info("HidKeyboardLink",
+                        $"HID device detected: {stableUid} ({hidDevice.VendorID:X4}:{hidDevice.ProductID:X4}, product={hidDevice.GetProductName()}, maker={hidDevice.GetManufacturer()})");
+                    DeviceDetected?.Invoke(device);
+                }
+
+                var reportBuffer = new byte[Math.Max(64, hidDevice.GetMaxInputReportLength())];
+                while (!token.IsCancellationRequested)
+                {
+                    int length;
+                    try
+                    {
+                        length = await stream.ReadAsync(reportBuffer, 0, reportBuffer.Length, token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch
+                    {
+                        break;
+                    }
+
+                    if (length <= 0)
+                        break;
+
+                    ParseReport(stableUid, device, reportBuffer, length);
+                }
             }
-
-            var reportBuffer = new byte[Math.Max(64, hidDevice.GetMaxInputReportLength())];
-            while (!token.IsCancellationRequested)
+        }
+        catch (Exception ex)
+        {
+            PluginLogger.Error("HidKeyboardLink", $"HID worker failed. path={path}", ex);
+        }
+        finally
+        {
+            lock (lockObj)
             {
-                int length;
-                try
-                {
-                    length = await stream.ReadAsync(reportBuffer, 0, reportBuffer.Length, token);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch
-                {
-                    break;
-                }
-
-                if (length <= 0)
-                    break;
-
-                ParseReport(uid, device, reportBuffer, length);
+                workers.Remove(path);
             }
         }
     }
@@ -162,7 +207,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
 
     private SerialKeyboardDevice GetOrCreateDevice(string uid, out bool isNew)
     {
-        lock (devicesLock)
+        lock (lockObj)
         {
             if (devices.TryGetValue(uid, out var existing))
             {
@@ -177,10 +222,27 @@ public sealed class HidKeyboardLink : IKeyboardLink
         }
     }
 
-    private static string BuildSyntheticUid(string source)
+    private static string BuildStableSyntheticUid(HidDevice hidDevice)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(source));
+        var identity = string.Join("|",
+            hidDevice.VendorID.ToString("X4"),
+            hidDevice.ProductID.ToString("X4"),
+            hidDevice.GetManufacturer() ?? string.Empty,
+            hidDevice.GetProductName() ?? string.Empty,
+            hidDevice.GetSerialNumber() ?? string.Empty);
+
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(identity));
         return Convert.ToHexString(bytes).ToLowerInvariant()[..16];
+    }
+
+    private void CleanupCompletedWorkers()
+    {
+        lock (lockObj)
+        {
+            var completed = workers.Where(x => x.Value.IsCompleted).Select(x => x.Key).ToArray();
+            foreach (var path in completed)
+                workers.Remove(path);
+        }
     }
 
     public void Dispose()

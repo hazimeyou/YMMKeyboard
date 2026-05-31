@@ -46,6 +46,8 @@ namespace YMMKeyboardPlugin.Settings
         [DataMember] public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Auto;
         [DataMember] public string HidVendorIdHex { get; set; } = string.Empty;
         [DataMember] public string HidProductIdHex { get; set; } = string.Empty;
+        [DataMember] public string HidProductNameFilter { get; set; } = string.Empty;
+        [DataMember] public string HidManufacturerFilter { get; set; } = string.Empty;
         [DataMember] public List<string> StartupPortNames { get; set; } = new();
         [DataMember] public List<string> KnownDeviceUids { get; set; } = new();
         [DataMember] public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new();
@@ -182,10 +184,12 @@ namespace YMMKeyboardPlugin.Settings
             SaveToPluginDirectory();
         }
 
-        public void UpdateHidFilter(string vendorIdHex, string productIdHex)
+        public void UpdateHidFilter(string vendorIdHex, string productIdHex, string productNameFilter, string manufacturerFilter)
         {
             HidVendorIdHex = NormalizeHex(vendorIdHex);
             HidProductIdHex = NormalizeHex(productIdHex);
+            HidProductNameFilter = (productNameFilter ?? string.Empty).Trim();
+            HidManufacturerFilter = (manufacturerFilter ?? string.Empty).Trim();
             SaveToPluginDirectory();
         }
 
@@ -247,6 +251,8 @@ namespace YMMKeyboardPlugin.Settings
                 ConnectionMode = data.ConnectionMode;
                 HidVendorIdHex = data.HidVendorIdHex ?? string.Empty;
                 HidProductIdHex = data.HidProductIdHex ?? string.Empty;
+                HidProductNameFilter = data.HidProductNameFilter ?? string.Empty;
+                HidManufacturerFilter = data.HidManufacturerFilter ?? string.Empty;
                 StartupPortNames = data.StartupPortNames ?? new();
                 KnownDeviceUids = data.KnownDeviceUids ?? new();
                 UiButtonConfigs = data.UiButtonConfigs ?? new();
@@ -289,6 +295,8 @@ namespace YMMKeyboardPlugin.Settings
                         ConnectionMode = ConnectionMode,
                         HidVendorIdHex = HidVendorIdHex,
                         HidProductIdHex = HidProductIdHex,
+                        HidProductNameFilter = HidProductNameFilter,
+                        HidManufacturerFilter = HidManufacturerFilter,
                         StartupPortNames = StartupPortNames.ToList(),
                         KnownDeviceUids = KnownDeviceUids.ToList(),
                         UiButtonConfigs = CloneConfigs(UiButtonConfigs),
@@ -332,6 +340,8 @@ namespace YMMKeyboardPlugin.Settings
         {
             HidVendorIdHex = NormalizeHex(HidVendorIdHex);
             HidProductIdHex = NormalizeHex(HidProductIdHex);
+            HidProductNameFilter = (HidProductNameFilter ?? string.Empty).Trim();
+            HidManufacturerFilter = (HidManufacturerFilter ?? string.Empty).Trim();
 
             StartupPortNames = StartupPortNames
                 .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -459,6 +469,8 @@ namespace YMMKeyboardPlugin.Settings
             public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Auto;
             public string? HidVendorIdHex { get; set; }
             public string? HidProductIdHex { get; set; }
+            public string? HidProductNameFilter { get; set; }
+            public string? HidManufacturerFilter { get; set; }
             public List<string>? StartupPortNames { get; set; }
             public List<string>? KnownDeviceUids { get; set; }
             public Dictionary<string, ButtonConfig>? UiButtonConfigs { get; set; }

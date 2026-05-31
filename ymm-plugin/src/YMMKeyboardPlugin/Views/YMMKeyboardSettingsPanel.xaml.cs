@@ -43,6 +43,8 @@ namespace YMMKeyboardPlugin.Views
 
             HidVendorIdTextBox.Text = settings.HidVendorIdHex;
             HidProductIdTextBox.Text = settings.HidProductIdHex;
+            HidProductNameFilterTextBox.Text = settings.HidProductNameFilter;
+            HidManufacturerFilterTextBox.Text = settings.HidManufacturerFilter;
         }
 
         private void LoadPorts()
@@ -150,10 +152,16 @@ namespace YMMKeyboardPlugin.Views
 
         private void ApplyHidFilter_OnClick(object sender, RoutedEventArgs e)
         {
-            settings.UpdateHidFilter(HidVendorIdTextBox.Text, HidProductIdTextBox.Text);
+            settings.UpdateHidFilter(
+                HidVendorIdTextBox.Text,
+                HidProductIdTextBox.Text,
+                HidProductNameFilterTextBox.Text,
+                HidManufacturerFilterTextBox.Text);
             HidVendorIdTextBox.Text = settings.HidVendorIdHex;
             HidProductIdTextBox.Text = settings.HidProductIdHex;
-            PortStatusTextBlock.Text = $"HIDフィルタを設定しました。VID={settings.HidVendorIdHex}, PID={settings.HidProductIdHex}";
+            HidProductNameFilterTextBox.Text = settings.HidProductNameFilter;
+            HidManufacturerFilterTextBox.Text = settings.HidManufacturerFilter;
+            PortStatusTextBlock.Text = $"HIDフィルタを設定しました。VID={settings.HidVendorIdHex}, PID={settings.HidProductIdHex}, 製品名={settings.HidProductNameFilter}, メーカー={settings.HidManufacturerFilter}";
         }
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
