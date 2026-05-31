@@ -21,6 +21,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
     private readonly Dictionary<string, Task> workers = new(StringComparer.OrdinalIgnoreCase);
     private readonly object lockObj = new();
     private CancellationTokenSource? cts;
+    private DateTime lastManagerErrorAtUtc = DateTime.MinValue;
 
     public event Action<SerialKeyboardDevice>? DeviceDetected;
     public event Action<SerialKeyboardDevice, KeyEvent>? KeyEventReceived;
@@ -97,37 +98,48 @@ public sealed class HidKeyboardLink : IKeyboardLink
 
     private IEnumerable<HidDevice> GetCandidateDevices()
     {
-        var list = DeviceList.Local.GetHidDevices();
-        if (vendorId.HasValue)
-            list = list.Where(d => d.VendorID == vendorId.Value);
-        if (productId.HasValue)
-            list = list.Where(d => d.ProductID == productId.Value);
-
-        if (!string.IsNullOrWhiteSpace(productNameFilter))
-        {
-            list = list.Where(d =>
-                (d.GetProductName() ?? string.Empty).Contains(productNameFilter, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (!string.IsNullOrWhiteSpace(manufacturerFilter))
-        {
-            list = list.Where(d =>
-                (d.GetManufacturer() ?? string.Empty).Contains(manufacturerFilter, StringComparison.OrdinalIgnoreCase));
-        }
-
-        // When no explicit filter is set, prefer our custom HID interface.
-        if (!vendorId.HasValue
+        var result = new List<HidDevice>();
+        var devices = DeviceList.Local.GetHidDevices().ToArray();
+        var useImplicitFilter = !vendorId.HasValue
             && !productId.HasValue
             && string.IsNullOrWhiteSpace(productNameFilter)
-            && string.IsNullOrWhiteSpace(manufacturerFilter))
+            && string.IsNullOrWhiteSpace(manufacturerFilter);
+
+        foreach (var d in devices)
         {
-            list = list.Where(IsLikelyYmmKeyboardDevice);
+            try
+            {
+                if (vendorId.HasValue && d.VendorID != vendorId.Value)
+                    continue;
+                if (productId.HasValue && d.ProductID != productId.Value)
+                    continue;
+
+                var productName = SafeGetProductName(d);
+                var manufacturer = SafeGetManufacturer(d);
+
+                if (!string.IsNullOrWhiteSpace(productNameFilter)
+                    && !productName.Contains(productNameFilter, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(manufacturerFilter)
+                    && !manufacturer.Contains(manufacturerFilter, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (useImplicitFilter && !IsLikelyYmmKeyboardDevice(d, productName, manufacturer))
+                    continue;
+
+                result.Add(d);
+            }
+            catch (Exception ex)
+            {
+                ThrottledManagerWarn($"Skipping HID device during filtering. error={ex.Message}");
+            }
         }
 
-        return list.ToArray();
+        return result;
     }
 
-    private static bool IsLikelyYmmKeyboardDevice(HidDevice d)
+    private static bool IsLikelyYmmKeyboardDevice(HidDevice d, string product, string maker)
     {
         if (TryGetUsagePageAndUsage(d, out var page, out var usage))
         {
@@ -135,8 +147,6 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 return true;
         }
 
-        var product = d.GetProductName() ?? string.Empty;
-        var maker = d.GetManufacturer() ?? string.Empty;
         if (product.Contains("CircuitPython HID", StringComparison.OrdinalIgnoreCase)
             || maker.Contains("Waveshare", StringComparison.OrdinalIgnoreCase))
             return true;
@@ -176,6 +186,27 @@ public sealed class HidKeyboardLink : IKeyboardLink
         }
 
         return false;
+    }
+
+    private static string SafeGetProductName(HidDevice d)
+    {
+        try { return d.GetProductName() ?? string.Empty; }
+        catch { return string.Empty; }
+    }
+
+    private static string SafeGetManufacturer(HidDevice d)
+    {
+        try { return d.GetManufacturer() ?? string.Empty; }
+        catch { return string.Empty; }
+    }
+
+    private void ThrottledManagerWarn(string message)
+    {
+        var now = DateTime.UtcNow;
+        if ((now - lastManagerErrorAtUtc).TotalSeconds < 10)
+            return;
+        lastManagerErrorAtUtc = now;
+        PluginLogger.Warn("HidKeyboardLink", message);
     }
 
     private async Task ReadDeviceLoop(HidDevice hidDevice, string path, CancellationToken token)
