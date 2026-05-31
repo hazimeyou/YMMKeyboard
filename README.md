@@ -1,22 +1,22 @@
 ﻿# YMMKeyboard
 
-YMMKeyboard は、YukkuriMovieMaker との連携を目的とした自作物理キーボードプロジェクトです。
+YMMKeyboard は、YukkuriMovieMaker 4 (YMM4) と連携する自作キーボードプロジェクトです。
 
-このリポジトリには、基板設計、ファームウェア、PC側ドライバー、YMM4プラグイン、開発補助ツールをまとめて管理しています。
+このリポジトリでは、ハードウェア・ファームウェア・PC側処理・YMM4プラグイン・補助ツールを一元管理しています。
 
 ## リポジトリ構成
 
-- `hardware/` - 基板、筐体、部品表、配線図
-- `firmware/` - マイコン側ファームウェア
-- `driver/` - PC側通信処理・ドライバー相当部分
-- `ymm-plugin/` - YukkuriMovieMaker 用プラグイン
-- `tools/` - 開発・診断用ツール
-- `docs/` - 仕様書・設計資料
+- `hardware/` : 基板・筐体・部品・ハード補足資料
+- `firmware/` : マイコン側実装
+- `driver/` : PC側通信/制御関連
+- `ymm-plugin/` : YMM4 プラグイン本体とテスト
+- `tools/` : 検証ツールと運用スクリプト
+- `docs/` : 全体仕様、運用メモ、検証手順
 
-## ビルド例
+## ビルド
 
 ```powershell
 dotnet build "YMMKeyboardPlugin.slnx"
 ```
 
-プラグイン本体プロジェクトは `ymm-plugin/src/YMMKeyboardPlugin/` 配下にあります。
+プラグイン本体は `ymm-plugin/src/YMMKeyboardPlugin/` にあります。
