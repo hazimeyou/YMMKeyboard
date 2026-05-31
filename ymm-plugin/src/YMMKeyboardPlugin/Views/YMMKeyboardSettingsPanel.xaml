@@ -71,6 +71,13 @@
                         VerticalAlignment="Top"
                         Content="切断"
                         Click="Disconnect_OnClick"/>
+
+                <Button Grid.Column="3"
+                        Margin="8,52,0,0"
+                        Padding="8,4"
+                        VerticalAlignment="Top"
+                        Content="HID診断"
+                        Click="HidProbe_OnClick"/>
             </Grid>
         </Border>
 

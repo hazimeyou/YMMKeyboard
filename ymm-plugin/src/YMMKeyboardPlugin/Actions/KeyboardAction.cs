@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using YMMKeyboardPlugin.Logging;
 using YukkuriMovieMaker.Plugin;
 using YukkuriMovieMaker.Project;
 using YukkuriMovieMaker.UndoRedo;
@@ -11,6 +12,8 @@ namespace YMMKeyboardPlugin.Actions
     public class KeyboardAction : ITimelineToolViewModel, INotifyPropertyChanged
     {
         private static readonly string[] WindowSeekCommandNames = { "ScrollToFrame", "シーク" };
+        private static readonly bool verboseSeekLog =
+            string.Equals(Environment.GetEnvironmentVariable("YMMK_VERBOSE_SEEK"), "1", StringComparison.Ordinal);
 
         public static Timeline? TimelineInstance { get; private set; }
         private static readonly object seekCacheLock = new();
@@ -91,11 +94,15 @@ namespace YMMKeyboardPlugin.Actions
                     return false;
 
                 seek.Value.InvokeMethod.Invoke(seek.Value.Command, args);
+                if (verboseSeekLog)
+                    PluginLogger.Info("KeyboardAction", $"Reflection seek executed. delta={frameDelta}");
                 return true;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[KeyboardAction] Seek command invoke failed: {ex.Message}");
+                if (verboseSeekLog)
+                    PluginLogger.Warn("KeyboardAction", $"Seek invoke failed. delta={frameDelta}, error={ex.Message}");
                 return false;
             }
         }
@@ -106,8 +113,11 @@ namespace YMMKeyboardPlugin.Actions
             if (cmd is null)
                 return false;
 
+            var currentFrame = Math.Max(0, TimelineInstance?.CurrentFrame ?? 0);
+            var targetFrame = Math.Max(0, currentFrame + frameDelta);
             var args = new object?[]
             {
+                targetFrame,
                 frameDelta,
                 FrameDeltaToTimeSpan(frameDelta),
                 null
@@ -119,13 +129,23 @@ namespace YMMKeyboardPlugin.Actions
                 {
                     if (!cmd.CanExecute(arg))
                         continue;
+
                     cmd.Execute(arg);
+                    if (verboseSeekLog)
+                        PluginLogger.Info("KeyboardAction", $"Window seek executed. current={currentFrame}, delta={frameDelta}, arg={arg ?? "null"}");
                     return true;
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"[KeyboardAction] Window seek command failed for arg={arg ?? "null"}: {ex.Message}");
+                    if (verboseSeekLog)
+                        PluginLogger.Warn("KeyboardAction", $"Window seek failed. arg={arg ?? "null"}, error={ex.Message}");
                 }
+            }
+
+            lock (seekCacheLock)
+            {
+                cachedWindowSeekCommand = null;
             }
 
             return false;
@@ -163,6 +183,10 @@ namespace YMMKeyboardPlugin.Actions
             {
                 cachedWindowSeekCommand = found;
             }
+
+            if (verboseSeekLog)
+                PluginLogger.Info("KeyboardAction", $"Window seek command resolved: {GetCommandName(found)}");
+
             return found;
         }
 
@@ -404,5 +428,3 @@ namespace YMMKeyboardPlugin.Actions
 #pragma warning restore CS0067
     }
 }
-
-

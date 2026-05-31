@@ -3,6 +3,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using YMMKeyboardPlugin.Hid;
+using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Views
@@ -169,6 +171,27 @@ namespace YMMKeyboardPlugin.Views
                 window.Owner = owner;
 
             window.ShowDialog();
+        }
+
+        private void HidProbe_OnClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var devices = HidDeviceProbe.EnumerateAll();
+                var report = HidDeviceProbe.BuildReportText(devices);
+                var reportPath = Path.Combine(PluginLogger.LogDirectoryPath, $"hid_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+                Directory.CreateDirectory(PluginLogger.LogDirectoryPath);
+                File.WriteAllText(reportPath, report);
+
+                PluginLogger.Info("YMMKeyboardSettingsPanel", $"HID report generated. count={devices.Count}, path={reportPath}");
+                PortStatusTextBlock.Text = $"HID診断を出力しました: {reportPath}";
+                MessageBox.Show($"HID診断を出力しました。\n{reportPath}", "HID診断");
+            }
+            catch (Exception ex)
+            {
+                PluginLogger.Error("YMMKeyboardSettingsPanel", "Failed to generate HID report.", ex);
+                MessageBox.Show($"HID診断の出力に失敗しました。\n{ex.Message}", "HID診断");
+            }
         }
     }
 }

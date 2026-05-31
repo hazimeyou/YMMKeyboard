@@ -28,26 +28,27 @@
 
 	<ItemGroup>
 	  <PackageReference Include="System.IO.Ports" Version="10.0.2" GeneratePathProperty="true" />
+	  <PackageReference Include="HidSharp" Version="2.1.0" />
 	</ItemGroup>
 	<Target Name="CopyToYMM4" AfterTargets="Build" Condition="Exists('$(YMM4DirPath)')">
 
 		<!-- コピー先フォルダ -->
 		<PropertyGroup>
-			<PluginOutputDir>
-				$(YMM4DirPath)\user\plugin\$(AssemblyName)
-			</PluginOutputDir>
+			<PluginOutputDir>$(YMM4DirPath)\user\plugin\$(AssemblyName)</PluginOutputDir>
 		</PropertyGroup>
 
 		<!-- フォルダ作成 -->
 		<MakeDir Directories="$(PluginOutputDir)" Condition="!Exists('$(PluginOutputDir)')" />
 
-		<!-- コピー対象（プラグイン本体のみ） -->
+		<!-- コピー対象（プラグイン本体と実行時依存） -->
 		<ItemGroup>
-			<PluginFiles Include="$(TargetPath)" />
-			<PluginFiles Include="$(SystemIOPortsRuntimePath)" Condition="Exists('$(SystemIOPortsRuntimePath)')" />
+			<PluginFiles Include="$(TargetDir)*.dll" />
+			<PluginFiles Include="$(TargetDir)$(AssemblyName).deps.json" Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
+			<RuntimeFiles Include="$(TargetDir)runtimes\**\*.*" Condition="Exists('$(TargetDir)runtimes')" />
 		</ItemGroup>
 		<!-- コピー -->
 		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" ContinueOnError="WarnAndContinue" />
+		<Copy SourceFiles="@(RuntimeFiles)" DestinationFiles="@(RuntimeFiles->'$(PluginOutputDir)\runtimes\%(RecursiveDir)%(Filename)%(Extension)')" ContinueOnError="WarnAndContinue" />
 	</Target>
 
 	<Target Name="CopyCodePyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py')">
