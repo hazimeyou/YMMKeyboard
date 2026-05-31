@@ -29,6 +29,8 @@ public sealed class HidKeyboardLink : IKeyboardLink
     private DateTime lastSummaryWrittenAtUtc = DateTime.MinValue;
     private int managerLoopCount;
     private int totalWorkerErrorCount;
+    private DateTime lastRawReportLogAtUtc = DateTime.MinValue;
+    private int rawReportSampleCount;
 
     public event Action<SerialKeyboardDevice>? DeviceDetected;
     public event Action<SerialKeyboardDevice, KeyEvent>? KeyEventReceived;
@@ -266,7 +268,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 if (isNew)
                 {
                     PluginLogger.Info("HidKeyboardLink",
-                        $"HID device detected: {stableUid} ({hidDevice.VendorID:X4}:{hidDevice.ProductID:X4}, product={hidDevice.GetProductName()}, maker={hidDevice.GetManufacturer()})");
+                        $"HID device detected: {stableUid} ({hidDevice.VendorID:X4}:{hidDevice.ProductID:X4}, product={hidDevice.GetProductName()}, maker={hidDevice.GetManufacturer()}, in={hidDevice.GetMaxInputReportLength()}, out={hidDevice.GetMaxOutputReportLength()}, path={path})");
                     DeviceDetected?.Invoke(device);
                 }
 
@@ -287,12 +289,13 @@ public sealed class HidKeyboardLink : IKeyboardLink
                         break;
                     }
 
-                    if (length <= 0)
-                        break;
+                if (length <= 0)
+                    break;
 
-                    ParseReport(stableUid, device, reportBuffer, length);
-                }
+                MaybeLogRawReport(path, reportBuffer, length);
+                ParseReport(stableUid, device, reportBuffer, length);
             }
+        }
         }
         catch (Exception ex)
         {
@@ -315,7 +318,10 @@ public sealed class HidKeyboardLink : IKeyboardLink
 
         var match = serialEventPattern.Match(ascii);
         if (!match.Success)
+        {
+            MaybeLogUnparsedAscii(ascii);
             return;
+        }
 
         var uid = match.Groups["uid"].Value.ToLowerInvariant();
         var state = match.Groups["state"].Value;
@@ -337,6 +343,9 @@ public sealed class HidKeyboardLink : IKeyboardLink
             SwitchId = switchId,
             ReceivedAtUtc = DateTime.UtcNow,
         });
+
+        PluginLogger.Info("HidKeyboardLink",
+            $"Parsed key event via HID. uid={uid}, switch={switchId}, pressed={(state == "P")}");
     }
 
     private SerialKeyboardDevice GetOrCreateDevice(string uid, out bool isNew)
@@ -457,6 +466,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 $"excluded_paths={excludedCount}",
                 $"known_devices={knownDeviceCount}",
                 $"worker_error_count={errorCount}",
+                $"raw_report_samples={rawReportSampleCount}",
             });
 
             Directory.CreateDirectory(PluginLogger.DiagnosticsDirectoryPath);
@@ -467,6 +477,33 @@ public sealed class HidKeyboardLink : IKeyboardLink
         {
             // best effort
         }
+    }
+
+    private void MaybeLogRawReport(string path, byte[] report, int length)
+    {
+        var now = DateTime.UtcNow;
+        if ((now - lastRawReportLogAtUtc).TotalSeconds < 10)
+            return;
+
+        lastRawReportLogAtUtc = now;
+        rawReportSampleCount++;
+
+        var safeLen = Math.Min(length, 32);
+        var hex = BitConverter.ToString(report, 0, safeLen);
+        var ascii = Encoding.ASCII.GetString(report, 0, safeLen)
+            .Replace('\0', '.')
+            .Replace('\r', ' ')
+            .Replace('\n', ' ');
+
+        PluginLogger.Info("HidKeyboardLink",
+            $"Raw HID sample path={path}, len={length}, headHex={hex}, headAscii={ascii}");
+    }
+
+    private static void MaybeLogUnparsedAscii(string ascii)
+    {
+        if (ascii.Length > 96)
+            ascii = ascii[..96] + "...";
+        PluginLogger.Info("HidKeyboardLink", $"Unparsed HID ascii: {ascii}");
     }
 
     public void Dispose()
