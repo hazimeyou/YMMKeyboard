@@ -2,6 +2,8 @@ import binascii
 import board
 import microcontroller
 import usb_hid
+import supervisor
+import traceback
 
 from kmk.kmk_keyboard import KMKKeyboard
 from kmk.keys import make_key
@@ -11,6 +13,16 @@ from kmk.modules.layers import Layers
 from kmk.scanners import DiodeOrientation
 
 DEVICE_UID = binascii.hexlify(microcontroller.cpu.uid).decode("utf-8")
+_last_heartbeat_ms = 0
+_hb_count = 0
+
+
+def _append_runtime_log(message):
+    try:
+        with open("/runtime_log.txt", "a", encoding="utf-8") as f:
+            f.write(message + "\n")
+    except Exception:
+        pass
 
 
 def _find_custom_hid():
@@ -24,6 +36,7 @@ def _find_custom_hid():
 
 
 CUSTOM_HID = _find_custom_hid()
+_append_runtime_log(f"CUSTOM_HID={'yes' if CUSTOM_HID is not None else 'no'}")
 
 
 def emit_event(state, switch_id):
@@ -33,18 +46,20 @@ def emit_event(state, switch_id):
 
     # Serial (existing path)
     print(line)
+    _append_runtime_log(f"SERIAL_TX:{line}")
 
-    # HID (new path): ASCII + zero padding into 64-byte report
+    # HID (new path): report_id(1) + 64-byte payload
     if CUSTOM_HID is not None:
         try:
             payload = hid_line.encode("ascii", "ignore")
             if len(payload) > 64:
                 payload = payload[:64]
-            report = payload + bytes(64 - len(payload))
+            report = bytes((1,)) + payload + bytes(64 - len(payload))
             CUSTOM_HID.send_report(report)
+            _append_runtime_log(f"HID_TX_OK:{hid_line}")
         except Exception:
             # Keep serial path alive even when HID send fails
-            pass
+            _append_runtime_log(f"HID_TX_FAIL:{hid_line}")
 
 
 class EventEmitter(Module):
@@ -52,7 +67,18 @@ class EventEmitter(Module):
         pass
 
     def before_matrix_scan(self, keyboard):
-        pass
+        global _last_heartbeat_ms, _hb_count
+        now = supervisor.ticks_ms()
+        if now - _last_heartbeat_ms >= 3000:
+            _last_heartbeat_ms = now
+            _hb_count += 1
+            print(f"HB:{DEVICE_UID}")
+            if _hb_count <= 5:
+                _append_runtime_log(f"HB_TX:{_hb_count}")
+            # Emit a diagnostic switch pulse periodically to verify host receive path.
+            if _hb_count % 2 == 0:
+                emit_event("P", 0)
+                emit_event("R", 0)
 
     def after_matrix_scan(self, keyboard):
         pass
@@ -108,5 +134,18 @@ SERIAL_ONLY = make_key(names=("SERIAL_ONLY",), on_press=lambda *args: None, on_r
 keyboard.keymap = [[SERIAL_ONLY] * 35]
 
 if __name__ == "__main__":
-    print(f"UID:{DEVICE_UID}")
-    keyboard.go()
+    try:
+        _append_runtime_log(f"BOOT UID:{DEVICE_UID}")
+        print(f"UID:{DEVICE_UID}")
+        # One-shot self-diagnostic frame (SW_00) to verify COM/HID path after boot.
+        # Plugin mapping ignores unknown switch IDs, so this should not trigger user actions.
+        emit_event("P", 0)
+        emit_event("R", 0)
+        _append_runtime_log("ENTER keyboard.go()")
+        keyboard.go()
+    except Exception as ex:
+        _append_runtime_log(f"EXCEPTION: {ex}")
+        try:
+            _append_runtime_log(traceback.format_exc())
+        except Exception:
+            pass

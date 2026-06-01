@@ -166,6 +166,12 @@ namespace YMMKeyboardPlugin.Views
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
         {
+            if (settings.ConnectionMode == ConnectionMode.Hid)
+            {
+                PortStatusTextBlock.Text = "HIDモードではCOM接続は不要です。実機入力は自動検出されます。";
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(settings.PortName))
             {
                 PortStatusTextBlock.Text = "先に接続するCOMポートを選択してください。";

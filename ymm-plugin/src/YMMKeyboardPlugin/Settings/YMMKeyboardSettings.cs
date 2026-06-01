@@ -43,7 +43,7 @@ namespace YMMKeyboardPlugin.Settings
         public override object? SettingView => new YMMKeyboardSettingsPanel(this);
 
         [DataMember] public string PortName { get; set; } = string.Empty;
-        [DataMember] public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Auto;
+        [DataMember] public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Com;
         [DataMember] public string HidVendorIdHex { get; set; } = string.Empty;
         [DataMember] public string HidProductIdHex { get; set; } = string.Empty;
         [DataMember] public string HidProductNameFilter { get; set; } = string.Empty;
@@ -466,7 +466,7 @@ namespace YMMKeyboardPlugin.Settings
         private class PersistedSettings
         {
             public string? PortName { get; set; }
-            public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Auto;
+            public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Com;
             public string? HidVendorIdHex { get; set; }
             public string? HidProductIdHex { get; set; }
             public string? HidProductNameFilter { get; set; }

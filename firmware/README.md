@@ -5,9 +5,8 @@
 ## 構成
 
 - `src/` : 実装コード (RP2040 など)
-- `include/` : 共通ヘッダー
-- `lib/` : 依存ライブラリ
-- `arduino/` : Arduino 構成
+- `src/RP2040ZeroCode/` : CircuitPython 実装
+- `src/RP2040TinyUsb/` : pico-sdk + TinyUSB(C) 実装
 
 ## メモ
 

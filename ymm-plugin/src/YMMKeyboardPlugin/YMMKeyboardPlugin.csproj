@@ -55,4 +55,8 @@
 		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py" DestinationFiles="D:\code.py" OverwriteReadOnlyFiles="true" ContinueOnError="WarnAndContinue" />
 	</Target>
 
+	<Target Name="CopyBootPyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\boot.py')">
+		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\boot.py" DestinationFiles="D:\boot.py" OverwriteReadOnlyFiles="true" ContinueOnError="WarnAndContinue" />
+	</Target>
+
 </Project>

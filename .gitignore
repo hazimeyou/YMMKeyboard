@@ -394,3 +394,6 @@ hardware/pcb/KiCad/YMMkeyboardMX/YmmKeyboardMX-backups/
 /_inspect/InspectYmm
 *.zip
 ymm-plugin/libs/YMM4/
+/tmp
+firmware/src/RP2040TinyUsb/build/
+tmp/pico/

@@ -78,7 +78,14 @@ namespace YMMKeyboardPlugin
 
         private void ConnectStartupPorts()
         {
+            var ports = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var portName in YMMKeyboardSettings.Current.GetStartupPortNames())
+                ports.Add(portName);
+
+            if (!string.IsNullOrWhiteSpace(YMMKeyboardSettings.Current.PortName))
+                ports.Add(YMMKeyboardSettings.Current.PortName);
+
+            foreach (var portName in ports)
                 ConnectPort(portName);
         }
 

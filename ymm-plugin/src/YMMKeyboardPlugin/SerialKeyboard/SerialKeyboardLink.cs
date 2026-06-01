@@ -61,11 +61,18 @@ namespace YMMKeyboardPlugin
                 Encoding = Encoding.ASCII,
                 ReadTimeout = 1000,
                 WriteTimeout = 1000,
+                Handshake = Handshake.None,
                 DtrEnable = true,
                 RtsEnable = true
             };
 
             _port.Open();
+            // Some USB CDC firmwares require a post-open DTR assert edge.
+            _port.DtrEnable = false;
+            Thread.Sleep(40);
+            _port.DtrEnable = true;
+            Thread.Sleep(180);
+            _port.DiscardInBuffer();
             PluginLogger.Info("SerialKeyboardLink", $"Port opened: {_portName}");
             Task.Run(() => ReadLoop(_cts.Token));
         }

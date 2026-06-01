@@ -359,6 +359,10 @@ public sealed class HidKeyboardLink : IKeyboardLink
                     {
                         break;
                     }
+                    catch (TimeoutException)
+                    {
+                        continue;
+                    }
                     catch
                     {
                         break;
@@ -387,20 +391,32 @@ public sealed class HidKeyboardLink : IKeyboardLink
 
     private void ParseReport(string fallbackUid, SerialKeyboardDevice device, byte[] report, int length)
     {
-        var ascii = Encoding.ASCII.GetString(report, 0, length).Trim('\0', '\r', '\n', ' ');
-        if (ascii.Length == 0)
+        var candidates = ExtractAsciiCandidates(report, length);
+        if (candidates.Count == 0)
             return;
 
-        var match = serialEventPattern.Match(ascii);
-        if (!match.Success)
+        Match? matched = null;
+        string matchedText = string.Empty;
+        foreach (var candidate in candidates)
         {
-            MaybeLogUnparsedAscii(ascii);
+            var m = serialEventPattern.Match(candidate);
+            if (!m.Success)
+                continue;
+
+            matched = m;
+            matchedText = candidate;
+            break;
+        }
+
+        if (matched is null)
+        {
+            MaybeLogUnparsedAscii(string.Join(" | ", candidates.Take(3)));
             return;
         }
 
-        var uid = match.Groups["uid"].Value.ToLowerInvariant();
-        var state = match.Groups["state"].Value;
-        if (!int.TryParse(match.Groups["switch"].Value, out var switchId))
+        var uid = matched.Groups["uid"].Value.ToLowerInvariant();
+        var state = matched.Groups["state"].Value;
+        if (!int.TryParse(matched.Groups["switch"].Value, out var switchId))
             return;
 
         var actualDevice = device;
@@ -420,7 +436,43 @@ public sealed class HidKeyboardLink : IKeyboardLink
         });
 
         PluginLogger.Info("HidKeyboardLink",
-            $"Parsed key event via HID. uid={uid}, switch={switchId}, pressed={(state == "P")}");
+            $"Parsed key event via HID. uid={uid}, switch={switchId}, pressed={(state == "P")}, source=\"{matchedText}\"");
+    }
+
+    private static List<string> ExtractAsciiCandidates(byte[] report, int length)
+    {
+        var candidates = new List<string>();
+        if (length <= 0)
+            return candidates;
+
+        var sb = new StringBuilder(length);
+        for (var i = 0; i < length; i++)
+        {
+            var b = report[i];
+            var isPrintable = b >= 0x20 && b <= 0x7E;
+            if (isPrintable)
+            {
+                sb.Append((char)b);
+                continue;
+            }
+
+            if (sb.Length > 0)
+            {
+                var token = sb.ToString().Trim();
+                if (token.Length > 0)
+                    candidates.Add(token);
+                sb.Clear();
+            }
+        }
+
+        if (sb.Length > 0)
+        {
+            var token = sb.ToString().Trim();
+            if (token.Length > 0)
+                candidates.Add(token);
+        }
+
+        return candidates;
     }
 
     private SerialKeyboardDevice GetOrCreateDevice(string uid, out bool isNew)

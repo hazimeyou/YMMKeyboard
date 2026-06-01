@@ -21,14 +21,11 @@ custom_hid = usb_hid.Device(
     report_descriptor=CUSTOM_HID_REPORT_DESCRIPTOR,
     usage_page=0xFF00,
     usage=0x0001,
-    report_ids=(),
+    report_ids=(1,),
     in_report_lengths=(64,),
     out_report_lengths=(64,),
 )
 
-usb_hid.enable((
-    usb_hid.Device.KEYBOARD,
-    usb_hid.Device.MOUSE,
-    usb_hid.Device.CONSUMER_CONTROL,
-    custom_hid,
-))
+# Expose only vendor-defined custom HID for stable host-side access.
+# Composite default devices can cause host to lock the target collection.
+usb_hid.enable((custom_hid,))

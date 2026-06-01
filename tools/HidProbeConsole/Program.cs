@@ -16,7 +16,7 @@ void Write(string message)
 }
 
 Write("HidProbeConsole START");
-Write($"Options: vid={options.VidHex ?? "(none)"}, pid={options.PidHex ?? "(none)"}, durationSec={options.DurationSec}, includeAll={options.IncludeAll}");
+Write($"Options: vid={options.VidHex ?? "(none)"}, pid={options.PidHex ?? "(none)"}, durationSec={options.DurationSec}, includeAll={options.IncludeAll}, dumpAll={options.DumpAll}, dumpAsciiOnly={options.DumpAsciiOnly}");
 
 var devices = DeviceList.Local.GetHidDevices().ToArray();
 Write($"Enumerated devices: {devices.Length}");
@@ -41,7 +41,7 @@ Console.CancelKeyPress += (_, e) =>
     cts.Cancel();
 };
 
-var tasks = candidates.Select(d => Task.Run(() => ReadLoop(d, Write, cts.Token), cts.Token)).ToArray();
+var tasks = candidates.Select(d => Task.Run(() => ReadLoop(d, options, Write, cts.Token), cts.Token)).ToArray();
 try
 {
     await Task.WhenAll(tasks);
@@ -68,7 +68,7 @@ static string SafeStr(Func<string?> f)
     try { return f() ?? string.Empty; } catch { return string.Empty; }
 }
 
-static async Task ReadLoop(HidDevice d, Action<string> write, CancellationToken token)
+static async Task ReadLoop(HidDevice d, ProbeOptions options, Action<string> write, CancellationToken token)
 {
     var eventPattern = new Regex(@"(?:YMMK:)?(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)", RegexOptions.Compiled);
 
@@ -96,6 +96,10 @@ static async Task ReadLoop(HidDevice d, Action<string> write, CancellationToken 
             {
                 break;
             }
+            catch (TimeoutException)
+            {
+                continue;
+            }
             catch (Exception ex)
             {
                 write($"READ_FAIL: {d.DevicePath} | {ex.GetType().Name}: {ex.Message}");
@@ -106,10 +110,13 @@ static async Task ReadLoop(HidDevice d, Action<string> write, CancellationToken 
                 break;
 
             sampleIndex++;
-            var head = Math.Min(len, 32);
+            var head = options.DumpAll ? len : Math.Min(len, 32);
             var hex = BitConverter.ToString(buffer, 0, head);
             var asciiRaw = Encoding.ASCII.GetString(buffer, 0, len).Trim('\0', '\r', '\n', ' ');
-            write($"RAW[{sampleIndex}] len={len} hex={hex} ascii={asciiRaw}");
+            if (options.DumpAsciiOnly)
+                write($"RAW[{sampleIndex}] len={len} ascii={asciiRaw}");
+            else
+                write($"RAW[{sampleIndex}] len={len} hex={hex} ascii={asciiRaw}");
 
             var m = eventPattern.Match(asciiRaw);
             if (m.Success)
@@ -127,6 +134,8 @@ sealed class ProbeOptions
     public string? VidHex { get; private init; }
     public string? PidHex { get; private init; }
     public bool IncludeAll { get; private init; }
+    public bool DumpAll { get; private init; }
+    public bool DumpAsciiOnly { get; private init; }
     public int DurationSec { get; private init; } = 60;
     public string LogDirectory { get; private init; } = Path.Combine(Environment.CurrentDirectory, "tmp", "hidprobe");
 
@@ -148,6 +157,8 @@ sealed class ProbeOptions
         string? vidHex = null;
         string? pidHex = null;
         var includeAll = false;
+        var dumpAll = false;
+        var dumpAsciiOnly = false;
         var duration = 60;
         string? logDir = null;
 
@@ -174,6 +185,12 @@ sealed class ProbeOptions
                 case "--logdir":
                     logDir = next();
                     break;
+                case "--dump-all":
+                    dumpAll = true;
+                    break;
+                case "--ascii-only":
+                    dumpAsciiOnly = true;
+                    break;
             }
         }
 
@@ -184,6 +201,8 @@ sealed class ProbeOptions
             VidHex = vidHex,
             PidHex = pidHex,
             IncludeAll = includeAll,
+            DumpAll = dumpAll,
+            DumpAsciiOnly = dumpAsciiOnly,
             DurationSec = duration,
             LogDirectory = string.IsNullOrWhiteSpace(logDir)
                 ? Path.Combine(Environment.CurrentDirectory, "tmp", "hidprobe")
