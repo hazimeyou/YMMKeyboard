@@ -16,9 +16,12 @@ public static class HidDeviceProbe
                     ProductId = d.ProductID,
                     ProductName = d.ProductName ?? string.Empty,
                     Manufacturer = d.Manufacturer ?? string.Empty,
+                    SerialNumber = TryGetStringValue(d, "SerialNumber"),
                     DevicePath = d.DevicePath ?? string.Empty,
                     MaxInputReportLength = d.GetMaxInputReportLength(),
                     MaxOutputReportLength = d.GetMaxOutputReportLength(),
+                    UsagePage = TryGetUsageValue(d, "UsagePage"),
+                    Usage = TryGetUsageValue(d, "Usage"),
                 })
                 .OrderBy(d => d.VendorId)
                 .ThenBy(d => d.ProductId)
@@ -48,5 +51,35 @@ public static class HidDeviceProbe
         }
 
         return string.Join(Environment.NewLine, lines);
+    }
+
+    private static int TryGetUsageValue(HidDevice d, string propertyName)
+    {
+        try
+        {
+            var prop = d.GetType().GetProperty(propertyName);
+            if (prop is not null)
+                return Convert.ToInt32(prop.GetValue(d) ?? 0);
+        }
+        catch
+        {
+        }
+
+        return 0;
+    }
+
+    private static string TryGetStringValue(HidDevice d, string propertyName)
+    {
+        try
+        {
+            var prop = d.GetType().GetProperty(propertyName);
+            if (prop is not null)
+                return prop.GetValue(d)?.ToString() ?? string.Empty;
+        }
+        catch
+        {
+        }
+
+        return string.Empty;
     }
 }
