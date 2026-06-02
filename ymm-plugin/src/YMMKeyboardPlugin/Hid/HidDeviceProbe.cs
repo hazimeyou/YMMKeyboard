@@ -14,8 +14,8 @@ public static class HidDeviceProbe
                 {
                     VendorId = d.VendorID,
                     ProductId = d.ProductID,
-                    ProductName = d.ProductName ?? string.Empty,
-                    Manufacturer = d.Manufacturer ?? string.Empty,
+                    ProductName = d.GetProductName() ?? string.Empty,
+                    Manufacturer = d.GetManufacturer() ?? string.Empty,
                     SerialNumber = TryGetStringValue(d, "SerialNumber"),
                     DevicePath = d.DevicePath ?? string.Empty,
                     MaxInputReportLength = d.GetMaxInputReportLength(),
