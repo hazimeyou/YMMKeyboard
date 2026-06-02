@@ -1,53 +1,46 @@
 # Diagnostics Cheat Sheet
 
-This repo now treats diagnostics as reusable artifacts.
+RC2 の標準確認はこれです。
 
-## Main artifacts
+```powershell
+./scripts/verify-diagnostics.ps1
+```
+
+## 何を見るか
+
+- `issues=0`
+- `InspectorOnly`
+- `PluginOnly`
+- `Rejected`
+- `Selected`
+- `HidVisibleButNotEvaluated`
+- `ComVisibleButNotEvaluated`
+
+## 主なファイル
 
 - `samples/device-inspector/latest.json`
 - `samples/plugin-diagnostics/latest.json`
 - `samples/comparer/report.md`
+- `tmp/diagnostics-comparer/report.md`
 
-## Capture inspector JSON
+## 手動比較
 
-```powershell
-dotnet run --project tools/YMMKeyboard.DeviceInspector/YMMKeyboard.DeviceInspector.csproj -c Release -- --json --output samples/device-inspector/latest.json
-```
-
-## Capture plugin diagnostics JSON
-
-Run YMM with diagnostics enabled, then copy the emitted JSON into:
-
-```text
-samples/plugin-diagnostics/latest.json
-```
-
-## Compare the two reports
+必要なときだけ短く実行します。
 
 ```powershell
-dotnet run --project tools/YMMKeyboard.DiagnosticsComparer/YMMKeyboard.DiagnosticsComparer.csproj -c Release -- --inspector samples/device-inspector/latest.json --plugin samples/plugin-diagnostics/latest.json --format markdown --output samples/comparer/report.md
+dotnet run --project tools/YMMKeyboard.DiagnosticsComparer/YMMKeyboard.DiagnosticsComparer.csproj -c Release -- --inspector samples/device-inspector/latest.json --plugin samples/plugin-diagnostics/latest.json --format markdown --output tmp/diagnostics-comparer/report.md
 ```
 
-## Replay without hardware
+## 判定の見方
 
-```powershell
-dotnet run --project tools/YMMKeyboard.ProtocolSimulator/YMMKeyboard.ProtocolSimulator.csproj -c Release -- --inspector samples/device-inspector/latest.json --plugin samples/plugin-diagnostics/latest.json --format markdown --output tmp/protocol-simulator/report.md
-```
+- `issues=0` なら RC2 の再現検証は通過
+- `InspectorOnly` / `PluginOnly` は片側だけにある候補
+- `Rejected` は plugin 側で選ばれなかった候補
+- `Selected` は plugin が選択した候補
+- `HidVisibleButNotEvaluated` / `ComVisibleButNotEvaluated` は列挙されたが比較対象外の候補
 
-## Expected sample layout
+## 境界
 
-```text
-samples/
-  device-inspector/
-    latest.json
-  plugin-diagnostics/
-    latest.json
-  comparer/
-    report.md
-```
-
-## Notes
-
-- Keep the sample JSON stable so CI and docs can reuse it.
-- The simulator is read-only and must not touch hardware.
-- Hardware validation stays deferred until the later phase.
+- ここでやるのは実機なしの検証だけ
+- 実機の HID / COM 列挙や入力送信はまだ後段
+- 詳細手順は [docs/diagnostics-workflow.md](docs/diagnostics-workflow.md) を見る
