@@ -1,0 +1,123 @@
+{
+  "generatedAt": "2026-06-02T09:01:00+09:00",
+  "appVersion": "1.0.0-preview",
+  "pluginVersion": "1.0.0-preview",
+  "ymmVersion": "2.0.0",
+  "machineName": "SIM-LAB-01",
+  "osVersion": "Microsoft Windows 11 Pro 23H2",
+  "scanMode": "manual",
+  "configuredDeviceIdentity": {
+    "connectionMode": "Hid",
+    "hidVendorId": "0x2E8A",
+    "hidProductId": "0x4020",
+    "hidProductNameFilter": "",
+    "hidManufacturerFilter": "",
+    "portName": "COM3",
+    "startupPortNames": ["COM3", "COM7"]
+  },
+  "detectedHidDevices": [
+    {
+      "vid": 11914,
+      "pid": 16416,
+      "productName": "YMM RP2040 Control Keyboard",
+      "manufacturer": "YMMKeyboard Project",
+      "serial": "YMMK-001",
+      "usagePage": 65280,
+      "usage": 1,
+      "maxInputReportLength": 64,
+      "maxOutputReportLength": 64,
+      "identityKind": "formal"
+    },
+    {
+      "vid": 11914,
+      "pid": 4127,
+      "productName": "YMM HID",
+      "manufacturer": "YMMKeyboard",
+      "serial": "YMMK-LEGACY",
+      "usagePage": 65280,
+      "usage": 1,
+      "maxInputReportLength": 64,
+      "maxOutputReportLength": 64,
+      "identityKind": "temporary"
+    },
+    {
+      "vid": 1133,
+      "pid": 8590,
+      "productName": "Logitech F310 Gamepad",
+      "manufacturer": "Logitech",
+      "serial": "GAMEPAD-1",
+      "usagePage": 1,
+      "usage": 5,
+      "maxInputReportLength": 64,
+      "maxOutputReportLength": 0,
+      "identityKind": "other"
+    }
+  ],
+  "detectedComPorts": ["COM3", "COM7"],
+  "connectionCandidates": [
+    {
+      "transportType": "HID",
+      "vid": 11914,
+      "pid": 16416,
+      "productName": "YMM RP2040 Control Keyboard",
+      "manufacturer": "YMMKeyboard Project",
+      "serial": "YMMK-001",
+      "comPort": "",
+      "usagePage": 65280,
+      "usage": 1,
+      "matchScore": 11164,
+      "matchReasons": ["connectionMode=HID", "vid=2E8A", "pid=4020", "usagePage=FF00 usage=0001"],
+      "rejectReasons": [],
+      "selected": true
+    },
+    {
+      "transportType": "HID",
+      "vid": 11914,
+      "pid": 4127,
+      "productName": "YMM HID",
+      "manufacturer": "YMMKeyboard",
+      "serial": "YMMK-LEGACY",
+      "comPort": "",
+      "usagePage": 65280,
+      "usage": 1,
+      "matchScore": 8164,
+      "matchReasons": ["connectionMode=HID", "vid=2E8A", "pid=101F", "usagePage=FF00 usage=0001"],
+      "rejectReasons": ["mode=COM"],
+      "selected": false
+    }
+  ],
+  "selectedCandidate": {
+    "transportType": "HID",
+    "vid": 11914,
+    "pid": 16416,
+    "productName": "YMM RP2040 Control Keyboard",
+    "manufacturer": "YMMKeyboard Project",
+    "serial": "YMMK-001",
+    "comPort": "",
+    "usagePage": 65280,
+    "usage": 1,
+    "matchScore": 11164,
+    "matchReasons": ["connectionMode=HID", "vid=2E8A", "pid=4020", "usagePage=FF00 usage=0001"],
+    "rejectReasons": [],
+    "selected": true
+  },
+  "rejectedCandidates": [
+    {
+      "transportType": "HID",
+      "vid": 11914,
+      "pid": 4127,
+      "productName": "YMM HID",
+      "manufacturer": "YMMKeyboard",
+      "serial": "YMMK-LEGACY",
+      "comPort": "",
+      "usagePage": 65280,
+      "usage": 1,
+      "matchScore": 8164,
+      "matchReasons": ["connectionMode=HID", "vid=2E8A", "pid=101F", "usagePage=FF00 usage=0001"],
+      "rejectReasons": ["mode=COM"],
+      "selected": false
+    }
+  ],
+  "warnings": [],
+  "errors": []
+}
