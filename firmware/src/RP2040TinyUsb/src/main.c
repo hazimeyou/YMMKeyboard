@@ -35,12 +35,12 @@ static void send_event(const char state, uint8_t sw_id)
 
   if (tud_hid_ready())
   {
-    uint8_t report[65] = {0};
-    char hid_line[64];
+    uint8_t report[63] = {0};
+    char hid_line[63];
     snprintf(hid_line, sizeof(hid_line), "YMMK:%s", line);
-    report[0] = REPORT_ID_VENDOR;
-    memcpy(&report[1], hid_line, strnlen(hid_line, 64));
-    tud_hid_report(REPORT_ID_VENDOR, &report[1], 64);
+    size_t payload_len = strnlen(hid_line, sizeof(report));
+    memcpy(report, hid_line, payload_len);
+    tud_hid_report(REPORT_ID_VENDOR, report, (uint16_t)payload_len);
   }
 }
 

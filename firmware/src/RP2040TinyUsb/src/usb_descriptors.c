@@ -3,14 +3,14 @@
 #include <string.h>
 
 #define USB_VID              0x2E8A
-#define USB_PID              0x101F
+#define USB_PID              0x4020
 #define USB_BCD              0x0100
 #define CFG_TUD_ENDPOINT0_SIZE 64
 
 #define USB_MANUFACTURER     "YMMKeyboard"
-#define USB_PRODUCT          "RP2040 TinyUSB Keyboard"
-#define USB_CDC_ITF_STR      "YMM CDC"
-#define USB_HID_ITF_STR      "YMM HID"
+#define USB_PRODUCT          "YMMKeyboard RP2040"
+#define USB_CDC_ITF_STR      "YMM Serial Bridge"
+#define USB_HID_ITF_STR      "YMM Control HID"
 
 const uint8_t hid_report_descriptor[] = {
   0x06, 0x00, 0xFF,        // Usage Page (Vendor Defined 0xFF00)
@@ -20,10 +20,10 @@ const uint8_t hid_report_descriptor[] = {
   0x15, 0x00,              // Logical Minimum (0)
   0x26, 0xFF, 0x00,        // Logical Maximum (255)
   0x75, 0x08,              // Report Size (8)
-  0x95, 0x40,              // Report Count (64)
+  0x95, 0x3F,              // Report Count (63)
   0x09, 0x01,              // Usage
   0x81, 0x02,              // Input
-  0x95, 0x40,              // Report Count (64)
+  0x95, 0x3F,              // Report Count (63)
   0x09, 0x01,              // Usage
   0x91, 0x02,              // Output
   0xC0                     // End Collection

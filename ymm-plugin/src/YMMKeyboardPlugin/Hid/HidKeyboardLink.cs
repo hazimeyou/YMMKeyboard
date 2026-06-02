@@ -145,7 +145,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
                     && !manufacturer.Contains(manufacturerFilter, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                if (useImplicitFilter && !IsLikelyYmmKeyboardDevice(d, productName, manufacturer))
+                if (useImplicitFilter && !IsFormalYmmKeyboardDevice(d, productName, manufacturer))
                     continue;
 
                 result.Add(d);
@@ -244,19 +244,17 @@ public sealed class HidKeyboardLink : IKeyboardLink
         }
     }
 
-    private static bool IsLikelyYmmKeyboardDevice(HidDevice d, string product, string maker)
+    private static bool IsFormalYmmKeyboardDevice(HidDevice d, string product, string maker)
     {
-        if (TryGetUsagePageAndUsage(d, out var page, out var usage))
-        {
-            if (page == 0xFF00 && usage == 0x0001)
-                return true;
-        }
+        if (!TryGetUsagePageAndUsage(d, out var page, out var usage))
+            return false;
 
-        if (product.Contains("CircuitPython HID", StringComparison.OrdinalIgnoreCase)
-            || maker.Contains("Waveshare", StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        return d.GetMaxInputReportLength() == 64 && d.GetMaxOutputReportLength() == 64;
+        return d.VendorID == 0x2E8A
+            && d.ProductID == 0x4020
+            && page == 0xFF00
+            && usage == 0x0001
+            && string.Equals(product, "YMMKeyboard RP2040", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(maker, "YMMKeyboard", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryGetUsagePageAndUsage(HidDevice d, out int usagePage, out int usage)

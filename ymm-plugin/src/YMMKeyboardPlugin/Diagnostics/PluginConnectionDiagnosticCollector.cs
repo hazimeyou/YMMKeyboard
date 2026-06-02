@@ -13,6 +13,13 @@ namespace YMMKeyboardPlugin.Diagnostics;
 
 public static class PluginConnectionDiagnosticCollector
 {
+    private const ushort FormalVendorId = 0x2E8A;
+    private const ushort FormalProductId = 0x4020;
+    private const string FormalManufacturer = "YMMKeyboard";
+    private const string FormalProductName = "YMMKeyboard RP2040";
+    private const ushort FormalUsagePage = 0xFF00;
+    private const ushort FormalUsage = 0x0001;
+
     public static PluginConnectionDiagnosticReport Capture(string scanMode)
     {
         var settings = YMMKeyboardSettings.Current;
@@ -205,18 +212,18 @@ public static class PluginConnectionDiagnosticCollector
 
             if (useImplicitFilter)
             {
-                if (LooksLikeYmmDevice(device))
+                if (LooksLikeFormalYmmDevice(device))
                 {
                     score += 2500;
-                    matchReasons.Add("implicitYmmHeuristic");
+                    matchReasons.Add("implicitFormalIdentityHeuristic");
                 }
                 else
                 {
-                    rejectReasons.Add("implicitYmmHeuristicMismatch");
+                    rejectReasons.Add("implicitFormalIdentityHeuristicMismatch");
                 }
             }
 
-            if (device.UsagePage == 0xFF00 && device.Usage == 0x0001)
+            if (device.UsagePage == FormalUsagePage && device.Usage == FormalUsage)
             {
                 score += 5000;
                 matchReasons.Add("usagePage=FF00 usage=0001");
@@ -317,46 +324,23 @@ public static class PluginConnectionDiagnosticCollector
         }
     }
 
-    private static bool LooksLikeYmmDevice(HidDeviceInfo device)
+    private static bool LooksLikeFormalYmmDevice(HidDeviceInfo device)
     {
-        if (device.VendorId == 0x2E8A)
-            return true;
-
-        if (device.ProductName.Contains("YMM", StringComparison.OrdinalIgnoreCase))
-            return true;
-        if (device.Manufacturer.Contains("YMM", StringComparison.OrdinalIgnoreCase))
-            return true;
-        if (device.Manufacturer.Contains("Waveshare", StringComparison.OrdinalIgnoreCase))
-            return true;
-        if (device.ProductName.Contains("CircuitPython", StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        return device.MaxInputReportLength >= 64 || device.MaxOutputReportLength >= 64;
+        return device.VendorId == FormalVendorId
+            && device.ProductId == FormalProductId
+            && string.Equals(device.ProductName, FormalProductName, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(device.Manufacturer, FormalManufacturer, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ClassifyHidIdentity(HidDeviceInfo device)
     {
-        if (device.VendorId == 0x2E8A
-            && device.ProductId == 0x4020
-            && string.Equals(device.ProductName, "YMM RP2040 Control Keyboard", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(device.Manufacturer, "YMMKeyboard Project", StringComparison.OrdinalIgnoreCase))
+        if (device.VendorId == FormalVendorId
+            && device.ProductId == FormalProductId
+            && string.Equals(device.ProductName, FormalProductName, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(device.Manufacturer, FormalManufacturer, StringComparison.OrdinalIgnoreCase))
         {
             return "formal";
         }
-
-        if (device.VendorId == 0x2E8A
-            && device.ProductId == 0x101F
-            && string.Equals(device.ProductName, "YMM HID", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(device.Manufacturer, "YMMKeyboard", StringComparison.OrdinalIgnoreCase))
-        {
-            return "temporary";
-        }
-
-        if (device.VendorId == 0x2E8A)
-            return "likely-ymm";
-
-        if (LooksLikeYmmDevice(device))
-            return "possible-ymm";
 
         return "other";
     }

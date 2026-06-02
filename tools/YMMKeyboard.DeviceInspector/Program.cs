@@ -36,7 +36,6 @@ internal sealed class DeviceInspectorApp : IDisposable
         Write("DeviceInspector START");
         Write($"LogFile={logPath}");
         Write($"FormalIdentity={DeviceIdentity.DescribeFormal()}");
-        Write($"TemporaryIdentity={DeviceIdentity.DescribeTemporary()}");
         Write($"MachineName={Environment.MachineName}");
         Write($"OsVersion={RuntimeInformation.OSDescription}");
         Write($"AppVersion={GetAppVersion()}");
@@ -371,9 +370,6 @@ internal sealed class DeviceInspectorApp : IDisposable
                 var reason = device.IdentityKind switch
                 {
                     "formal" => "matched formal identity",
-                    "temporary" => "matched temporary identity",
-                    "likely-ymm" => "matched by VID/PID or usage heuristics",
-                    "possible-ymm" => "matched by YMM text heuristic",
                     _ => "matched by inspector heuristic",
                 };
 
@@ -397,9 +393,6 @@ internal sealed class DeviceInspectorApp : IDisposable
                 };
             })
             .OrderByDescending(candidate => candidate.IdentityKind == "formal")
-            .ThenByDescending(candidate => candidate.IdentityKind == "temporary")
-            .ThenByDescending(candidate => candidate.IdentityKind == "likely-ymm")
-            .ThenByDescending(candidate => candidate.IdentityKind == "possible-ymm")
             .ThenBy(candidate => candidate.VendorId)
             .ThenBy(candidate => candidate.ProductId)
             .ToList();

@@ -743,8 +743,6 @@ internal sealed class ConnectionCandidateRecord
         {
             if (Vid == 0x2E8A && Pid == 0x4020)
                 return 10000;
-            if (Vid == 0x2E8A && Pid == 0x101F)
-                return 8000;
             if (UsagePage == 0xFF00 && Usage == 0x0001)
                 return 7000;
             return 1500;
@@ -760,10 +758,6 @@ internal sealed class ConnectionCandidateRecord
     {
         if (Vid == 0x2E8A && Pid == 0x4020)
             return "formal";
-        if (Vid == 0x2E8A && Pid == 0x101F)
-            return "temporary";
-        if (Vid == 0x2E8A)
-            return "likely-ymm";
         return "other";
     }
 
@@ -876,16 +870,8 @@ internal sealed class InspectorReport
     {
         if (identityKind.Equals("formal", StringComparison.OrdinalIgnoreCase))
             return 10000;
-        if (identityKind.Equals("temporary", StringComparison.OrdinalIgnoreCase))
-            return 8000;
-        if (identityKind.Equals("likely-ymm", StringComparison.OrdinalIgnoreCase))
-            return 5000;
-        if (identityKind.Equals("possible-ymm", StringComparison.OrdinalIgnoreCase))
-            return 1500;
         if (vid == 0x2E8A && pid == 0x4020)
             return 10000;
-        if (vid == 0x2E8A && pid == 0x101F)
-            return 8000;
         if (usagePage == 0xFF00 && usage == 0x0001)
             return 7000;
         return 0;

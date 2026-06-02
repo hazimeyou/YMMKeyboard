@@ -22,6 +22,10 @@ namespace YMMKeyboardPlugin.Settings
     public class YMMKeyboardSettings : SettingsBase<YMMKeyboardSettings>
     {
         private static readonly Regex uidPattern = new("^[0-9a-fA-F]{8,64}$", RegexOptions.Compiled);
+        private const string FormalHidVendorIdHex = "2E8A";
+        private const string FormalHidProductIdHex = "4020";
+        private const string FormalHidProductNameFilter = "YMMKeyboard RP2040";
+        private const string FormalHidManufacturerFilter = "YMMKeyboard";
         private const string SettingsDirectoryName = "settings";
         private const string SettingsFileName = "YMMKeyboardSettings.json";
         private static readonly object saveLock = new();
@@ -43,11 +47,11 @@ namespace YMMKeyboardPlugin.Settings
         public override object? SettingView => new YMMKeyboardSettingsPanel(this);
 
         [DataMember] public string PortName { get; set; } = string.Empty;
-        [DataMember] public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Com;
-        [DataMember] public string HidVendorIdHex { get; set; } = string.Empty;
-        [DataMember] public string HidProductIdHex { get; set; } = string.Empty;
-        [DataMember] public string HidProductNameFilter { get; set; } = string.Empty;
-        [DataMember] public string HidManufacturerFilter { get; set; } = string.Empty;
+        [DataMember] public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Hid;
+        [DataMember] public string HidVendorIdHex { get; set; } = FormalHidVendorIdHex;
+        [DataMember] public string HidProductIdHex { get; set; } = FormalHidProductIdHex;
+        [DataMember] public string HidProductNameFilter { get; set; } = FormalHidProductNameFilter;
+        [DataMember] public string HidManufacturerFilter { get; set; } = FormalHidManufacturerFilter;
         [DataMember] public List<string> StartupPortNames { get; set; } = new();
         [DataMember] public List<string> KnownDeviceUids { get; set; } = new();
         [DataMember] public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new();
@@ -339,9 +343,17 @@ namespace YMMKeyboardPlugin.Settings
         private void NormalizeSettings()
         {
             HidVendorIdHex = NormalizeHex(HidVendorIdHex);
+            if (string.IsNullOrWhiteSpace(HidVendorIdHex))
+                HidVendorIdHex = FormalHidVendorIdHex;
             HidProductIdHex = NormalizeHex(HidProductIdHex);
+            if (string.IsNullOrWhiteSpace(HidProductIdHex))
+                HidProductIdHex = FormalHidProductIdHex;
             HidProductNameFilter = (HidProductNameFilter ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(HidProductNameFilter))
+                HidProductNameFilter = FormalHidProductNameFilter;
             HidManufacturerFilter = (HidManufacturerFilter ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(HidManufacturerFilter))
+                HidManufacturerFilter = FormalHidManufacturerFilter;
 
             StartupPortNames = StartupPortNames
                 .Where(name => !string.IsNullOrWhiteSpace(name))
