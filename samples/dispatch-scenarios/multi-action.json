@@ -1,0 +1,17 @@
+{
+  "dispatchId": "DISPATCH_MULTI",
+  "target": "YMM",
+  "actionCount": 2,
+  "actions": [
+    {
+      "actionType": "key",
+      "payloadSummary": "press A"
+    },
+    {
+      "actionType": "key",
+      "payloadSummary": "release A"
+    }
+  ],
+  "validationResult": "ok",
+  "readyState": true
+}

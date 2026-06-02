@@ -30,5 +30,8 @@
   <Project Path="tools/YMMKeyboard.MacroDiagnosticsViewer/YMMKeyboard.MacroDiagnosticsViewer.csproj">
     <Platform Solution="*|x64" Project="Any CPU" />
   </Project>
+  <Project Path="tools/YMMKeyboard.DispatchDiagnosticsViewer/YMMKeyboard.DispatchDiagnosticsViewer.csproj">
+    <Platform Solution="*|x64" Project="Any CPU" />
+  </Project>
 </Solution>
 

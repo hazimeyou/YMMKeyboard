@@ -1,0 +1,9 @@
+{
+  "dispatchId": "DISPATCH_EMPTY",
+  "target": "YMM",
+  "actionCount": 0,
+  "actions": [],
+  "validationResult": "failed",
+  "rejectReason": "no actions",
+  "readyState": false
+}

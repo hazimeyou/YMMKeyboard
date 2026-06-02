@@ -1,0 +1,13 @@
+{
+  "dispatchId": "DISPATCH_01",
+  "target": "YMM",
+  "actionCount": 1,
+  "actions": [
+    {
+      "actionType": "key",
+      "payloadSummary": "press A"
+    }
+  ],
+  "validationResult": "ok",
+  "readyState": true
+}
