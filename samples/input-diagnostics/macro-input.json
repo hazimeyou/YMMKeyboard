@@ -1,0 +1,57 @@
+{
+  "generatedAt": "2026-06-02T10:02:00+09:00",
+  "appVersion": "RC1",
+  "pluginVersion": "RC1",
+  "machineName": "SIM-LAB-01",
+  "osVersion": "Microsoft Windows 11 Pro 23H2",
+  "source": "macro-input",
+  "summary": {
+    "eventCount": 4,
+    "macroCount": 1,
+    "mappedActionCount": 1,
+    "rejectedCount": 0,
+    "issuesCount": 0
+  },
+  "events": [
+    {
+      "eventType": "InputReceived",
+      "timestamp": "2026-06-02T10:02:00+09:00",
+      "transportType": "Serial",
+      "sourceDevice": "COM7",
+      "rawInput": "yymmk-003:P:SW_03",
+      "inputId": "yymmk-003:P:SW_03"
+    },
+    {
+      "eventType": "InputMapped",
+      "timestamp": "2026-06-02T10:02:00+09:00",
+      "transportType": "Serial",
+      "sourceDevice": "COM7",
+      "rawInput": "yymmk-003:P:SW_03",
+      "inputId": "yymmk-003:P:SW_03",
+      "mappedAction": "YMMT読み込み",
+      "mappingSource": "device-switch:yymmk-003:SW03"
+    },
+    {
+      "eventType": "MacroResolved",
+      "timestamp": "2026-06-02T10:02:00+09:00",
+      "transportType": "Serial",
+      "sourceDevice": "COM7",
+      "rawInput": "yymmk-003:P:SW_03",
+      "inputId": "yymmk-003:P:SW_03",
+      "macroName": "YMMT読み込み",
+      "stepCount": 3,
+      "resolutionResult": "resolved"
+    },
+    {
+      "eventType": "DispatchPrepared",
+      "timestamp": "2026-06-02T10:02:00+09:00",
+      "transportType": "Serial",
+      "sourceDevice": "COM7",
+      "rawInput": "yymmk-003:P:SW_03",
+      "inputId": "yymmk-003:P:SW_03",
+      "dispatchType": "catalog-load",
+      "target": "LoadYmmtCatalogAction.Execute",
+      "payloadSummary": "switch=SW03; parameter=3"
+    }
+  ]
+}

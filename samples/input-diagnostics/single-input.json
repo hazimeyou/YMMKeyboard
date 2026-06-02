@@ -1,0 +1,57 @@
+{
+  "generatedAt": "2026-06-02T10:00:00+09:00",
+  "appVersion": "RC1",
+  "pluginVersion": "RC1",
+  "machineName": "SIM-LAB-01",
+  "osVersion": "Microsoft Windows 11 Pro 23H2",
+  "source": "single-input",
+  "summary": {
+    "eventCount": 4,
+    "macroCount": 1,
+    "mappedActionCount": 1,
+    "rejectedCount": 0,
+    "issuesCount": 0
+  },
+  "events": [
+    {
+      "eventType": "InputReceived",
+      "timestamp": "2026-06-02T10:00:00+09:00",
+      "transportType": "Serial",
+      "sourceDevice": "COM3",
+      "rawInput": "yymmk-001:P:SW_01",
+      "inputId": "yymmk-001:P:SW_01"
+    },
+    {
+      "eventType": "InputMapped",
+      "timestamp": "2026-06-02T10:00:00+09:00",
+      "transportType": "Serial",
+      "sourceDevice": "COM3",
+      "rawInput": "yymmk-001:P:SW_01",
+      "inputId": "yymmk-001:P:SW_01",
+      "mappedAction": "テストイベント",
+      "mappingSource": "device-switch:yymmk-001:SW01"
+    },
+    {
+      "eventType": "MacroResolved",
+      "timestamp": "2026-06-02T10:00:00+09:00",
+      "transportType": "Serial",
+      "sourceDevice": "COM3",
+      "rawInput": "yymmk-001:P:SW_01",
+      "inputId": "yymmk-001:P:SW_01",
+      "macroName": "テストイベント",
+      "stepCount": 1,
+      "resolutionResult": "resolved"
+    },
+    {
+      "eventType": "DispatchPrepared",
+      "timestamp": "2026-06-02T10:00:00+09:00",
+      "transportType": "Serial",
+      "sourceDevice": "COM3",
+      "rawInput": "yymmk-001:P:SW_01",
+      "inputId": "yymmk-001:P:SW_01",
+      "dispatchType": "message-box",
+      "target": "TestEvent.Execute",
+      "payloadSummary": "switch=SW01; parameter=(null)"
+    }
+  ]
+}

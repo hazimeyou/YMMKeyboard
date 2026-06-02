@@ -1,5 +1,7 @@
 ﻿using System.Windows;
 using YMMKeyboardPlugin.Actions;
+using YMMKeyboardPlugin.Diagnostics;
+using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
@@ -46,41 +48,61 @@ namespace YMMKeyboardPlugin.Mapping
             ExecuteAction(config.ActionName, config.Parameter, combinationKey, "UIキーボード");
         }
 
-        public static void ExecuteDeviceSwitch(string uid, string switchName)
+        public static void ExecuteDeviceSwitch(string uid, string switchName, KeyEvent? input = null)
         {
             if (string.IsNullOrWhiteSpace(uid))
                 return;
 
             var config = YMMKeyboardSettings.Current.GetDeviceButtonConfig(uid, switchName);
-            ExecuteAction(config.ActionName, config.Parameter, switchName, uid);
+            if (input is not null)
+                InputDiagnostics.RecordInputMapped(input, config.ActionName, $"device-switch:{uid}:{switchName}");
+
+            ExecuteAction(config.ActionName, config.Parameter, switchName, uid, input);
         }
 
-        public static void ExecuteAction(string actionName, string? parameter, string switchName, string sourceName)
+        public static void ExecuteAction(string actionName, string? parameter, string switchName, string sourceName, KeyEvent? input = null)
         {
             actionName = NormalizeActionName(actionName);
             var frameCount = ParseFrameCount(parameter);
 
+            if (input is not null)
+            {
+                InputDiagnostics.RecordMacroResolved(input, actionName, 1, string.IsNullOrWhiteSpace(actionName) ? "noop" : "resolved");
+            }
+
             switch (actionName)
             {
                 case TestEventActionName:
+                    if (input is not null)
+                        InputDiagnostics.RecordDispatchPrepared(input, "message-box", nameof(TestEvent.Execute), $"switch={switchName}; parameter={parameter ?? "(null)"}");
                     TestEvent.Execute($"{switchName} ({sourceName})", parameter);
                     break;
                 case PlusSeekFrameActionName:
+                    if (input is not null)
+                        InputDiagnostics.RecordDispatchPrepared(input, "seek-frame", nameof(KeyboardAction.PlusSeekFrame), $"frameCount={frameCount}");
                     KeyboardAction.PlusSeekFrame(frameCount);
                     break;
                 case MinusSeekFrameActionName:
+                    if (input is not null)
+                        InputDiagnostics.RecordDispatchPrepared(input, "seek-frame", nameof(KeyboardAction.MinusSeekFrame), $"frameCount={frameCount}");
                     KeyboardAction.MinusSeekFrame(frameCount);
                     break;
                 case LoadYmmtCatalogActionName:
+                    if (input is not null)
+                        InputDiagnostics.RecordDispatchPrepared(input, "catalog-load", nameof(LoadYmmtCatalogAction.Execute), $"switch={switchName}; parameter={parameter ?? "(null)"}");
                     LoadYmmtCatalogAction.Execute($"{switchName} ({sourceName})", parameter);
                     break;
                 case NoneActionName:
                 case "":
                 case null:
+                    if (input is not null)
+                        InputDiagnostics.RecordDispatchPrepared(input, "none", "noop", $"switch={switchName}");
                     break;
                 default:
                     if (warnedUnknownActions.Add(actionName))
                         PluginLogger.Warn("MappingConverter", $"Unsupported action was ignored: {actionName}");
+                    if (input is not null)
+                        InputDiagnostics.RecordDispatchPrepared(input, "unsupported", actionName, $"switch={switchName}; parameter={parameter ?? "(null)"}");
                     break;
             }
         }

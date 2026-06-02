@@ -1,0 +1,21 @@
+name: Input Diagnostics Verification
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify_input_diagnostics:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Verify input diagnostics foundation
+        shell: pwsh
+        run: ./scripts/verify-input-diagnostics.ps1

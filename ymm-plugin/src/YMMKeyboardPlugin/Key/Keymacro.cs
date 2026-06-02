@@ -10,6 +10,7 @@ using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
 using YMMKeyboardPlugin.Hid;
+using YMMKeyboardPlugin.Diagnostics;
 
 namespace YMMKeyboardPlugin
 {
@@ -33,11 +34,13 @@ namespace YMMKeyboardPlugin
         public void Initialize()
         {
             Debug.WriteLine("[Keymacro] Initialize START");
+            InputDiagnostics.Initialize();
             YMMKeyboardSettings.ConnectionRequested += OnConnectionRequested;
             YMMKeyboardSettings.DisconnectionRequested += OnDisconnectionRequested;
             YMMKeyboardSettings.SettingsLoaded += OnSettingsLoaded;
             StartHidIfConfigured();
             ConnectStartupPorts();
+            WriteConnectionDiagnostics("startup");
             Debug.WriteLine("[Keymacro] Initialize END");
         }
 
@@ -45,6 +48,7 @@ namespace YMMKeyboardPlugin
         {
             StartHidIfConfigured();
             ConnectStartupPorts();
+            WriteConnectionDiagnostics("settings-loaded");
         }
 
         private void StartHidIfConfigured()
@@ -73,6 +77,7 @@ namespace YMMKeyboardPlugin
             catch (Exception ex)
             {
                 PluginLogger.Error("Keymacro", "Failed to start HID link.", ex);
+                WriteConnectionDiagnostics("hid-start-failed");
             }
         }
 
@@ -91,6 +96,7 @@ namespace YMMKeyboardPlugin
 
         private void OnConnectionRequested(string portName)
         {
+            WriteConnectionDiagnostics($"connection-request:{SanitizeScanModePort(portName)}");
             ConnectPort(portName);
         }
 
@@ -133,6 +139,7 @@ namespace YMMKeyboardPlugin
             {
                 Debug.WriteLine($"[Keymacro] Connection error: {ex}");
                 MessageBox.Show($"COMポート {portName} に接続できませんでした。\n{ex.Message}");
+                WriteConnectionDiagnostics($"connect-failed:{SanitizeScanModePort(portName)}");
             }
         }
 
@@ -171,20 +178,22 @@ namespace YMMKeyboardPlugin
         private void OnKeyEventReceived(SerialKeyboardDevice device, KeyEvent e)
         {
             Debug.WriteLine($"[Keymacro] KeyEventReceived UID={device.Uid} SW={e.SwitchId} Pressed={e.IsPressed}");
+            InputDiagnostics.RecordInputReceived(e);
 
             if (!SwitchLayout.TryGetSwitchName(e.SwitchId, out var switchName))
             {
                 Debug.WriteLine("[Keymacro] Unknown switch id");
+                InputDiagnostics.RecordInputFiltered(e, "UnknownSwitchId", accepted: false, "unknown switch id");
                 return;
             }
 
             if (e.IsPressed)
-                HandleKeyPressed(device.Uid, switchName, e.ReceivedAtUtc);
+                HandleKeyPressed(device.Uid, switchName, e.ReceivedAtUtc, e);
             else
                 HandleKeyReleased(device.Uid, switchName);
         }
 
-        private void HandleKeyPressed(string uid, string switchName, DateTime receivedAtUtc)
+        private void HandleKeyPressed(string uid, string switchName, DateTime receivedAtUtc, KeyEvent input)
         {
             ButtonConfig? comboConfig = null;
             string combinationKey = string.Empty;
@@ -200,18 +209,21 @@ namespace YMMKeyboardPlugin
                     {
                         CancelPendingSingles(uid, pressed);
                         LogLatency($"Immediate action uid={uid} switch={switchName}", receivedAtUtc);
-                        MappingConverter.ExecuteDeviceSwitch(uid, switchName);
+                        MappingConverter.ExecuteDeviceSwitch(uid, switchName, input);
                         return;
                     }
 
-                    ScheduleSingleAction(uid, switchName, receivedAtUtc);
+                    ScheduleSingleAction(uid, switchName, receivedAtUtc, input);
                     return;
                 }
 
                 combinationKey = SwitchLayout.NormalizeCombination(pressed);
                 comboConfig = YMMKeyboardSettings.Current.GetDeviceComboButtonConfig(uid, combinationKey);
-                if (!HasExecutableAction(comboConfig))
+                if (comboConfig is null || !HasExecutableAction(comboConfig))
+                {
+                    InputDiagnostics.RecordInputFiltered(input, "NoExecutableAction", accepted: false, $"combo={combinationKey}");
                     return;
+                }
 
                 CancelPendingSingles(uid, pressed);
                 var consumed = GetOrCreateSwitchSet(consumedSwitches, uid);
@@ -221,8 +233,30 @@ namespace YMMKeyboardPlugin
 
             if (comboConfig is not null)
             {
+                InputDiagnostics.RecordInputMapped(input, comboConfig.ActionName, $"device-combo:{uid}:{combinationKey}");
                 LogLatency($"Combo action uid={uid} combo={combinationKey}", receivedAtUtc);
-                MappingConverter.ExecuteAction(comboConfig.ActionName, comboConfig.Parameter, combinationKey, uid);
+                MappingConverter.ExecuteAction(comboConfig.ActionName, comboConfig.Parameter, combinationKey, uid, input);
+            }
+        }
+
+        private static string SanitizeScanModePort(string? portName)
+        {
+            if (string.IsNullOrWhiteSpace(portName))
+                return "empty";
+
+            return new string(portName.Where(ch => char.IsLetterOrDigit(ch) || ch == '_' || ch == '-').ToArray());
+        }
+
+        private void WriteConnectionDiagnostics(string scanMode)
+        {
+            try
+            {
+                var report = PluginConnectionDiagnosticCollector.Capture(scanMode);
+                PluginConnectionDiagnosticWriter.Write(report);
+            }
+            catch (Exception ex)
+            {
+                PluginLogger.Warn("Keymacro", $"Connection diagnostics failed: {ex.Message}");
             }
         }
 
@@ -246,7 +280,7 @@ namespace YMMKeyboardPlugin
             }
         }
 
-        private void ScheduleSingleAction(string uid, string switchName, DateTime receivedAtUtc)
+        private void ScheduleSingleAction(string uid, string switchName, DateTime receivedAtUtc, KeyEvent input)
         {
             var pendingByUid = GetOrCreatePendingSingles(uid);
             if (pendingByUid.TryGetValue(switchName, out var existing))
@@ -276,7 +310,7 @@ namespace YMMKeyboardPlugin
                     }
 
                     LogLatency($"Single action uid={uid} switch={switchName}", receivedAtUtc);
-                    MappingConverter.ExecuteDeviceSwitch(uid, switchName);
+                    MappingConverter.ExecuteDeviceSwitch(uid, switchName, input);
                 }
                 catch (TaskCanceledException)
                 {
@@ -393,6 +427,8 @@ namespace YMMKeyboardPlugin
                 pressedSwitches.Clear();
                 consumedSwitches.Clear();
             }
+
+            InputDiagnostics.Flush();
         }
     }
 }

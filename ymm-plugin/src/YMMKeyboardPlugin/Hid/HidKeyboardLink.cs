@@ -430,6 +430,10 @@ public sealed class HidKeyboardLink : IKeyboardLink
         KeyEventReceived?.Invoke(actualDevice, new KeyEvent
         {
             Uid = uid,
+            TransportType = "HID",
+            SourceDevice = actualDevice.Uid,
+            RawInput = matchedText,
+            InputId = $"{uid}:{state}:SW_{switchId:00}",
             IsPressed = state == "P",
             SwitchId = switchId,
             ReceivedAtUtc = DateTime.UtcNow,

@@ -128,6 +128,10 @@ namespace YMMKeyboardPlugin
                     var keyEvent = new KeyEvent
                     {
                         Uid = uid,
+                        TransportType = "Serial",
+                        SourceDevice = _portName,
+                        RawInput = normalizedLine,
+                        InputId = $"{uid}:{state}:SW_{switchId:00}",
                         IsPressed = state == "P",
                         SwitchId = switchId,
                         ReceivedAtUtc = DateTime.UtcNow
