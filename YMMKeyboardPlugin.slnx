@@ -21,5 +21,14 @@
   <Project Path="tools/YMMKeyboard.ProtocolSimulator/YMMKeyboard.ProtocolSimulator.csproj">
     <Platform Solution="*|x64" Project="Any CPU" />
   </Project>
+  <Project Path="tools/YMMKeyboard.InputDiagnosticsViewer/YMMKeyboard.InputDiagnosticsViewer.csproj">
+    <Platform Solution="*|x64" Project="Any CPU" />
+  </Project>
+  <Project Path="tools/YMMKeyboard.InputSimulator/YMMKeyboard.InputSimulator.csproj">
+    <Platform Solution="*|x64" Project="Any CPU" />
+  </Project>
+  <Project Path="tools/YMMKeyboard.MacroDiagnosticsViewer/YMMKeyboard.MacroDiagnosticsViewer.csproj">
+    <Platform Solution="*|x64" Project="Any CPU" />
+  </Project>
 </Solution>
 

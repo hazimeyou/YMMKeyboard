@@ -1,0 +1,25 @@
+{
+  "macroId": "MACRO_LARGE",
+  "input": "MACRO_LARGE",
+  "lookupSource": "catalog",
+  "lookupResult": "found",
+  "bindingName": "large",
+  "bindingResult": "matched",
+  "expandedSteps": [
+    "step-1",
+    "step-2",
+    "step-3",
+    "step-4",
+    "step-5",
+    "step-6",
+    "step-7",
+    "step-8"
+  ],
+  "valid": true,
+  "warnings": [
+    "large expansion"
+  ],
+  "errors": [],
+  "planId": "macro-plan-large",
+  "actionCount": 8
+}

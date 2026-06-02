@@ -1,0 +1,21 @@
+{
+  "macroId": "MACRO_NESTED",
+  "input": "MACRO_01",
+  "lookupSource": "catalog",
+  "lookupResult": "found",
+  "bindingName": "nested",
+  "bindingResult": "resolved",
+  "expandedSteps": [
+    "enter nested",
+    "press B",
+    "release B",
+    "exit nested"
+  ],
+  "valid": true,
+  "warnings": [
+    "nested macro expanded"
+  ],
+  "errors": [],
+  "planId": "macro-plan-nested",
+  "actionCount": 4
+}

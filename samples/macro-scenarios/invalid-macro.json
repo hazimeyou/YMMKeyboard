@@ -1,0 +1,16 @@
+{
+  "macroId": "MACRO_INVALID",
+  "input": "INVALID",
+  "lookupSource": "catalog",
+  "lookupResult": "missing",
+  "bindingName": "invalid",
+  "bindingResult": "rejected",
+  "expandedSteps": [],
+  "valid": false,
+  "warnings": [],
+  "errors": [
+    "macro not found"
+  ],
+  "planId": "macro-plan-invalid",
+  "actionCount": 0
+}

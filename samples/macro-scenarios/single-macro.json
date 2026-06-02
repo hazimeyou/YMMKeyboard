@@ -1,0 +1,17 @@
+{
+  "macroId": "MACRO_01",
+  "input": "KEY_A",
+  "lookupSource": "catalog",
+  "lookupResult": "found",
+  "bindingName": "single-key",
+  "bindingResult": "matched",
+  "expandedSteps": [
+    "press A",
+    "release A"
+  ],
+  "valid": true,
+  "warnings": [],
+  "errors": [],
+  "planId": "macro-plan-01",
+  "actionCount": 2
+}

@@ -1,0 +1,18 @@
+{
+  "macroId": "MACRO_MISSING",
+  "input": "MISSING",
+  "lookupSource": "catalog",
+  "lookupResult": "missing",
+  "bindingName": "missing",
+  "bindingResult": "missing",
+  "expandedSteps": [],
+  "valid": false,
+  "warnings": [
+    "binding unavailable"
+  ],
+  "errors": [
+    "macro missing"
+  ],
+  "planId": "macro-plan-missing",
+  "actionCount": 0
+}
