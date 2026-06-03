@@ -1,3 +1,5 @@
+using YMMKeyboardPlugin.Hid;
+
 namespace YMMKeyboardPlugin.Diagnostics;
 
 public sealed class PluginConnectionDiagnosticReport
@@ -10,6 +12,7 @@ public sealed class PluginConnectionDiagnosticReport
     public string OsVersion { get; init; } = string.Empty;
     public string ScanMode { get; init; } = string.Empty;
     public ConfiguredDeviceIdentity ConfiguredDeviceIdentity { get; init; } = new();
+    public HidEnumerationDiagnosticResult RawHidEnumeration { get; init; } = new();
     public List<DetectedHidDeviceDiagnostic> DetectedHidDevices { get; init; } = [];
     public List<string> DetectedComPorts { get; init; } = [];
     public List<ConnectionCandidateDiagnostic> ConnectionCandidates { get; init; } = [];

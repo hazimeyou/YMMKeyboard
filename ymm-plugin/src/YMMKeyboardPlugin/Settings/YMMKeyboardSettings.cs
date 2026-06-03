@@ -24,7 +24,8 @@ namespace YMMKeyboardPlugin.Settings
         private static readonly Regex uidPattern = new("^[0-9a-fA-F]{8,64}$", RegexOptions.Compiled);
         private const string FormalHidVendorIdHex = "2E8A";
         private const string FormalHidProductIdHex = "4020";
-        private const string FormalHidProductNameFilter = "YMMKeyboard RP2040";
+        private const string FormalHidProductNameFilter = "";
+        private const string LegacyFormalHidProductNameFilter = "YMMKeyboard RP2040";
         private const string FormalHidManufacturerFilter = "YMMKeyboard";
         private const string SettingsDirectoryName = "settings";
         private const string SettingsFileName = "YMMKeyboardSettings.json";
@@ -349,11 +350,17 @@ namespace YMMKeyboardPlugin.Settings
             if (string.IsNullOrWhiteSpace(HidProductIdHex))
                 HidProductIdHex = FormalHidProductIdHex;
             HidProductNameFilter = (HidProductNameFilter ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(HidProductNameFilter))
-                HidProductNameFilter = FormalHidProductNameFilter;
             HidManufacturerFilter = (HidManufacturerFilter ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(HidManufacturerFilter))
                 HidManufacturerFilter = FormalHidManufacturerFilter;
+
+            if (string.Equals(HidVendorIdHex, FormalHidVendorIdHex, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(HidProductIdHex, FormalHidProductIdHex, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(HidManufacturerFilter, FormalHidManufacturerFilter, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(HidProductNameFilter, LegacyFormalHidProductNameFilter, StringComparison.OrdinalIgnoreCase))
+            {
+                HidProductNameFilter = FormalHidProductNameFilter;
+            }
 
             StartupPortNames = StartupPortNames
                 .Where(name => !string.IsNullOrWhiteSpace(name))

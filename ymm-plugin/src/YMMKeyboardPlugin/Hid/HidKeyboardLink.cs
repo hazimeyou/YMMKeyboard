@@ -31,6 +31,22 @@ public sealed class HidKeyboardLink : IKeyboardLink
     private int totalWorkerErrorCount;
     private DateTime lastRawReportLogAtUtc = DateTime.MinValue;
     private int rawReportSampleCount;
+    private string selectedPath = string.Empty;
+    private string attemptedPath = string.Empty;
+    private string openedPath = string.Empty;
+    private int openedVid;
+    private int openedPid;
+    private string openedProductName = string.Empty;
+    private string openedManufacturer = string.Empty;
+    private string openedSerial = string.Empty;
+    private bool openSucceeded;
+    private bool readLoopStarted;
+    private int readAttemptCount;
+    private int readSuccessCount;
+    private int readTimeoutCount;
+    private DateTime? lastReadAtUtc;
+    private string lastExceptionType = string.Empty;
+    private string lastExceptionMessage = string.Empty;
 
     public event Action<SerialKeyboardDevice>? DeviceDetected;
     public event Action<SerialKeyboardDevice, KeyEvent>? KeyEventReceived;
@@ -69,7 +85,14 @@ public sealed class HidKeyboardLink : IKeyboardLink
         {
             try
             {
-                foreach (var hidDevice in GetCandidateDevices())
+                var candidateDevices = GetCandidateDevices().ToArray();
+                lock (lockObj)
+                {
+                    selectedPath = candidateDevices.FirstOrDefault()?.DevicePath ?? string.Empty;
+                }
+                TryWriteSummary();
+
+                foreach (var hidDevice in candidateDevices)
                 {
                     if (token.IsCancellationRequested)
                         break;
@@ -84,6 +107,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
                             continue;
 
                         workers[path] = Task.Run(() => ReadDeviceLoop(hidDevice, path, token), token);
+                        TryWriteSummary(force: true);
                     }
                 }
 
@@ -246,15 +270,22 @@ public sealed class HidKeyboardLink : IKeyboardLink
 
     private static bool IsFormalYmmKeyboardDevice(HidDevice d, string product, string maker)
     {
-        if (!TryGetUsagePageAndUsage(d, out var page, out var usage))
+        if (d.VendorID != 0x2E8A
+            || d.ProductID != 0x4020
+            || !string.Equals(maker, "YMMKeyboard", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
 
-        return d.VendorID == 0x2E8A
-            && d.ProductID == 0x4020
+        var hasKnownProductName =
+            string.Equals(product, "YMMKeyboard RP2040", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(product, "YMM Control HID", StringComparison.OrdinalIgnoreCase);
+
+        var hasFormalUsage = TryGetUsagePageAndUsage(d, out var page, out var usage)
             && page == 0xFF00
-            && usage == 0x0001
-            && string.Equals(product, "YMMKeyboard RP2040", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(maker, "YMMKeyboard", StringComparison.OrdinalIgnoreCase);
+            && usage == 0x0001;
+
+        return hasKnownProductName || hasFormalUsage;
     }
 
     private static bool TryGetUsagePageAndUsage(HidDevice d, out int usagePage, out int usage)
@@ -328,14 +359,48 @@ public sealed class HidKeyboardLink : IKeyboardLink
     {
         try
         {
+            lock (lockObj)
+            {
+                attemptedPath = path;
+            }
+            TryWriteSummary(force: true);
+
             if (!hidDevice.TryOpen(out var stream))
             {
+                lock (lockObj)
+                {
+                    openedPath = path;
+                    openedVid = hidDevice.VendorID;
+                    openedPid = hidDevice.ProductID;
+                    openedProductName = SafeGetProductName(hidDevice);
+                    openedManufacturer = SafeGetManufacturer(hidDevice);
+                    openedSerial = SafeGetSerialNumber(hidDevice);
+                    openSucceeded = false;
+                    lastExceptionType = string.Empty;
+                    lastExceptionMessage = "TryOpen failed";
+                }
+                TryWriteSummary(force: true);
                 ThrottledManagerWarn($"TryOpen failed. path={path}");
                 return;
             }
 
             using (stream)
             {
+                lock (lockObj)
+                {
+                    openedPath = path;
+                    openedVid = hidDevice.VendorID;
+                    openedPid = hidDevice.ProductID;
+                    openedProductName = SafeGetProductName(hidDevice);
+                    openedManufacturer = SafeGetManufacturer(hidDevice);
+                    openedSerial = SafeGetSerialNumber(hidDevice);
+                    openSucceeded = true;
+                    readLoopStarted = true;
+                    lastExceptionType = string.Empty;
+                    lastExceptionMessage = string.Empty;
+                }
+                TryWriteSummary(force: true);
+
                 var stableUid = BuildStableSyntheticUid(hidDevice);
                 var device = GetOrCreateDevice(stableUid, out var isNew);
                 if (isNew)
@@ -351,6 +416,11 @@ public sealed class HidKeyboardLink : IKeyboardLink
                     int length;
                     try
                     {
+                        lock (lockObj)
+                        {
+                            readAttemptCount++;
+                        }
+                        TryWriteSummary();
                         length = await stream.ReadAsync(reportBuffer, 0, reportBuffer.Length, token);
                     }
                     catch (OperationCanceledException)
@@ -359,16 +429,35 @@ public sealed class HidKeyboardLink : IKeyboardLink
                     }
                     catch (TimeoutException)
                     {
+                        lock (lockObj)
+                        {
+                            readTimeoutCount++;
+                            lastExceptionType = nameof(TimeoutException);
+                            lastExceptionMessage = string.Empty;
+                        }
+                        TryWriteSummary(force: true);
                         continue;
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        lock (lockObj)
+                        {
+                            lastExceptionType = ex.GetType().Name;
+                            lastExceptionMessage = ex.Message;
+                        }
+                        TryWriteSummary(force: true);
                         break;
                     }
 
                 if (length <= 0)
                     break;
 
+                lock (lockObj)
+                {
+                    readSuccessCount++;
+                    lastReadAtUtc = DateTime.UtcNow;
+                }
+                TryWriteSummary();
                 MaybeLogRawReport(path, reportBuffer, length);
                 ParseReport(stableUid, device, reportBuffer, length);
             }
@@ -376,6 +465,12 @@ public sealed class HidKeyboardLink : IKeyboardLink
         }
         catch (Exception ex)
         {
+            lock (lockObj)
+            {
+                lastExceptionType = ex.GetType().Name;
+                lastExceptionMessage = ex.Message;
+            }
+            TryWriteSummary(force: true);
             RegisterPathFailure(path, ex);
         }
         finally
@@ -562,10 +657,16 @@ public sealed class HidKeyboardLink : IKeyboardLink
         }
     }
 
-    private void TryWriteSummary()
+    private static string SafeGetSerialNumber(HidDevice d)
+    {
+        try { return d.GetSerialNumber() ?? string.Empty; }
+        catch { return string.Empty; }
+    }
+
+    private void TryWriteSummary(bool force = false)
     {
         var now = DateTime.UtcNow;
-        if ((now - lastSummaryWrittenAtUtc).TotalSeconds < 30)
+        if (!force && (now - lastSummaryWrittenAtUtc).TotalSeconds < 30)
             return;
 
         lastSummaryWrittenAtUtc = now;
@@ -577,6 +678,22 @@ public sealed class HidKeyboardLink : IKeyboardLink
             int excludedCount;
             int knownDeviceCount;
             int errorCount;
+            string selectedPathSnapshot;
+            string attemptedPathSnapshot;
+            string openedPathSnapshot;
+            int openedVidSnapshot;
+            int openedPidSnapshot;
+            string openedProductNameSnapshot;
+            string openedManufacturerSnapshot;
+            string openedSerialSnapshot;
+            bool openSucceededSnapshot;
+            bool readLoopStartedSnapshot;
+            int readAttemptCountSnapshot;
+            int readSuccessCountSnapshot;
+            int readTimeoutCountSnapshot;
+            DateTime? lastReadAtSnapshot;
+            string lastExceptionTypeSnapshot;
+            string lastExceptionMessageSnapshot;
             lock (lockObj)
             {
                 activeWorkers = workers.Count;
@@ -584,11 +701,43 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 excludedCount = excludedPaths.Count;
                 knownDeviceCount = devices.Count;
                 errorCount = totalWorkerErrorCount;
+                selectedPathSnapshot = selectedPath;
+                attemptedPathSnapshot = attemptedPath;
+                openedPathSnapshot = openedPath;
+                openedVidSnapshot = openedVid;
+                openedPidSnapshot = openedPid;
+                openedProductNameSnapshot = openedProductName;
+                openedManufacturerSnapshot = openedManufacturer;
+                openedSerialSnapshot = openedSerial;
+                openSucceededSnapshot = openSucceeded;
+                readLoopStartedSnapshot = readLoopStarted;
+                readAttemptCountSnapshot = readAttemptCount;
+                readSuccessCountSnapshot = readSuccessCount;
+                readTimeoutCountSnapshot = readTimeoutCount;
+                lastReadAtSnapshot = lastReadAtUtc;
+                lastExceptionTypeSnapshot = lastExceptionType;
+                lastExceptionMessageSnapshot = lastExceptionMessage;
             }
 
             var summary = string.Join(Environment.NewLine, new[]
             {
                 $"time_utc={DateTime.UtcNow:O}",
+                $"selectedPath={selectedPathSnapshot}",
+                $"attemptedPath={attemptedPathSnapshot}",
+                $"openedPath={openedPathSnapshot}",
+                $"openedVid={openedVidSnapshot:X4}",
+                $"openedPid={openedPidSnapshot:X4}",
+                $"openedProductName={openedProductNameSnapshot}",
+                $"openedManufacturer={openedManufacturerSnapshot}",
+                $"openedSerial={openedSerialSnapshot}",
+                $"openSucceeded={openSucceededSnapshot}",
+                $"readLoopStarted={readLoopStartedSnapshot}",
+                $"readAttemptCount={readAttemptCountSnapshot}",
+                $"readSuccessCount={readSuccessCountSnapshot}",
+                $"readTimeoutCount={readTimeoutCountSnapshot}",
+                $"lastReadAt={(lastReadAtSnapshot.HasValue ? lastReadAtSnapshot.Value.ToString("O") : string.Empty)}",
+                $"lastExceptionType={lastExceptionTypeSnapshot}",
+                $"lastExceptionMessage={lastExceptionMessageSnapshot}",
                 $"manager_loop_count={managerLoopCount}",
                 $"active_workers={activeWorkers}",
                 $"cooldown_paths={cooldownCount}",

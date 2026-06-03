@@ -16,14 +16,19 @@ public static class PluginConnectionDiagnosticCollector
     private const ushort FormalVendorId = 0x2E8A;
     private const ushort FormalProductId = 0x4020;
     private const string FormalManufacturer = "YMMKeyboard";
-    private const string FormalProductName = "YMMKeyboard RP2040";
     private const ushort FormalUsagePage = 0xFF00;
     private const ushort FormalUsage = 0x0001;
+    private static readonly string[] FormalProductNames =
+    [
+        "YMMKeyboard RP2040",
+        "YMM Control HID",
+    ];
 
     public static PluginConnectionDiagnosticReport Capture(string scanMode)
     {
         var settings = YMMKeyboardSettings.Current;
-        var hidDevices = HidDeviceProbe.EnumerateAll();
+        var hidEnumeration = HidDeviceProbe.EnumerateAllWithDiagnostics();
+        var hidDevices = hidEnumeration.EnumeratedDevices;
         var comPorts = EnumerateComPorts();
         var candidates = new List<ConnectionCandidateDiagnostic>();
         var warnings = new List<string>();
@@ -47,8 +52,15 @@ public static class PluginConnectionDiagnosticCollector
 
         var rejected = candidates.Where(c => !c.Selected).ToList();
 
-        if (hidDevices.Count == 0)
+        if (hidEnumeration.TotalDeviceCount == 0)
             warnings.Add("No HID devices detected.");
+        else if (hidDevices.Count == 0)
+            warnings.Add("No HID devices matched after raw enumeration.");
+
+        var problematicHidDevices = hidEnumeration.FailedCount + hidEnumeration.PartialCount + hidEnumeration.SkippedCount;
+        if (problematicHidDevices > 0)
+            warnings.Add($"HID raw enumeration had {problematicHidDevices} problematic device(s).");
+
         if (comPorts.Count == 0)
             warnings.Add("No COM ports detected.");
         if (selected is null)
@@ -73,6 +85,7 @@ public static class PluginConnectionDiagnosticCollector
                 PortName = settings.PortName,
                 StartupPortNames = settings.GetStartupPortNames().ToList(),
             },
+            RawHidEnumeration = hidEnumeration,
             DetectedHidDevices = hidDevices.Select(d => new DetectedHidDeviceDiagnostic
             {
                 Vid = d.VendorId,
@@ -328,21 +341,33 @@ public static class PluginConnectionDiagnosticCollector
     {
         return device.VendorId == FormalVendorId
             && device.ProductId == FormalProductId
-            && string.Equals(device.ProductName, FormalProductName, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(device.Manufacturer, FormalManufacturer, StringComparison.OrdinalIgnoreCase);
+            && string.Equals(device.Manufacturer, FormalManufacturer, StringComparison.OrdinalIgnoreCase)
+            && (HasKnownFormalProductName(device.ProductName)
+                || (device.UsagePage == FormalUsagePage && device.Usage == FormalUsage));
     }
 
     private static string ClassifyHidIdentity(HidDeviceInfo device)
     {
-        if (device.VendorId == FormalVendorId
-            && device.ProductId == FormalProductId
-            && string.Equals(device.ProductName, FormalProductName, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(device.Manufacturer, FormalManufacturer, StringComparison.OrdinalIgnoreCase))
-        {
-            return "formal";
-        }
+        if (!LooksLikeFormalYmmDevice(device))
+            return "other";
 
-        return "other";
+        if (HasKnownFormalProductName(device.ProductName)
+            && device.UsagePage == FormalUsagePage
+            && device.Usage == FormalUsage)
+            return "formal";
+
+        if (HasKnownFormalProductName(device.ProductName))
+            return "formal-observed-product";
+
+        if (device.UsagePage == FormalUsagePage && device.Usage == FormalUsage)
+            return "formal-usage";
+
+        return "formal";
+    }
+
+    private static bool HasKnownFormalProductName(string productName)
+    {
+        return FormalProductNames.Any(name => string.Equals(productName, name, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string GetAppVersion()
