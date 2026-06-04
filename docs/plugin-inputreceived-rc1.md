@@ -18,12 +18,12 @@ Confirm that the latest matrix formal payload can enter the YMMKeyboardPlugin ru
 - The recorded raw input was `K_0_1:P`.
 - The current baseline also reaches `DispatchExecuted` for the `K_0_1 -> A` mapping.
 
-## What Is Not Required Yet
+## What Is Confirmed Now
 
-- `InputMapped`
-- `DispatchPrepared`
-- Macro execution
-- Label conversion
+- `InputMapped` is reached for the live baseline.
+- `DispatchPrepared` is reached for the live baseline.
+- `DispatchExecuted` is reached for the live baseline.
+- The current working path is `K_0_1:P -> A`.
 
 ## Success Criteria
 
