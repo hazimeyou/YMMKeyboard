@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Confirm that the latest matrix formal payload can enter the YMMKeyboardPlugin runtime and reach `InputReceived`.
+Confirm that the latest matrix formal payload can enter the YMMKeyboardPlugin runtime, reach `InputReceived`, and continue into dispatch execution.
 
 ## Current Confirmed Facts
 
@@ -16,6 +16,7 @@ Confirm that the latest matrix formal payload can enter the YMMKeyboardPlugin ru
 - The event landed in `tmp/input-diagnostics/`.
 - The live run also reached `InputMapped` and `DispatchPrepared`.
 - The recorded raw input was `K_0_1:P`.
+- The current baseline also reaches `DispatchExecuted` for the `K_0_1 -> A` mapping.
 
 ## What Is Not Required Yet
 
@@ -29,6 +30,7 @@ Confirm that the latest matrix formal payload can enter the YMMKeyboardPlugin ru
 - `InputReceived >= 1`
 - `raw_report_samples > 0`
 - The recorded raw input matches the formal matrix payload path.
+- `DispatchExecuted >= 1` for the `K_0_1 -> A` path.
 
 ## Next Step
 

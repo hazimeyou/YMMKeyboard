@@ -6,7 +6,7 @@
 |---|---|---|
 | Project Audit | Completed | Repository-wide audit and documentation baseline established. |
 | Diagnostics Foundation RC2 | Completed | Diagnostics tooling and verification flow are stable. |
-| Input Diagnostics RC1 | Completed | `InputReceived`, `InputMapped`, and `DispatchPrepared` are confirmed in live plugin input flow. |
+| Input Diagnostics RC1 | Completed | `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` are confirmed in live plugin input flow. |
 | Input Simulation RC1 | Completed | Replay and simulation plumbing is in place. |
 | Macro & Dispatch Diagnostics RC1 | Completed | Macro / dispatch visibility exists. |
 | Unified Diagnostics Replay | Completed | Cross-diagnostic replay is working. |
@@ -19,7 +19,7 @@
 - `DeviceInspector` sees `VID=0x2E8A` / `PID=0x4020`.
 - `HidConsoleProbe` can receive host HID traffic.
 - Formal payload `K_<row>_<col>:P/R` is observable on the host when the HID report length is fixed to 63 bytes.
-- `InputReceived`, `InputMapped`, and `DispatchPrepared` are now connected in the plugin path for HID events.
+- `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` are now connected in the plugin path for HID events.
 
 ## 3. Current Blockers
 
@@ -49,6 +49,7 @@ Current likely causes, in priority order:
 | Plugin InputReceived | `1` |
 | Plugin InputMapped | `1` |
 | Plugin DispatchPrepared | `1` |
+| Plugin DispatchExecuted | `1` |
 
 ## 6. Remaining Work by Area
 
@@ -60,7 +61,8 @@ Current likely causes, in priority order:
 
 ### Plugin
 
-- Confirm any remaining mapping or dispatch details only if a different key path is exercised.
+- Dispatch execution is now confirmed for the `K_0_1 -> A` path.
+- Any remaining mapping or dispatch details only need follow-up if a different key path is exercised.
 
 ### Diagnostics
 
@@ -100,14 +102,14 @@ Current likely causes, in priority order:
 
 | Area | Estimate |
 |---|---:|
-| Diagnostics | 95% |
+| Diagnostics | 97% |
 | Firmware Identity | 100% |
 | Hardware Validation | 95% |
-| Input Validation | 85% |
+| Input Validation | 95% |
 | Macro Validation | 10% |
-| YMM Integration | 50% |
-| Overall | 75% |
+| YMM Integration | 65% |
+| Overall | 82% |
 
 ## 10. Conclusion
 
-The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The plugin runtime now also confirms `InputReceived`, `InputMapped`, and `DispatchPrepared` for the live matrix path, so the current baseline is end-to-end healthy.
+The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The plugin runtime now also confirms `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` for the live matrix path, so the current baseline is end-to-end healthy for the `K_0_1 -> A` mapping.

@@ -73,3 +73,4 @@
 - The fixed-length formal payload was validated on the host as `K_COLON`.
 - The next live check is plugin-side `InputReceived`; see [Plugin InputReceived RC1](./plugin-inputreceived-rc1.md).
 - The live plugin run confirmed `InputReceived`, `InputMapped`, and `DispatchPrepared` for `K_0_1:P`.
+- The latest live plugin run also confirmed `DispatchExecuted` for `K_0_1:P` after the `SendInput` fix.

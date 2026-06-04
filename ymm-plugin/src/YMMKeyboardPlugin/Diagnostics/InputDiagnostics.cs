@@ -121,6 +121,76 @@ public static class InputDiagnostics
         }
     }
 
+    public static void RecordDispatchSkipped(KeyEvent input, string dispatchType, string target, string payloadSummary, string result)
+    {
+        lock (sync)
+        {
+            EnsureSession();
+            session!.Events.Add(new InputDiagnosticEvent
+            {
+                EventType = "DispatchSkipped",
+                Timestamp = DateTimeOffset.Now,
+                TransportType = input.TransportType,
+                SourceDevice = input.SourceDevice,
+                RawInput = input.RawInput,
+                InputId = input.InputId,
+                DispatchType = dispatchType,
+                Target = target,
+                PayloadSummary = payloadSummary,
+                Result = result,
+            });
+            FlushLocked();
+        }
+    }
+
+    public static void RecordDispatchExecuted(KeyEvent input, string dispatchType, string target, string payloadSummary, string result)
+    {
+        lock (sync)
+        {
+            EnsureSession();
+            session!.Events.Add(new InputDiagnosticEvent
+            {
+                EventType = "DispatchExecuted",
+                Timestamp = DateTimeOffset.Now,
+                TransportType = input.TransportType,
+                SourceDevice = input.SourceDevice,
+                RawInput = input.RawInput,
+                InputId = input.InputId,
+                DispatchType = dispatchType,
+                Target = target,
+                PayloadSummary = payloadSummary,
+                Succeeded = true,
+                Result = result,
+            });
+            FlushLocked();
+        }
+    }
+
+    public static void RecordDispatchFailed(KeyEvent input, string dispatchType, string target, string payloadSummary, string result, Exception ex)
+    {
+        lock (sync)
+        {
+            EnsureSession();
+            session!.Events.Add(new InputDiagnosticEvent
+            {
+                EventType = "DispatchFailed",
+                Timestamp = DateTimeOffset.Now,
+                TransportType = input.TransportType,
+                SourceDevice = input.SourceDevice,
+                RawInput = input.RawInput,
+                InputId = input.InputId,
+                DispatchType = dispatchType,
+                Target = target,
+                PayloadSummary = payloadSummary,
+                Succeeded = false,
+                Result = result,
+                ExceptionType = ex.GetType().FullName,
+                ExceptionMessage = ex.Message,
+            });
+            FlushLocked();
+        }
+    }
+
     public static void Flush()
     {
         lock (sync)
@@ -174,7 +244,9 @@ public static class InputDiagnostics
                     MacroCount = events.Count(e => e.EventType == "MacroResolved"),
                     MappedActionCount = events.Count(e => e.EventType == "InputMapped"),
                     RejectedCount = events.Count(e => e.EventType == "InputFiltered" && e.Accepted == false),
-                    IssuesCount = 0,
+                    IssuesCount = events.Count(e =>
+                        e.EventType is "InputFiltered" or "DispatchFailed" or "DispatchSkipped"
+                        && (e.EventType != "InputFiltered" || e.Accepted == false)),
                 },
             };
         }

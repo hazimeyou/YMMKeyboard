@@ -19,4 +19,8 @@ public sealed class InputDiagnosticEvent
     public string DispatchType { get; init; } = string.Empty;
     public string Target { get; init; } = string.Empty;
     public string PayloadSummary { get; init; } = string.Empty;
+    public bool? Succeeded { get; init; }
+    public string Result { get; init; } = string.Empty;
+    public string ExceptionType { get; init; } = string.Empty;
+    public string ExceptionMessage { get; init; } = string.Empty;
 }
