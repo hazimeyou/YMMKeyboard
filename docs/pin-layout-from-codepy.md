@@ -67,6 +67,8 @@ The next cut is to probe a smaller, more targeted matrix transition rather than 
 
 The new target is `matrix-electrical-probe-rc1`, which logs `ROW_STATE`, `ROW_EDGE`, and `MATRIX_CANDIDATE` directly.
 
+The new reverse-direction experiment is `matrix-reverse-direction-probe-rc1`, which treats rows as outputs and columns as pulled-up inputs for idle/edge comparison. The idle capture is now stable at `1111111`, and the pressed capture produced repeatable `REV_COL_EDGE` / `REV_MATRIX_CANDIDATE` coordinates.
+
 ## Conclusion
 
 `GPIO29` is not the whole story. It is only one row line in the matrix.

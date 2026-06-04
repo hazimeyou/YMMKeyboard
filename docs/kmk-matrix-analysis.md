@@ -50,3 +50,9 @@ The correct firmware probe must watch matrix row/column transitions, not only a 
 
 The current TinyUSB validation phase is using `matrix-direction-validation-rc2` to confirm the idle row snapshot per driven column before re-attempting any key press validation.
 The latest firmware build has been regenerated for the one-column-per-tick scan cadence, and the next step is to re-flash one board and re-take the idle snapshot capture.
+
+The new direction experiment is `matrix-reverse-direction-probe-rc1`, which swaps the electrical role so rows are driven and columns are read with pull-ups. The idle capture is now stable at `1111111`, and the pressed capture produced repeatable `REV_COL_EDGE` / `REV_MATRIX_CANDIDATE` coordinates.
+
+## Conclusion for Mapping
+
+The reverse-direction electrical probe is alive, and the current evidence is strong enough to use it as the canonical electrical model for the next phase. The remaining work is to map the observed row/col coordinates back to `coord_mapping` and physical positions before enabling `matrix-input-rc1`.

@@ -7,8 +7,8 @@
 #include "usb_descriptors.h"
 
 #define FW_ID "YMMKeyboard-RP2040-TinyUSB"
-#define FW_VERSION "matrix-direction-validation-rc2"
-#define FW_FEATURES "FW_INFO,HID_STATUS,ROW_CONFIG,COL_CONFIG,SCAN_FRAME"
+#define FW_VERSION "matrix-reverse-direction-probe-rc1"
+#define FW_FEATURES "FW_INFO,HID_STATUS,REV_ROW_CONFIG,REV_COL_CONFIG,REV_SCAN_FRAME,REV_COL_EDGE,REV_MATRIX_CANDIDATE"
 #define FW_BUILD_TIME __DATE__ " " __TIME__
 #define MATRIX_COL_COUNT 7
 #define MATRIX_ROW_COUNT 6
@@ -48,6 +48,12 @@ static absolute_time_t g_matrix_last_diag;
 static bool g_row_state_last[MATRIX_ROW_COUNT];
 static char g_scan_frame_rows[MATRIX_ROW_COUNT + 1];
 static uint g_matrix_scan_column = 0;
+static uint8_t g_rev_last_raw[MATRIX_ROW_COUNT][MATRIX_COL_COUNT];
+static uint8_t g_rev_stable[MATRIX_ROW_COUNT][MATRIX_COL_COUNT];
+static absolute_time_t g_rev_last_change[MATRIX_ROW_COUNT][MATRIX_COL_COUNT];
+static bool g_rev_col_state_last[MATRIX_COL_COUNT];
+static char g_rev_scan_frame_cols[MATRIX_COL_COUNT + 1];
+static uint g_rev_scan_row = 0;
 
 static void write_cdc_line(const char *line)
 {
@@ -189,6 +195,30 @@ static void write_col_config(void)
   }
 }
 
+static void write_rev_row_config(void)
+{
+  char line[64];
+  for (uint row = 0; row < MATRIX_ROW_COUNT; row++)
+  {
+    snprintf(line, sizeof(line),
+             "REV_ROW_CONFIG GP%u OUTPUT",
+             (unsigned)MATRIX_ROW_PINS[row]);
+    write_cdc_line(line);
+  }
+}
+
+static void write_rev_col_config(void)
+{
+  char line[64];
+  for (uint col = 0; col < MATRIX_COL_COUNT; col++)
+  {
+    snprintf(line, sizeof(line),
+             "REV_COL_CONFIG GP%u INPUT_PULLUP",
+             (unsigned)MATRIX_COL_PINS[col]);
+    write_cdc_line(line);
+  }
+}
+
 static void write_scan_frame(uint col, const bool row_values[MATRIX_ROW_COUNT])
 {
   for (uint row = 0; row < MATRIX_ROW_COUNT; row++)
@@ -200,6 +230,20 @@ static void write_scan_frame(uint col, const bool row_values[MATRIX_ROW_COUNT])
            "SCAN_FRAME COL=%u ROWS=%s",
            (unsigned)col,
            g_scan_frame_rows);
+  write_cdc_line(line);
+}
+
+static void write_rev_scan_frame(uint row, const uint8_t col_levels[MATRIX_COL_COUNT])
+{
+  for (uint col = 0; col < MATRIX_COL_COUNT; col++)
+    g_rev_scan_frame_cols[col] = col_levels[col] ? '1' : '0';
+  g_rev_scan_frame_cols[MATRIX_COL_COUNT] = '\0';
+
+  char line[128];
+  snprintf(line, sizeof(line),
+           "REV_SCAN_FRAME ROW=%u COLS=%s",
+           (unsigned)row,
+           g_rev_scan_frame_cols);
   write_cdc_line(line);
 }
 
@@ -219,6 +263,28 @@ static void write_matrix_candidate(uint row, uint col)
   char line[96];
   snprintf(line, sizeof(line),
            "MATRIX_CANDIDATE row=%u col=%u",
+           (unsigned)row,
+           (unsigned)col);
+  write_cdc_line(line);
+}
+
+static void write_rev_col_edge(uint row, uint col, uint8_t old_value, uint8_t new_value)
+{
+  char line[112];
+  snprintf(line, sizeof(line),
+           "REV_COL_EDGE row=%u col=%u old=%u new=%u",
+           (unsigned)row,
+           (unsigned)col,
+           (unsigned)old_value,
+           (unsigned)new_value);
+  write_cdc_line(line);
+}
+
+static void write_rev_matrix_candidate(uint row, uint col)
+{
+  char line[96];
+  snprintf(line, sizeof(line),
+           "REV_MATRIX_CANDIDATE row=%u col=%u",
            (unsigned)row,
            (unsigned)col);
   write_cdc_line(line);
@@ -297,6 +363,39 @@ static void init_matrix_input(void)
   g_matrix_initialized = true;
 }
 
+static void init_matrix_reverse_input(void)
+{
+  for (uint row = 0; row < MATRIX_ROW_COUNT; row++)
+  {
+    gpio_init(MATRIX_ROW_PINS[row]);
+    gpio_set_dir(MATRIX_ROW_PINS[row], GPIO_OUT);
+    gpio_put(MATRIX_ROW_PINS[row], 1);
+  }
+
+  for (uint col = 0; col < MATRIX_COL_COUNT; col++)
+  {
+    gpio_init(MATRIX_COL_PINS[col]);
+    gpio_set_dir(MATRIX_COL_PINS[col], GPIO_IN);
+    gpio_pull_up(MATRIX_COL_PINS[col]);
+  }
+
+  for (uint row = 0; row < MATRIX_ROW_COUNT; row++)
+  {
+    for (uint col = 0; col < MATRIX_COL_COUNT; col++)
+    {
+      g_rev_last_raw[row][col] = 1;
+      g_rev_stable[row][col] = 1;
+      g_rev_last_change[row][col] = get_absolute_time();
+    }
+  }
+
+  write_rev_row_config();
+  write_rev_col_config();
+
+  g_matrix_last_diag = get_absolute_time();
+  g_matrix_initialized = true;
+}
+
 static bool send_hid_report(const char *label, const char *payload_text, uint16_t payload_length, bool pressed)
 {
   bool hid_ready = tud_hid_ready();
@@ -345,6 +444,47 @@ static bool send_hid_report(const char *label, const char *payload_text, uint16_
   write_cdc_line(diag_line);
 
   return send_result;
+}
+
+static void poll_matrix_reverse_input(void)
+{
+  if (!g_matrix_initialized)
+    return;
+
+  absolute_time_t now = get_absolute_time();
+  uint row = g_rev_scan_row;
+  g_rev_scan_row = (uint)((g_rev_scan_row + 1) % MATRIX_ROW_COUNT);
+
+  for (uint r = 0; r < MATRIX_ROW_COUNT; r++)
+    gpio_put(MATRIX_ROW_PINS[r], 1);
+
+  gpio_put(MATRIX_ROW_PINS[row], 0);
+  sleep_us(5);
+
+  uint8_t col_values[MATRIX_COL_COUNT];
+  for (uint col = 0; col < MATRIX_COL_COUNT; col++)
+  {
+    uint8_t raw_level = gpio_get(MATRIX_COL_PINS[col]) ? 1u : 0u;
+    col_values[col] = raw_level;
+    bool last_raw = g_rev_last_raw[row][col];
+
+    if (raw_level != last_raw)
+    {
+      g_rev_last_raw[row][col] = raw_level;
+      g_rev_last_change[row][col] = now;
+      write_rev_col_edge(row, col, last_raw, raw_level);
+      if (raw_level == 0)
+        write_rev_matrix_candidate(row, col);
+    }
+
+    if (raw_level != g_rev_stable[row][col] &&
+        absolute_time_diff_us(g_rev_last_change[row][col], now) >= MATRIX_DEBOUNCE_US)
+    {
+      g_rev_stable[row][col] = raw_level;
+    }
+  }
+
+  write_rev_scan_frame(row, col_values);
 }
 
 static void write_hid_result(const char *button, bool pressed, bool hid_ready, uint16_t report_length, bool send_result)
@@ -503,7 +643,7 @@ int main(void)
   board_init();
   tusb_init();
   make_uid_hex();
-  init_matrix_input();
+  init_matrix_reverse_input();
 
   absolute_time_t last_hb = get_absolute_time();
   absolute_time_t last_status = get_absolute_time();
@@ -514,7 +654,7 @@ int main(void)
     flush_usb_events_if_ready();
 
     emit_fw_info_if_ready();
-    poll_matrix_input();
+    poll_matrix_reverse_input();
 
     if (absolute_time_diff_us(g_matrix_last_diag, get_absolute_time()) >= MATRIX_DIAG_INTERVAL_US)
     {

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Confirm the matrix scan direction and GPIO states by observing per-column row snapshots with no key presses.
+This phase established the baseline forward scan behavior and served as the comparison point for the later reverse-direction probe.
 
 ## Layout
 
@@ -39,21 +39,19 @@ The firmware advances one column per scan tick, emitting one `SCAN_FRAME` line p
 ## Current Firmware State
 
 - The latest firmware build has been regenerated after the one-column-per-tick adjustment.
-- The pending step is to flash one board and re-run the 60-second CDC capture with no key presses.
-- Earlier noisy scan output from the pre-adjustment run is no longer the target interpretation for this phase.
+- The phase is superseded by the reverse-direction decision, but the log remains useful as the forward-direction comparison baseline.
 
 ## Interpretation
 
 - If `ROWS` changes by column, the scan is alive and directionally meaningful.
-- If all columns report the same value, the pull-up / direction / wiring model still needs adjustment.
+- In the recorded baseline run, all columns reported `ROWS=000000`, which is why the reverse-direction probe was introduced.
 - This phase does not require key presses.
 
 ## Next Validation
 
-1. Flash one board only.
-2. Run `CdcTraceCapture -- --port COM12 --duration-sec 60`.
-3. Do not press any keys.
-4. Inspect `SCAN_FRAME` across all columns.
+1. Compare the forward baseline against the reverse-direction probe.
+2. Use the reverse-direction result as the candidate canonical scan model.
+3. Proceed to `matrix-input-rc1` only after the row/col mapping is fixed.
 
 ## Outcome Targets
 
