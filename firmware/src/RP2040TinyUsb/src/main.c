@@ -7,19 +7,21 @@
 #include "usb_descriptors.h"
 
 #define FW_ID "YMMKeyboard-RP2040-TinyUSB"
-#define FW_VERSION "matrix-reverse-direction-probe-rc1"
-#define FW_FEATURES "FW_INFO,HID_STATUS,REV_ROW_CONFIG,REV_COL_CONFIG,REV_SCAN_FRAME,REV_COL_EDGE,REV_MATRIX_CANDIDATE"
+#define FW_VERSION "matrix-input-formal-payload-rc1"
+#define FW_FEATURES "FW_INFO,HID_STATUS,MATRIX_KEY,MATRIX_HID_FORMAL_PAYLOAD"
 #define FW_BUILD_TIME __DATE__ " " __TIME__
 #define MATRIX_COL_COUNT 7
 #define MATRIX_ROW_COUNT 6
 #define MATRIX_DEBOUNCE_US 20000
 #define MATRIX_DIAG_INTERVAL_US 500000
+#define MATRIX_FORMAL_REPORT_LENGTH 63u
 
 static const uint MATRIX_COL_PINS[MATRIX_COL_COUNT] = {2, 8, 7, 6, 5, 4, 3};
 static const uint MATRIX_ROW_PINS[MATRIX_ROW_COUNT] = {28, 27, 26, 15, 14, 29};
 
 static char g_uid_hex[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
 static bool g_hid_last_send_result = false;
+static uint32_t g_hid_send_attempt_count = 0;
 static uint32_t g_hid_ready_true_count = 0;
 static uint32_t g_hid_ready_false_count = 0;
 static uint32_t g_hid_report_call_count = 0;
@@ -27,6 +29,7 @@ static uint32_t g_hid_report_success_count = 0;
 static uint32_t g_hid_report_fail_count = 0;
 static uint32_t g_hid_test_sent_count = 0;
 static uint32_t g_hid_test_fail_count = 0;
+static uint32_t g_matrix_formal_payload_count = 0;
 static uint8_t g_fw_info_remaining = 5;
 static bool g_fw_info_started = false;
 static absolute_time_t g_fw_info_last_emit;
@@ -121,7 +124,7 @@ static void write_hid_status(const char *phase)
   char line[220];
   bool hid_ready = tud_hid_ready();
   snprintf(line, sizeof(line),
-           "HID_STATUS:%s mounted=%s suspended=%s hidReady=%s mountCount=%lu unmountCount=%lu suspendCount=%lu resumeCount=%lu sendCount=%lu sendFailCount=%lu lastSendResult=%s hidReadyTrueCount=%lu hidReadyFalseCount=%lu hidReportCallCount=%lu hidReportSuccessCount=%lu hidReportFailCount=%lu reportId=%u reportLength=%u descriptorLength=%u",
+           "HID_STATUS:%s mounted=%s suspended=%s hidReady=%s mountCount=%lu unmountCount=%lu suspendCount=%lu resumeCount=%lu hidSendAttemptCount=%lu hidReadyTrueCount=%lu hidReadyFalseCount=%lu hidReportCallCount=%lu hidReportSuccessCount=%lu hidReportFailCount=%lu lastSendResult=%s reportId=%u reportLength=%u descriptorLength=%u",
            phase,
            g_usb_mounted ? "true" : "false",
            g_usb_suspended ? "true" : "false",
@@ -130,14 +133,13 @@ static void write_hid_status(const char *phase)
            (unsigned long)g_unmount_count,
            (unsigned long)g_suspend_count,
            (unsigned long)g_resume_count,
-           (unsigned long)g_hid_report_call_count,
-           (unsigned long)g_hid_report_fail_count,
-           g_hid_last_send_result ? "true" : "false",
+           (unsigned long)g_hid_send_attempt_count,
            (unsigned long)g_hid_ready_true_count,
            (unsigned long)g_hid_ready_false_count,
            (unsigned long)g_hid_report_call_count,
            (unsigned long)g_hid_report_success_count,
            (unsigned long)g_hid_report_fail_count,
+           g_hid_last_send_result ? "true" : "false",
            (unsigned)REPORT_ID_VENDOR,
            (unsigned)63,
            (unsigned)hid_report_descriptor_len);
@@ -146,14 +148,21 @@ static void write_hid_status(const char *phase)
 
 static void write_hid_status_short(void)
 {
-  char line[96];
+  char line[192];
   bool hid_ready = tud_hid_ready();
   snprintf(line, sizeof(line),
-           "HID_STATUS ready=%s mounted=%s suspended=%s sendCount=%lu failCount=%lu",
+           "HID_STATUS ready=%s mounted=%s suspended=%s hidSendAttemptCount=%lu hidReadyTrueCount=%lu hidReadyFalseCount=%lu hidReportCallCount=%lu hidReportSuccessCount=%lu hidReportFailCount=%lu lastSendResult=%s sendCount=%lu failCount=%lu",
            hid_ready ? "true" : "false",
            g_usb_mounted ? "true" : "false",
            g_usb_suspended ? "true" : "false",
-           (unsigned long)g_hid_report_call_count + (unsigned long)g_hid_test_sent_count,
+           (unsigned long)g_hid_send_attempt_count,
+           (unsigned long)g_hid_ready_true_count,
+           (unsigned long)g_hid_ready_false_count,
+           (unsigned long)g_hid_report_call_count,
+           (unsigned long)g_hid_report_success_count,
+           (unsigned long)g_hid_report_fail_count,
+           g_hid_last_send_result ? "true" : "false",
+           (unsigned long)g_hid_send_attempt_count,
            (unsigned long)g_hid_report_fail_count);
   write_cdc_line(line);
 }
@@ -303,31 +312,20 @@ static void write_matrix_edge(uint row, uint col, bool pressed)
   write_cdc_line(line);
 }
 
-static void write_matrix_key(uint row, uint col, bool pressed)
+static void write_matrix_key(uint row, uint col, const char *key_id, bool pressed, bool sent)
 {
   char line[128];
   snprintf(line, sizeof(line),
-           "MATRIX_KEY row=%u col=%u pressed=%s keyId=K_%u_%u",
+           "MATRIX_KEY row=%u col=%u keyId=%s state=%c sent=%s",
            (unsigned)row,
            (unsigned)col,
-           pressed ? "true" : "false",
-           (unsigned)row,
-           (unsigned)col);
+           key_id,
+           pressed ? 'P' : 'R',
+           sent ? "true" : "false");
   write_cdc_line(line);
 }
 
-static void write_matrix_hid(uint row, uint col, bool pressed)
-{
-  char line[96];
-  snprintf(line, sizeof(line),
-           "MATRIX_HID row=%u col=%u pressed=%s payload=K_%u_%u",
-           (unsigned)row,
-           (unsigned)col,
-           pressed ? "true" : "false",
-           (unsigned)row,
-           (unsigned)col);
-  write_cdc_line(line);
-}
+static bool send_hid_report(const char *label, const char *payload_text, uint16_t payload_length, bool pressed);
 
 static void init_matrix_input(void)
 {
@@ -398,11 +396,14 @@ static void init_matrix_reverse_input(void)
 
 static bool send_hid_report(const char *label, const char *payload_text, uint16_t payload_length, bool pressed)
 {
+  g_hid_send_attempt_count++;
   bool hid_ready = tud_hid_ready();
   bool send_result = false;
+  size_t payload_string_length = strnlen(payload_text, payload_length);
 
   if (hid_ready)
   {
+    g_hid_ready_true_count++;
     uint8_t report[63] = {0};
     size_t copy_len = payload_length;
     if (copy_len > sizeof(report))
@@ -427,17 +428,16 @@ static bool send_hid_report(const char *label, const char *payload_text, uint16_
   }
 
   g_hid_last_send_result = send_result;
-  if (send_result)
-    g_hid_ready_true_count++;
 
   char diag_line[160];
   snprintf(diag_line, sizeof(diag_line),
-           "HID_DIAG:button=%s pressed=%s mounted=%s suspended=%s hidReady=%s reportLength=%u reportId=%u sendResult=%s",
+           "HID_DIAG:button=%s pressed=%s mounted=%s suspended=%s hidReady=%s stringLength=%u reportLength=%u reportId=%u sendResult=%s",
            label,
            pressed ? "true" : "false",
            g_usb_mounted ? "true" : "false",
            g_usb_suspended ? "true" : "false",
            hid_ready ? "true" : "false",
+           (unsigned)payload_string_length,
            (unsigned)payload_length,
            (unsigned)REPORT_ID_VENDOR,
            send_result ? "true" : "false");
@@ -481,15 +481,48 @@ static void poll_matrix_reverse_input(void)
         absolute_time_diff_us(g_rev_last_change[row][col], now) >= MATRIX_DEBOUNCE_US)
     {
       g_rev_stable[row][col] = raw_level;
+
+      bool pressed = raw_level == 0;
+      char key_id[16];
+      snprintf(key_id, sizeof(key_id), "K_%u_%u", (unsigned)row, (unsigned)col);
+      bool sent = false;
+      uint32_t payload_count = ++g_matrix_formal_payload_count;
+      char payload[63] = {0};
+      snprintf(payload, sizeof(payload), "%s:%c", key_id, pressed ? 'P' : 'R');
+      size_t payload_len = strnlen(payload, sizeof(payload));
+      sent = send_hid_report(key_id, payload, MATRIX_FORMAL_REPORT_LENGTH, pressed);
+
+      {
+        char line[220];
+        snprintf(line, sizeof(line),
+                 "MATRIX_HID_FORMAL row=%u col=%u keyId=%s state=%c payload=%s stringLength=%u reportLength=%u sent=%s payloadCount=%lu",
+                 (unsigned)row,
+                 (unsigned)col,
+                 key_id,
+                 pressed ? 'P' : 'R',
+                 payload,
+                 (unsigned)payload_len,
+                 MATRIX_FORMAL_REPORT_LENGTH,
+                 sent ? "true" : "false",
+                 (unsigned long)payload_count);
+        write_cdc_line(line);
+      }
+
+      {
+        char line[160];
+        snprintf(line, sizeof(line),
+                 "MATRIX_KEY row=%u col=%u keyId=%s state=%c sent=%s",
+                 (unsigned)row,
+                 (unsigned)col,
+                 key_id,
+                 pressed ? 'P' : 'R',
+                 sent ? "true" : "false");
+        write_cdc_line(line);
+      }
     }
   }
 
   write_rev_scan_frame(row, col_values);
-}
-
-static void write_hid_result(const char *button, bool pressed, bool hid_ready, uint16_t report_length, bool send_result)
-{
-  write_hid_diag(button, pressed, hid_ready, report_length, REPORT_ID_VENDOR, send_result);
 }
 
 static void write_hid_test_result(bool send_result)
@@ -546,20 +579,6 @@ static void emit_fw_info_if_ready(void)
   }
 }
 
-static void send_event(const char *key_id, bool pressed)
-{
-  char line[96];
-  snprintf(line, sizeof(line), "%s:%c:%s", g_uid_hex, pressed ? 'P' : 'R', key_id);
-
-  write_cdc_line(line);
-
-  char hid_line[63];
-  snprintf(hid_line, sizeof(hid_line), "%s", key_id);
-  size_t payload_len = strnlen(hid_line, sizeof(hid_line));
-  bool report_ok = send_hid_report(key_id, hid_line, (uint16_t)payload_len, pressed);
-  write_hid_result(key_id, pressed, tud_hid_ready(), (uint16_t)payload_len, report_ok);
-}
-
 static void poll_matrix_input(void)
 {
   if (!g_matrix_initialized)
@@ -599,9 +618,10 @@ static void poll_matrix_input(void)
 
       char key_id[16];
       snprintf(key_id, sizeof(key_id), "K_%u_%u", (unsigned)row, (unsigned)col);
-      write_matrix_key(row, col, raw_pressed);
-      send_event(key_id, raw_pressed);
-      write_matrix_hid(row, col, raw_pressed);
+      char payload[63] = {0};
+      snprintf(payload, sizeof(payload), "%s:%c", key_id, raw_pressed ? 'P' : 'R');
+      bool sent = send_hid_report(key_id, payload, MATRIX_FORMAL_REPORT_LENGTH, raw_pressed);
+      write_matrix_key(row, col, key_id, raw_pressed, sent);
     }
   }
   write_scan_frame(col, row_values);

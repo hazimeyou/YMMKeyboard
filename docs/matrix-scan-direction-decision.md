@@ -37,3 +37,12 @@ The next firmware phase should treat the reverse-direction model as the canonica
 ## Conclusion
 
 Reverse-direction scanning is the correct electrical model to carry forward into `matrix-input-rc1`.
+
+## Matrix Input RC1
+
+For the next phase:
+
+- treat reverse scan as the canonical input scan
+- promote `MATRIX_KEY row=<r> col=<c> keyId=K_<r>_<c>` to the formal event
+- send HID payloads as `K_<r>_<c>:P` and `K_<r>_<c>:R`
+- postpone any key-label translation until the electrical mapping is stable

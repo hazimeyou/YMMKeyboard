@@ -9,8 +9,12 @@ namespace YMMKeyboardPlugin.Hid;
 
 public sealed class HidKeyboardLink : IKeyboardLink
 {
+    private const int MatrixColumnCount = 7;
     private static readonly Regex serialEventPattern = new(
         @"(?:YMMK:)?(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",
+        RegexOptions.Compiled);
+    private static readonly Regex matrixFormalPattern = new(
+        @"^(?:MATRIX:)?K_(?<row>\d+)_(?<col>\d+):(?<state>[PR])$",
         RegexOptions.Compiled);
 
     private readonly int? vendorId;
@@ -490,15 +494,26 @@ public sealed class HidKeyboardLink : IKeyboardLink
 
         Match? matched = null;
         string matchedText = string.Empty;
+        string matchedKind = string.Empty;
         foreach (var candidate in candidates)
         {
-            var m = serialEventPattern.Match(candidate);
-            if (!m.Success)
-                continue;
+            var serialMatch = serialEventPattern.Match(candidate);
+            if (serialMatch.Success)
+            {
+                matched = serialMatch;
+                matchedText = candidate;
+                matchedKind = "serial";
+                break;
+            }
 
-            matched = m;
-            matchedText = candidate;
-            break;
+            var matrixMatch = matrixFormalPattern.Match(candidate);
+            if (matrixMatch.Success)
+            {
+                matched = matrixMatch;
+                matchedText = candidate;
+                matchedKind = "matrix";
+                break;
+            }
         }
 
         if (matched is null)
@@ -507,33 +522,59 @@ public sealed class HidKeyboardLink : IKeyboardLink
             return;
         }
 
-        var uid = matched.Groups["uid"].Value.ToLowerInvariant();
         var state = matched.Groups["state"].Value;
-        if (!int.TryParse(matched.Groups["switch"].Value, out var switchId))
-            return;
-
         var actualDevice = device;
-        if (!string.Equals(uid, fallbackUid, StringComparison.OrdinalIgnoreCase))
+        string uid = fallbackUid.ToLowerInvariant();
+        int switchId = 0;
+
+        if (matchedKind == "serial")
         {
-            actualDevice = GetOrCreateDevice(uid, out var isNewUid);
-            if (isNewUid)
-                DeviceDetected?.Invoke(actualDevice);
+            uid = matched.Groups["uid"].Value.ToLowerInvariant();
+            if (!int.TryParse(matched.Groups["switch"].Value, out switchId))
+                return;
+
+            if (!string.Equals(uid, fallbackUid, StringComparison.OrdinalIgnoreCase))
+            {
+                actualDevice = GetOrCreateDevice(uid, out var isNewUid);
+                if (isNewUid)
+                    DeviceDetected?.Invoke(actualDevice);
+            }
+        }
+        else if (matchedKind == "matrix")
+        {
+            if (!int.TryParse(matched.Groups["row"].Value, out var row))
+                return;
+            if (!int.TryParse(matched.Groups["col"].Value, out var col))
+                return;
+
+            switchId = row * MatrixColumnCount + col + 1;
+            uid = fallbackUid.ToLowerInvariant();
+        }
+        else
+        {
+            return;
         }
 
-        KeyEventReceived?.Invoke(actualDevice, new KeyEvent
+        var keyEvent = new KeyEvent
         {
             Uid = uid,
             TransportType = "HID",
             SourceDevice = actualDevice.Uid,
             RawInput = matchedText,
-            InputId = $"{uid}:{state}:SW_{switchId:00}",
+            InputId = matchedKind == "matrix"
+                ? $"{uid}:{state}:K_{matched.Groups["row"].Value}_{matched.Groups["col"].Value}"
+                : $"{uid}:{state}:SW_{switchId:00}",
             IsPressed = state == "P",
             SwitchId = switchId,
             ReceivedAtUtc = DateTime.UtcNow,
-        });
+        };
+
+        KeyEventReceived?.Invoke(actualDevice, keyEvent);
 
         PluginLogger.Info("HidKeyboardLink",
-            $"Parsed key event via HID. uid={uid}, switch={switchId}, pressed={(state == "P")}, source=\"{matchedText}\"");
+            matchedKind == "matrix"
+                ? $"Parsed matrix HID event via HID. uid={uid}, row={matched.Groups["row"].Value}, col={matched.Groups["col"].Value}, pressed={(state == "P")}, source=\"{matchedText}\""
+                : $"Parsed key event via HID. uid={uid}, switch={switchId}, pressed={(state == "P")}, source=\"{matchedText}\"");
     }
 
     private static List<string> ExtractAsciiCandidates(byte[] report, int length)

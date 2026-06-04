@@ -69,3 +69,70 @@ report_received
 - no `SW_*` HID report was classified by the probe in this run
 - the firmware-to-host HID send path is working for the forced test report
 - the button-triggered `SW_00` path is still not confirmed on the HID probe side
+
+## Latest Matrix Correlation
+
+- The forced `TEST_HID_*` path remains confirmed.
+- In the latest matrix correlation run, `K_*` was not received; `readSuccessCount=0` and `firstReportKind` remained empty.
+- The latest matrix host result is captured in [Matrix HID Host Correlation RC1](./matrix-hid-host-correlation.md).
+
+## Matrix Minimal Probe Note
+
+- The current host probe already classifies `TEST_HID_*` traffic.
+- The next matrix probe uses `TEST_HID_MATRIX_<counter>` so it can be observed with the same classification path.
+- If the next run still shows `readSuccessCount=0`, the issue is not the prefix classification.
+
+## Latest Matrix Minimal Probe
+
+- The latest matrix minimal probe run received `TEST_HID_KEY_<counter>` reports on the host.
+- `readSuccessCount > 0`.
+- The probe classified these as `TEST_HID`.
+- This is a strong indication that the host can receive matrix-triggered HID traffic when the payload is shaped like the forced test path.
+
+## Payload Stepdown Plan
+
+- The next probe steps the payload family down in this order:
+  - `TEST_HID_KEY_0001`
+  - `TEST_KEY_0001`
+  - `KEY_0001`
+  - `K_2_2_P`
+  - `K_2_2:P`
+- The probe classification now separates:
+  - `TEST_HID`
+  - `TEST_KEY`
+  - `KEY`
+  - `K_UNDERSCORE`
+  - `K_COLON`
+  - `OTHER`
+
+## Variant Per Press Plan
+
+- The latest probe sends one variant per press.
+- The per-press sequence is:
+  - press 1 -> `TEST_HID_KEY_0001`
+  - press 2 -> `TEST_KEY_0001`
+  - press 3 -> `KEY_0001`
+  - press 4 -> `K_2_2_P`
+  - press 5 -> `K_2_2:P`
+
+## Latest Variant Per Press Result
+
+- The host received all five payload variants.
+- Report kinds observed:
+  - `TEST_HID`
+  - `TEST_KEY`
+  - `KEY`
+  - `K_UNDERSCORE`
+  - `K_COLON`
+- `readSuccessCount > 0` for the run.
+
+## Formal Payload Follow-up
+
+- The matrix input path now returns to the formal payload `K_<row>_<col>:P/R`.
+- The formal payload flow is documented in [Matrix Input Formal Payload RC1](./matrix-input-formal-payload-rc1.md).
+- The formal payload send path now keeps the HID report length fixed at 63 bytes so it matches the working transport shape from the variant-per-press probe.
+- The diff is documented in [Formal Payload Send Path Diff RC1](./formal-payload-send-path-diff.md).
+- Validation result:
+  - `K_0_1:P` -> `K_COLON`
+  - `K_0_1:R` -> `K_COLON`
+  - `readSuccessCount > 0`

@@ -41,7 +41,7 @@ That leaves two practical possibilities for the matrix probe:
 
 - Forced `TEST_HID_*` path: confirmed
 - Legacy `SW_00` path on CDC: observed in earlier periodic diagnostics, but that was not a real button probe
-- Matrix `K_*` path on CDC/HID: not yet confirmed
+- Matrix `K_*` path on CDC/HID: still the target, now modeled by `matrix-input-rc1`
 - The current firmware has now been switched to a matrix scan probe based on the `code.py` layout
 - Next capture should classify `K_*` payloads rather than `SW_*`
 
@@ -52,8 +52,14 @@ Run the matrix scan probe aligned to the `code.py` row/column layout so we can d
 ### Latest Matrix Attempt
 
 - `MATRIX_SCAN cols=7 rows=6`: observed
-- `MATRIX_KEY`: not observed
-- `MATRIX_HID`: not observed
+- `MATRIX_KEY`: not yet confirmed in the latest matrix capture window
+- `MATRIX_HID`: not yet confirmed in the latest matrix capture window
 - `HidConsoleProbe` `ReadSuccessCount`: `0`
 
 The current evidence says the transport layer is ready, but the physical key press did not yet produce a detectable matrix transition in this capture window.
+
+## Latest Matrix Context
+
+- The canonical input path is now matrix-based, not the legacy standalone `SW_00` probe.
+- The latest matrix host correlation run did not receive any `K_*` HID report.
+- See [Matrix HID Host Correlation RC1](./matrix-hid-host-correlation.md).

@@ -357,18 +357,28 @@ sealed class HidConsoleProbeRunner
 
     private static string ClassifyReport(string payload)
     {
+        payload = NormalizePayload(payload);
         if (string.IsNullOrWhiteSpace(payload))
             return "EMPTY";
         if (payload.StartsWith("TEST_HID_", StringComparison.OrdinalIgnoreCase))
             return "TEST_HID";
+        if (payload.StartsWith("TEST_KEY_", StringComparison.OrdinalIgnoreCase))
+            return "TEST_KEY";
+        if (payload.StartsWith("KEY_", StringComparison.OrdinalIgnoreCase))
+            return "KEY";
         if (payload.StartsWith("K_", StringComparison.OrdinalIgnoreCase))
-            return "MATRIX";
-        if (payload.StartsWith("SW_", StringComparison.OrdinalIgnoreCase)
-            || payload.Contains("SW_", StringComparison.OrdinalIgnoreCase)
-            || payload.Contains(":SW_", StringComparison.OrdinalIgnoreCase)
-            || payload.StartsWith("YMMK:", StringComparison.OrdinalIgnoreCase))
-            return "SW";
+            return payload.Contains(":", StringComparison.OrdinalIgnoreCase)
+                ? "K_COLON"
+                : "K_UNDERSCORE";
         return "OTHER";
+    }
+
+    private static string NormalizePayload(string payload)
+    {
+        if (payload.StartsWith("MATRIX:", StringComparison.OrdinalIgnoreCase))
+            return payload["MATRIX:".Length..];
+
+        return payload;
     }
 }
 

@@ -71,6 +71,7 @@ The pressed-key capture produced edges and candidates at these coordinates:
 
 1. Correlate the observed row/col coordinates with the physical key positions in the matrix layout.
 2. Reconnect the reverse-direction probe findings to `MATRIX_KEY` / HID path validation.
+3. Carry the reverse-direction model forward into `matrix-input-rc1`.
 
 ## Outcome Targets
 

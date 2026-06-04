@@ -39,4 +39,9 @@ The following coordinates were observed during the reverse-direction capture:
 
 ## Conclusion
 
-The reverse-direction probe is aligned with the KMK matrix model well enough to proceed to a `matrix-input-rc1` phase, but the remaining work is to translate the observed coordinates into the final `MATRIX_KEY` naming and HID path.
+The reverse-direction probe is aligned with the KMK matrix model well enough to proceed to `matrix-input-rc1`.
+
+In `matrix-input-rc1`, the observed coordinates should be emitted directly as:
+
+- `MATRIX_KEY row=<r> col=<c> keyId=K_<r>_<c> state=P/R`
+- HID payload `K_<r>_<c>:P/R`
