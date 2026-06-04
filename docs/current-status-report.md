@@ -20,6 +20,7 @@
 - `HidConsoleProbe` can receive host HID traffic.
 - Formal payload `K_<row>_<col>:P/R` is observable on the host when the HID report length is fixed to 63 bytes.
 - `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` are now connected in the plugin path for HID events.
+- The live `K_0_1 -> A` path has been verified as an actual YMM UI action.
 
 ## 3. Current Blockers
 
@@ -50,6 +51,7 @@ Current likely causes, in priority order:
 | Plugin InputMapped | `1` |
 | Plugin DispatchPrepared | `1` |
 | Plugin DispatchExecuted | `1` |
+| Actual YMM UI Action | `Confirmed` |
 
 ## 6. Remaining Work by Area
 
@@ -62,6 +64,7 @@ Current likely causes, in priority order:
 ### Plugin
 
 - Dispatch execution is now confirmed for the `K_0_1 -> A` path.
+- The working baseline is frozen on the confirmed live UI action path.
 - Any remaining mapping or dispatch details only need follow-up if a different key path is exercised.
 
 ### Diagnostics
@@ -105,11 +108,11 @@ Current likely causes, in priority order:
 | Diagnostics | 97% |
 | Firmware Identity | 100% |
 | Hardware Validation | 95% |
-| Input Validation | 95% |
+| Input Validation | 97% |
 | Macro Validation | 10% |
-| YMM Integration | 65% |
-| Overall | 82% |
+| YMM Integration | 75% |
+| Overall | 85% |
 
 ## 10. Conclusion
 
-The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The plugin runtime now also confirms `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` for the live matrix path, so the current baseline is end-to-end healthy for the `K_0_1 -> A` mapping.
+The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The plugin runtime now confirms `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` for the live matrix path, and the actual YMM UI action is confirmed for the `K_0_1 -> A` mapping.
