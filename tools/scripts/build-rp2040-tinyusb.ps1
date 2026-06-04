@@ -96,11 +96,18 @@ finally {
 }
 
 $uf2 = Join-Path $fwRoot "build\\ymm_keyboard_fw.uf2"
-if (-not (Test-Path $uf2)) {
-    $bin = Join-Path $fwRoot "build\\ymm_keyboard_fw.bin"
-    $uf2conv = Join-Path $repoRoot "tools\\scripts\\rp2040_tools\\uf2conv.py"
-    if ((Test-Path $bin) -and (Test-Path $uf2conv)) {
-        $pythonExe = $null
+$bin = Join-Path $fwRoot "build\\ymm_keyboard_fw.bin"
+$uf2conv = Join-Path $repoRoot "tools\\scripts\\rp2040_tools\\uf2conv.py"
+if (Test-Path $uf2) {
+    Remove-Item $uf2 -Force
+}
+if ((Test-Path $bin) -and (Test-Path $uf2conv)) {
+    $pythonExe = $null
+    $pyCmd = Get-Command py -ErrorAction SilentlyContinue
+    if ($pyCmd) {
+        $pythonExe = $pyCmd.Source
+    }
+    else {
         $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
         if ($pythonCmd -and $pythonCmd.CommandType -ne "Application") {
             $pythonCmd = $null
@@ -111,13 +118,12 @@ if (-not (Test-Path $uf2)) {
         elseif (Test-Path "C:\Users\yu-za-hazimeyou\AppData\Local\Python\pythoncore-3.14-64\python.exe") {
             $pythonExe = "C:\Users\yu-za-hazimeyou\AppData\Local\Python\pythoncore-3.14-64\python.exe"
         }
-        else {
-            $pyCmd = Get-Command py -ErrorAction SilentlyContinue
-            if ($pyCmd) { $pythonExe = $pyCmd.Source }
+        elseif (Test-Path "C:\Windows\py.exe") {
+            $pythonExe = "C:\Windows\py.exe"
         }
-        if ($pythonExe) {
-            & $pythonExe $uf2conv --base 0x10000000 --family RP2040 --convert $bin --output $uf2
-        }
+    }
+    if ($pythonExe) {
+        & $pythonExe $uf2conv --base 0x10000000 --family RP2040 --convert $bin --output $uf2
     }
 }
 

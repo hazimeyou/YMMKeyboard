@@ -15,6 +15,12 @@
   <Project Path="tools/YMMKeyboard.HidConsoleProbe/YMMKeyboard.HidConsoleProbe.csproj">
     <Platform Solution="*|x64" Project="Any CPU" />
   </Project>
+  <Project Path="tools/YMMKeyboard.CdcTraceCapture/YMMKeyboard.CdcTraceCapture.csproj">
+    <Platform Solution="*|x64" Project="Any CPU" />
+  </Project>
+  <Project Path="tools/YMMKeyboard.ComHidCorrelationProbe/YMMKeyboard.ComHidCorrelationProbe.csproj">
+    <Platform Solution="*|x64" Project="Any CPU" />
+  </Project>
   <Project Path="tools/YMMKeyboard.DeviceInspector/YMMKeyboard.DeviceInspector.csproj">
     <Platform Solution="*|x64" Project="Any CPU" />
   </Project>

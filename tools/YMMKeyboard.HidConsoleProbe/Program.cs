@@ -212,17 +212,32 @@ sealed class HidConsoleProbeRunner
 
                     var hex = ToHex(reportBuffer, length);
                     var ascii = ToAscii(reportBuffer, length);
-                    var timestamp = DateTime.Now.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture);
-                    write($"[{timestamp}] len={length} data={hex} ascii={ascii}");
+                    var payload = StripReportIdPrefix(ascii);
+                    var reportKind = ClassifyReport(payload);
+                    var timestamp = DateTimeOffset.Now;
+                    write($"SAMPLE[{sampleIndex}] ts={timestamp:HH:mm:ss.fff} len={length} classification={reportKind} ascii={ascii} hex={hex}");
+                    write($"REPORT_KIND[{sampleIndex}] kind={reportKind} payload={payload}");
 
                     report.Samples.Add(new HidConsoleProbeSample
                     {
                         Index = sampleIndex,
-                        Timestamp = DateTimeOffset.Now,
+                        Timestamp = timestamp,
                         Length = length,
                         Hex = hex,
                         Ascii = ascii,
+                        Payload = payload,
+                        ReportKind = reportKind,
                     });
+
+                    runtime.ReportKindCounts.TryGetValue(reportKind, out var reportKindCount);
+                    runtime.ReportKindCounts[reportKind] = reportKindCount + 1;
+                    if (runtime.FirstReportKind.Length == 0)
+                    {
+                        runtime.FirstReportKind = reportKind;
+                        runtime.FirstReportLength = length;
+                        runtime.FirstReportHex = hex;
+                        runtime.FirstReportAscii = payload;
+                    }
                 }
 
                 write($"READ_SUMMARY openSucceeded={runtime.OpenSucceeded} readLoopStarted={runtime.ReadLoopStarted} readAttemptCount={runtime.ReadAttemptCount} readSuccessCount={runtime.ReadSuccessCount} readTimeoutCount={runtime.ReadTimeoutCount} lastException={runtime.LastException}");
@@ -330,6 +345,30 @@ sealed class HidConsoleProbeRunner
     private static string ToAscii(byte[] buffer, int length)
     {
         return Ascii.GetString(buffer, 0, length).Trim('\0', '\r', '\n', ' ');
+    }
+
+    private static string StripReportIdPrefix(string ascii)
+    {
+        if (string.IsNullOrEmpty(ascii))
+            return string.Empty;
+
+        return ascii[0] == '\u0001' ? ascii[1..] : ascii;
+    }
+
+    private static string ClassifyReport(string payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload))
+            return "EMPTY";
+        if (payload.StartsWith("TEST_HID_", StringComparison.OrdinalIgnoreCase))
+            return "TEST_HID";
+        if (payload.StartsWith("K_", StringComparison.OrdinalIgnoreCase))
+            return "MATRIX";
+        if (payload.StartsWith("SW_", StringComparison.OrdinalIgnoreCase)
+            || payload.Contains("SW_", StringComparison.OrdinalIgnoreCase)
+            || payload.Contains(":SW_", StringComparison.OrdinalIgnoreCase)
+            || payload.StartsWith("YMMK:", StringComparison.OrdinalIgnoreCase))
+            return "SW";
+        return "OTHER";
     }
 }
 
@@ -449,6 +488,11 @@ sealed class HidConsoleProbeRuntime
     public int ReadTimeoutCount { get; set; }
     public DateTimeOffset? LastReadAtUtc { get; set; }
     public string LastException { get; set; } = string.Empty;
+    public string FirstReportKind { get; set; } = string.Empty;
+    public int FirstReportLength { get; set; }
+    public string FirstReportHex { get; set; } = string.Empty;
+    public string FirstReportAscii { get; set; } = string.Empty;
+    public Dictionary<string, int> ReportKindCounts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 sealed class HidConsoleProbeDevice
@@ -495,4 +539,6 @@ sealed class HidConsoleProbeSample
     public int Length { get; init; }
     public string Hex { get; init; } = string.Empty;
     public string Ascii { get; init; } = string.Empty;
+    public string Payload { get; init; } = string.Empty;
+    public string ReportKind { get; init; } = string.Empty;
 }

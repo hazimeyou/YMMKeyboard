@@ -26,6 +26,18 @@ Current host-side observations remain:
 - `InputMapped = 0`
 - `DispatchPrepared = 0`
 
+## Runtime Marker Status
+
+The available local diagnostics were searched for the firmware markers:
+
+- `HID_STATUS`
+- `HID_TEST`
+- `HID_DIAG`
+
+No matches were found in the available log locations. So we still do not have a captured CDC trace that proves those firmware markers are being emitted at runtime.
+
+After the standalone CDC trace capture run, `COM12` produced `HB:` and `SW_00`, but still did not emit `HID_STATUS`, `HID_TEST`, or `HID_DIAG`.
+
 ## Firmware Diagnostics Added
 
 The firmware `main.c` was extended to emit the following diagnostics over CDC:
@@ -222,3 +234,17 @@ Record:
 - HID runtime summary
 - classification result
 - remaining blocker
+
+## Firmware HID Report Send Debug
+
+The firmware-side debug plan for the next phase is tracked in:
+
+- `docs/firmware-hid-report-send-debug.md`
+- `docs/firmware-hid-runtime-observation.md`
+- `docs/cdc-trace-capture.md`
+- `docs/hid-send-host-receive-correlation.md`
+
+It introduces a forced HID test report path so we can distinguish:
+
+- button input / debounce problems
+- HID send path / TinyUSB problems
