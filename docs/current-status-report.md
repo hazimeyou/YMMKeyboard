@@ -25,6 +25,7 @@
 ## 3. Current Blockers
 
 - Some historical docs still reference earlier matrix probes; they should be treated as background unless updated to the latest formal-payload run.
+- Rotary direction labels were clarified so that left / counter-clockwise is `SW36`, push is `SW35`, and right / clockwise is `SW37`.
 
 ## 4. Cause Candidates
 
@@ -92,6 +93,7 @@ Current likely causes, in priority order:
 
 - Keep the confirmed live `InputReceived` run as the baseline.
 - Save any future changed-path diagnostics under `tmp/input-diagnostics/` if new mappings are exercised.
+- Validate the current multiple-key mapping set on the live device (`K_0_1`, `K_0_4`, `K_0_6`, `K_1_6`, `K_4_1`) against the existing `A/B/C/D/E` assignments.
 
 ### P2
 

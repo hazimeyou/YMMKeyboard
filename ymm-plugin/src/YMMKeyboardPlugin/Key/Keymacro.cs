@@ -19,8 +19,8 @@ namespace YMMKeyboardPlugin
         private const int SingleKeyDelayMs = 35;
         private static readonly HashSet<string> immediateSwitches = new(StringComparer.OrdinalIgnoreCase)
         {
-            "SW36", // rotary clockwise
-            "SW37", // rotary counter-clockwise
+            "SW36", // rotary counter-clockwise
+            "SW37", // rotary clockwise
         };
         private static readonly bool verboseLatencyLog =
             string.Equals(Environment.GetEnvironmentVariable("YMMK_VERBOSE_LATENCY"), "1", StringComparison.Ordinal);
