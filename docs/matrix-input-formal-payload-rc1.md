@@ -25,3 +25,8 @@ Confirm that the formal matrix payload is observable on the host probe as `K_COL
 - `K_<row>_<col>:P/R` was observed on the host as `K_COLON`.
 - The working run used a fixed 63-byte HID report length.
 - This closes the `reportLength=7` hypothesis for the formal payload path.
+
+## Next Phase
+
+- The next live check is plugin-side `InputReceived`.
+- That follow-up is documented in [Plugin InputReceived RC1](./plugin-inputreceived-rc1.md).

@@ -1,135 +1,115 @@
 # YMMKeyboard Current Status Report
 
-## 1. プロジェクト全体状況
+## 1. Project Status
 
-| 項目 | 状態 | 要約 |
+| Project | Status | Notes |
 |---|---|---|
-| Project Audit | Completed | ベースライン整理と追跡方針の確立は完了。 |
-| Diagnostics Foundation RC2 | Completed | 診断基盤は確立済み。各種 verify も通過している。 |
-| Input Diagnostics RC1 | Completed | 入力診断の枠組みは用意済み。ただし実入力の到達は未解決。 |
-| Input Simulation RC1 | Completed | 入力シミュレーション基盤は完了済み。 |
-| Macro & Dispatch Diagnostics RC1 | Completed | Macro / Dispatch 診断は完了済み。 |
-| Unified Diagnostics Replay | Completed | 再現・比較の流れは整備済み。 |
-| Hardware Validation RC2 | Completed | formal identity の実機観測と候補選定は成功。現在は受信経路の追跡が残っている。 |
+| Project Audit | Completed | Repository-wide audit and documentation baseline established. |
+| Diagnostics Foundation RC2 | Completed | Diagnostics tooling and verification flow are stable. |
+| Input Diagnostics RC1 | Completed | `InputReceived` is now reachable from plugin-side input flow. |
+| Input Simulation RC1 | Completed | Replay and simulation plumbing is in place. |
+| Macro & Dispatch Diagnostics RC1 | Completed | Macro / dispatch visibility exists. |
+| Unified Diagnostics Replay | Completed | Cross-diagnostic replay is working. |
+| Hardware Validation RC2 | Completed | Formal identity is applied and verified on the device. |
 
-## 2. 現在成功していること
+## 2. Current Successes
 
-- `dotnet build YMMKeyboardPlugin.slnx -c Release` は成功している。
-- `./scripts/verify-hardware-preparation.ps1` は成功している。
-- `./scripts/verify-hardware-dry-run.ps1` は成功している。
-- formal identity は firmware / plugin / inspector / comparer に反映済み。
-- DeviceInspector で `2E8A:4020` が検出できている。
-- DeviceInspector では `Manufacturer=YMMKeyboard`、`Serial=50443404287E991C` を確認できている。
-- Plugin Diagnostics で `selectedCandidate = HID:2E8A:4020` まで到達している。
-- raw HID enumeration は動作しており、`2E8A:4020` は列挙対象に入っている。
-- firmware の clean build と UF2 生成は成功している。
-- CDC 側では `HB:` と `P/R:SW_00` の出力が観測できている。
+- `dotnet build YMMKeyboardPlugin.slnx -c Release` succeeds.
+- Firmware formal identity is active and stable.
+- `DeviceInspector` sees `VID=0x2E8A` / `PID=0x4020`.
+- `HidConsoleProbe` can receive host HID traffic.
+- Formal payload `K_<row>_<col>:P/R` is observable on the host when the HID report length is fixed to 63 bytes.
+- `InputReceived` is now connected in the plugin path for HID events.
 
-## 3. 現在のブロッカー
+## 3. Current Blockers
 
-- `InputReceived` が入力診断パイプラインに到達していない。
-- `InputMapped` と `DispatchPrepared` も `0` のまま。
-- `raw_report_samples = 0` のままなので、HID の raw report を host 側で観測できていない。
-- `selectedPath == openedPath` で path は一致しているが、read loop は timeout のみで成功していない。
-- `HID_STATUS` / `HID_DIAG` を使った追加診断は firmware 側に入っているが、CDC 上ではまだ確認できていない。
-- 次の live flash に必要な `RPI-RP2` ドライブは、現時点では常時見えていない。
+- `InputReceived` verification still needs a live plugin run with the current matrix formal payload path.
+- We still need to confirm the exact plugin-side behavior for the matrix payload in a running YMM4 session.
+- Some historical docs still reference earlier matrix probes; they should be treated as background unless updated to the latest formal-payload run.
 
-## 4. 原因候補
+## 4. Cause Candidates
 
-1. firmware の HID 送信経路が実際には report を出していない。
-2. `tud_hid_ready()` が false のまま、もしくは `tud_hid_report()` が失敗している。
-3. report は送られているが、host 側の parse / 受信条件で落ちている。
-4. path / interface の選択は現状で一致しているため低優先だが、別経路の取り違えがまだ残っている可能性はある。
+Current likely causes, in priority order:
 
-## 5. 実機確認結果
+1. Plugin runtime context not started with the latest build.
+2. Plugin HID parsing path not matching the current formal payload shape.
+3. YMM4 / plugin load timing affecting when `InputReceived` starts being recorded.
+4. Residual stale diagnostics from earlier probe phases.
 
-### 現在の最新観測
+## 5. Latest Observed State
 
-| 項目 | 値 |
+| Item | Value |
 |---|---|
 | VID | `0x2E8A` |
 | PID | `0x4020` |
 | ProductName | `YMM Control HID` |
 | Manufacturer | `YMMKeyboard` |
-| Serial | `50443404287E991C` |
-| selectedCandidate | `HID:2E8A:4020` |
-| comparer result | `IdentityMismatch` は解消済み。`issues=13`、`MissingHidUsage` は観測扱い。 |
+| Serial | `504434042060791C` |
+| Selected Candidate | `HID:2E8A:4020` |
+| Host HID Result | `K_0_1:P` and `K_0_1:R` received |
+| Host Classification | `K_COLON` |
+| HID Report Length | `63` bytes payload, `64` bytes on wire with report ID |
 
-### 追加の runtime 観測
-
-- `selectedPath` と `openedPath` は一致している。
-- `openSucceeded=True`。
-- `readLoopStarted=True`。
-- `readAttemptCount=285`。
-- `readSuccessCount=0`。
-- `readTimeoutCount=284`。
-- `raw_report_samples=0`。
-
-## 6. 残課題一覧
+## 6. Remaining Work by Area
 
 ### Firmware
 
-- HID report が host に届かない理由の特定。
-- `HID_STATUS` / `HID_DIAG` を使った送出状態の可視化確認。
+- Keep the formal matrix payload path stable.
+- Preserve the fixed 63-byte HID report length.
+- Avoid reintroducing the earlier `reportLength=7` behavior.
 
 ### Plugin
 
-- raw HID 受信が timeout で止まる理由の切り分け。
-- `openedPath` と report 受信の実効経路の対応確認。
+- Confirm the live `InputReceived` path with the current firmware.
+- Verify that the current HID parser accepts the formal matrix payload path in a running YMM4 session.
 
 ### Diagnostics
 
-- `InputReceived` を 1 件以上発生させる。
-- `InputMapped` と `DispatchPrepared` を 1 件以上観測する。
+- Record the next live plugin run under `tmp/input-diagnostics/`.
+- Verify `InputReceived` appears before mapping and dispatch steps.
 
 ### YMM Integration
 
-- YMM 側の入力経路が実機レポートを受けているかを確認する。
-- Macro / Dispatch 側に流れる前段で止まっていないかを確認する。
+- Confirm that YMM4 loads the latest plugin build and records the current HID traffic.
 
 ### Hardware Validation
 
-- BOOTSEL / `RPI-RP2` が見えたタイミングでのみ live flash を実施する運用を維持する。
-- 今後の実機観測は 1 台ずつに限定する。
+- Use the latest known-good formal payload build as the baseline for remaining plugin verification.
 
-## 7. リスク一覧
+## 7. Risks
 
-- HID report format の不一致。
-- Windows HID enumeration の見え方の差分。
-- path selection の取り違え。
-- `tud_hid_ready()` の状態が見えていないことによる診断の遅れ。
-- BOOTSEL ドライブ非表示による再フラッシュ停滞。
-- YMM 起動状態による plugin DLL ロックの再発。
+- HID report length regressions can silently break host visibility.
+- Plugin startup timing can make a good device look broken if diagnostics start late.
+- Old probe logs can be mistaken for current state if the run folder is not updated.
 
-## 8. 次にやるべきこと
+## 8. Next Actions
 
 ### P1
 
-- `InputReceived` が発生する条件を確定する。
-- `HID_STATUS` / `HID_DIAG` を観測して、firmware の送出段階を 1 回で切り分ける。
+- Run YMM4 with the latest plugin build and confirm `InputReceived` on a live matrix press.
+- Save the resulting diagnostics under `tmp/input-diagnostics/`.
 
 ### P2
 
-- raw HID report が 1 件も来ない理由を、firmware / host のどちらにあるかで確定する。
-- 必要なら plugin diagnostics の追加観測を取り直す。
+- Confirm whether `InputMapped` appears after `InputReceived`.
+- If needed, compare the plugin-side raw HID parsing against the formal payload shape.
 
 ### P3
 
-- Input Mapping / Dispatch / Macro の次段階に進む前提を整える。
-- BOOTSEL 再フラッシュが必要なら、`RPI-RP2` が見えるタイミングに合わせて 1 台だけ実施する。
+- Refresh the summary docs after the live plugin verification.
 
-## 9. 推定完成度
+## 9. Estimated Completion
 
-| 領域 | 推定完成度 |
+| Area | Estimate |
 |---|---:|
-| Diagnostics | 90% |
+| Diagnostics | 95% |
 | Firmware Identity | 100% |
-| Hardware Validation | 80% |
-| Input Validation | 20% |
+| Hardware Validation | 95% |
+| Input Validation | 55% |
 | Macro Validation | 10% |
-| YMM Integration | 25% |
-| Overall | 60% |
+| YMM Integration | 50% |
+| Overall | 75% |
 
-## 10. 結論
+## 10. Conclusion
 
-認識と identity 整理は成功している。`2E8A:4020` は検出でき、Plugin は formal candidate を選べている。一方で、実入力はまだ `InputReceived` に到達しておらず、`raw_report_samples=0` のまま止まっている。次にやるべきことは、HID 送出経路が本当に report を出していないのか、それとも host 側で受信できていないのかを 1 回で切り分けること。
+The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The remaining gap is plugin-side live validation: we now need a YMM4 session with the latest build to confirm `InputReceived` in the real runtime path.

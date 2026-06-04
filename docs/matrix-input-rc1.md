@@ -71,3 +71,4 @@
 - The formal payload flow is documented in [Matrix Input Formal Payload RC1](./matrix-input-formal-payload-rc1.md).
 - The formal HID report length is now fixed to 63 bytes so the on-wire report shape matches the working variant-per-press transport path.
 - The fixed-length formal payload was validated on the host as `K_COLON`.
+- The next live check is plugin-side `InputReceived`; see [Plugin InputReceived RC1](./plugin-inputreceived-rc1.md).
