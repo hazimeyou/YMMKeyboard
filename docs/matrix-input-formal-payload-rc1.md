@@ -30,3 +30,4 @@ Confirm that the formal matrix payload is observable on the host probe as `K_COL
 
 - The next live check is plugin-side `InputReceived`.
 - That follow-up is documented in [Plugin InputReceived RC1](./plugin-inputreceived-rc1.md).
+- The live plugin run confirmed `InputReceived`, `InputMapped`, and `DispatchPrepared` for `K_0_1:P`.

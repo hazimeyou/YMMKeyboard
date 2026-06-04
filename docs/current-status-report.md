@@ -6,7 +6,7 @@
 |---|---|---|
 | Project Audit | Completed | Repository-wide audit and documentation baseline established. |
 | Diagnostics Foundation RC2 | Completed | Diagnostics tooling and verification flow are stable. |
-| Input Diagnostics RC1 | Completed | `InputReceived` is now reachable from plugin-side input flow. |
+| Input Diagnostics RC1 | Completed | `InputReceived`, `InputMapped`, and `DispatchPrepared` are confirmed in live plugin input flow. |
 | Input Simulation RC1 | Completed | Replay and simulation plumbing is in place. |
 | Macro & Dispatch Diagnostics RC1 | Completed | Macro / dispatch visibility exists. |
 | Unified Diagnostics Replay | Completed | Cross-diagnostic replay is working. |
@@ -19,22 +19,19 @@
 - `DeviceInspector` sees `VID=0x2E8A` / `PID=0x4020`.
 - `HidConsoleProbe` can receive host HID traffic.
 - Formal payload `K_<row>_<col>:P/R` is observable on the host when the HID report length is fixed to 63 bytes.
-- `InputReceived` is now connected in the plugin path for HID events.
+- `InputReceived`, `InputMapped`, and `DispatchPrepared` are now connected in the plugin path for HID events.
 
 ## 3. Current Blockers
 
-- `InputReceived` verification still needs a live plugin run with the current matrix formal payload path.
-- We still need to confirm the exact plugin-side behavior for the matrix payload in a running YMM4 session.
 - Some historical docs still reference earlier matrix probes; they should be treated as background unless updated to the latest formal-payload run.
 
 ## 4. Cause Candidates
 
 Current likely causes, in priority order:
 
-1. Plugin runtime context not started with the latest build.
-2. Plugin HID parsing path not matching the current formal payload shape.
-3. YMM4 / plugin load timing affecting when `InputReceived` starts being recorded.
-4. Residual stale diagnostics from earlier probe phases.
+1. Residual stale diagnostics from earlier probe phases.
+2. Follow-up mapping / dispatch behavior if a different key path is used later.
+3. YMM4 / plugin load timing only matters for older runs, not the latest confirmed one.
 
 ## 5. Latest Observed State
 
@@ -49,6 +46,9 @@ Current likely causes, in priority order:
 | Host HID Result | `K_0_1:P` and `K_0_1:R` received |
 | Host Classification | `K_COLON` |
 | HID Report Length | `63` bytes payload, `64` bytes on wire with report ID |
+| Plugin InputReceived | `1` |
+| Plugin InputMapped | `1` |
+| Plugin DispatchPrepared | `1` |
 
 ## 6. Remaining Work by Area
 
@@ -60,21 +60,20 @@ Current likely causes, in priority order:
 
 ### Plugin
 
-- Confirm the live `InputReceived` path with the current firmware.
-- Verify that the current HID parser accepts the formal matrix payload path in a running YMM4 session.
+- Confirm any remaining mapping or dispatch details only if a different key path is exercised.
 
 ### Diagnostics
 
-- Record the next live plugin run under `tmp/input-diagnostics/`.
-- Verify `InputReceived` appears before mapping and dispatch steps.
+- Record the latest live plugin run under `tmp/input-diagnostics/`.
+- Preserve `InputReceived`, `InputMapped`, and `DispatchPrepared` as the confirmed baseline.
 
 ### YMM Integration
 
-- Confirm that YMM4 loads the latest plugin build and records the current HID traffic.
+- Confirmed for the current formal payload path and live runtime session.
 
 ### Hardware Validation
 
-- Use the latest known-good formal payload build as the baseline for remaining plugin verification.
+- Use the latest known-good formal payload build as the baseline.
 
 ## 7. Risks
 
@@ -86,13 +85,12 @@ Current likely causes, in priority order:
 
 ### P1
 
-- Run YMM4 with the latest plugin build and confirm `InputReceived` on a live matrix press.
-- Save the resulting diagnostics under `tmp/input-diagnostics/`.
+- Keep the confirmed live `InputReceived` run as the baseline.
+- Save any future changed-path diagnostics under `tmp/input-diagnostics/` if new mappings are exercised.
 
 ### P2
 
-- Confirm whether `InputMapped` appears after `InputReceived`.
-- If needed, compare the plugin-side raw HID parsing against the formal payload shape.
+- Compare any future alternate payload path against the confirmed formal path only if required.
 
 ### P3
 
@@ -105,11 +103,11 @@ Current likely causes, in priority order:
 | Diagnostics | 95% |
 | Firmware Identity | 100% |
 | Hardware Validation | 95% |
-| Input Validation | 55% |
+| Input Validation | 85% |
 | Macro Validation | 10% |
 | YMM Integration | 50% |
 | Overall | 75% |
 
 ## 10. Conclusion
 
-The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The remaining gap is plugin-side live validation: we now need a YMM4 session with the latest build to confirm `InputReceived` in the real runtime path.
+The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The plugin runtime now also confirms `InputReceived`, `InputMapped`, and `DispatchPrepared` for the live matrix path, so the current baseline is end-to-end healthy.

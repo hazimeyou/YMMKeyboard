@@ -10,12 +10,12 @@ Confirm that the latest matrix formal payload can enter the YMMKeyboardPlugin ru
 - `HidConsoleProbe` receives the formal payload on the host as `K_COLON`.
 - The host-side HID transport is working for the formal payload shape.
 
-## Verification Target
+## Validation Result
 
-The next live YMM4 session should confirm:
-
-- `InputReceived` is recorded for the matrix HID event.
-- The event lands in `tmp/input-diagnostics/`.
+- `InputReceived` was recorded for the matrix HID event.
+- The event landed in `tmp/input-diagnostics/`.
+- The live run also reached `InputMapped` and `DispatchPrepared`.
+- The recorded raw input was `K_0_1:P`.
 
 ## What Is Not Required Yet
 
@@ -32,4 +32,4 @@ The next live YMM4 session should confirm:
 
 ## Next Step
 
-Run YMM4 with the latest plugin build and collect a fresh `input-diagnostics` snapshot from a live matrix press.
+- The next phase is to treat this as a confirmed baseline and move on to any remaining mapping or dispatch follow-up only if needed.
