@@ -11,7 +11,10 @@
 | Macro & Dispatch Diagnostics RC1 | Completed | Macro / dispatch visibility exists. |
 | Unified Diagnostics Replay | Completed | Cross-diagnostic replay is working. |
 | Hardware Validation RC2 | Completed | Formal identity is applied and verified on the device. |
-| Rotary Host Receive Validation RC5 | Completed | `GP0/GP1` raw state, edge, and decode are in place; immediate `SW36` / `SW37` step emission and host HID receive are confirmed. |
+| Rotary Host Receive Validation RC5 | Completed | `GP0/GP1` raw state, edge, and decode are in place; immediate `SW36` / `SW37` host receive is confirmed. |
+| Rotary Detent Quality RC2 | In Progress | Click-quality analysis is being added so detent aggregation can converge toward one click ~= one event. |
+| Rotary Sensitivity Settings RC1 | In Progress | Rotary sensitivity is moving into plugin-side filtering so users can tune how many `SW36` / `SW37` presses become one action. |
+| Rotary Payload Parser Contract Fix RC1 | In Progress | Plugin parser now accepts raw `SW36:P/R` and `SW37:P/R` firmware payloads while preserving the existing rotary filter path. |
 
 ## 2. Current Successes
 
@@ -23,12 +26,15 @@
 - `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` are now connected in the plugin path for HID events.
 - The live `K_0_1 -> A` path has been verified as an actual YMM UI action.
 - Rotary push-in is confirmed on `SW35`; rotary motion is now fully confirmed on `GP0/GP1` with raw-state, decode, and immediate HID host-receive diagnostics.
+- Plugin-side rotary sensitivity filtering is now being introduced so the hardware can stay simple while the user tunes responsiveness in the UI.
 
 ## 3. Current Blockers
 
 - Some historical docs still reference earlier matrix probes; they should be treated as background unless updated to the latest formal-payload run.
 - Rotary direction labels were clarified so that left / counter-clockwise is `SW36`, push-in is `SW35`, and right / clockwise is `SW37`.
 - Rotary step emission is confirmed in immediate mode; `ROTARY_STEP` and host `SW36` / `SW37` reception both worked in RC5.
+- Rotary detent aggregation is now being tuned with click-quality analysis so the rotary can move from diagnostic immediate mode to practical click-based behavior.
+- Rotary sensitivity is being shifted to the plugin layer, with a new user-facing setting that controls how many `SW36` / `SW37` presses count as one action.
 
 ## 4. Cause Candidates
 

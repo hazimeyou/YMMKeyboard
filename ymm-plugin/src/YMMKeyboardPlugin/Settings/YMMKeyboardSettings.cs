@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using YMMKeyboardPlugin.Logging;
@@ -27,6 +28,7 @@ namespace YMMKeyboardPlugin.Settings
         private const string FormalHidProductNameFilter = "";
         private const string LegacyFormalHidProductNameFilter = "YMMKeyboard RP2040";
         private const string FormalHidManufacturerFilter = "YMMKeyboard";
+        private const int DefaultRotarySensitivity = 2;
         private const string SettingsDirectoryName = "settings";
         private const string SettingsFileName = "YMMKeyboardSettings.json";
         private static readonly object saveLock = new();
@@ -55,6 +57,7 @@ namespace YMMKeyboardPlugin.Settings
         [DataMember] public string HidManufacturerFilter { get; set; } = FormalHidManufacturerFilter;
         [DataMember] public List<string> StartupPortNames { get; set; } = new();
         [DataMember] public List<string> KnownDeviceUids { get; set; } = new();
+        [DataMember] public int RotarySensitivity { get; set; } = DefaultRotarySensitivity;
         [DataMember] public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new();
         [DataMember] public Dictionary<string, ButtonConfig> UiComboButtonConfigs { get; set; } = new();
         [DataMember] public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceButtonConfigs { get; set; } = new();
@@ -189,6 +192,12 @@ namespace YMMKeyboardPlugin.Settings
             SaveToPluginDirectory();
         }
 
+        public void UpdateRotarySensitivity(int sensitivity)
+        {
+            RotarySensitivity = ClampRotarySensitivity(sensitivity);
+            SaveToPluginDirectory();
+        }
+
         public void UpdateHidFilter(string vendorIdHex, string productIdHex, string productNameFilter, string manufacturerFilter)
         {
             HidVendorIdHex = NormalizeHex(vendorIdHex);
@@ -260,6 +269,7 @@ namespace YMMKeyboardPlugin.Settings
                 HidManufacturerFilter = data.HidManufacturerFilter ?? string.Empty;
                 StartupPortNames = data.StartupPortNames ?? new();
                 KnownDeviceUids = data.KnownDeviceUids ?? new();
+                RotarySensitivity = data.RotarySensitivity;
                 UiButtonConfigs = data.UiButtonConfigs ?? new();
                 UiComboButtonConfigs = data.UiComboButtonConfigs ?? new();
                 DeviceButtonConfigs = data.DeviceButtonConfigs ?? new();
@@ -280,19 +290,21 @@ namespace YMMKeyboardPlugin.Settings
 
         private void SaveToPluginDirectory()
         {
+            string? tempFilePath = null;
+            string? backupFilePath = null;
+
             try
             {
                 NormalizeSettings();
                 PersistedSettings data;
                 string settingsFilePath;
-                string tempFilePath;
 
                 lock (saveLock)
                 {
                     var directory = GetSettingsDirectoryPath();
                     Directory.CreateDirectory(directory);
                     settingsFilePath = GetSettingsFilePath();
-                    tempFilePath = settingsFilePath + ".tmp";
+                    tempFilePath = settingsFilePath + $".tmp.{Guid.NewGuid():N}";
 
                     data = new PersistedSettings
                     {
@@ -304,6 +316,7 @@ namespace YMMKeyboardPlugin.Settings
                         HidManufacturerFilter = HidManufacturerFilter,
                         StartupPortNames = StartupPortNames.ToList(),
                         KnownDeviceUids = KnownDeviceUids.ToList(),
+                        RotarySensitivity = RotarySensitivity,
                         UiButtonConfigs = CloneConfigs(UiButtonConfigs),
                         UiComboButtonConfigs = CloneConfigs(UiComboButtonConfigs),
                         DeviceButtonConfigs = CloneNestedConfigs(DeviceButtonConfigs),
@@ -311,15 +324,29 @@ namespace YMMKeyboardPlugin.Settings
                     };
 
                     var json = JsonSerializer.Serialize(data, jsonSerializerOptions);
-                    File.WriteAllText(tempFilePath, json);
+                    using (var stream = new FileStream(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+                    using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
+                    {
+                        writer.Write(json);
+                        writer.Flush();
+                        stream.Flush(flushToDisk: true);
+                    }
 
                     if (File.Exists(settingsFilePath))
-                        File.Copy(tempFilePath, settingsFilePath, overwrite: true);
-                    else
-                        File.Move(tempFilePath, settingsFilePath);
+                    {
+                        backupFilePath = settingsFilePath + ".bak";
+                        if (File.Exists(backupFilePath))
+                            File.Delete(backupFilePath);
 
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
+                        File.Replace(tempFilePath, settingsFilePath, backupFilePath, ignoreMetadataErrors: true);
+                    }
+                    else
+                    {
+                        File.Move(tempFilePath, settingsFilePath);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(backupFilePath) && File.Exists(backupFilePath))
+                        File.Delete(backupFilePath);
                 }
             }
             catch (Exception ex)
@@ -330,6 +357,28 @@ namespace YMMKeyboardPlugin.Settings
                 {
                     hasShownSaveError = true;
                     MessageBox.Show($"設定の保存に失敗しました。\n{ex.Message}", "キーボード設定");
+                }
+            }
+            finally
+            {
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
+                        File.Delete(tempFilePath);
+                }
+                catch
+                {
+                    // Best-effort cleanup only.
+                }
+
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(backupFilePath) && File.Exists(backupFilePath))
+                        File.Delete(backupFilePath);
+                }
+                catch
+                {
+                    // Best-effort cleanup only.
                 }
             }
         }
@@ -361,6 +410,8 @@ namespace YMMKeyboardPlugin.Settings
             {
                 HidProductNameFilter = FormalHidProductNameFilter;
             }
+
+            RotarySensitivity = ClampRotarySensitivity(RotarySensitivity);
 
             StartupPortNames = StartupPortNames
                 .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -434,6 +485,17 @@ namespace YMMKeyboardPlugin.Settings
             return s.ToUpperInvariant();
         }
 
+        private static int ClampRotarySensitivity(int sensitivity)
+        {
+            return sensitivity switch
+            {
+                <= 1 => 1,
+                2 => 2,
+                3 => 3,
+                >= 4 => 4,
+            };
+        }
+
         private void EnsureUiDefault(string switchName)
         {
             if (!UiButtonConfigs.ContainsKey(switchName))
@@ -492,6 +554,7 @@ namespace YMMKeyboardPlugin.Settings
             public string? HidManufacturerFilter { get; set; }
             public List<string>? StartupPortNames { get; set; }
             public List<string>? KnownDeviceUids { get; set; }
+            public int RotarySensitivity { get; set; } = DefaultRotarySensitivity;
             public Dictionary<string, ButtonConfig>? UiButtonConfigs { get; set; }
             public Dictionary<string, ButtonConfig>? UiComboButtonConfigs { get; set; }
             public Dictionary<string, Dictionary<string, ButtonConfig>>? DeviceButtonConfigs { get; set; }

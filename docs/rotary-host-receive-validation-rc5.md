@@ -37,3 +37,5 @@ This RC verifies that host-side `HidConsoleProbe` receives those payloads.
 - `ROTARY_STEP_RESULT` was emitted alongside the send path.
 - `HidConsoleProbe` received `SW36:P` and `SW37:P` payloads and classified them correctly.
 - Host receive for `SW36` / `SW37` is confirmed.
+
+This RC is now the host-receive baseline for the raw SW36:P/R and SW37:P/R rotary payload contract.

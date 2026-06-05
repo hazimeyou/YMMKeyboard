@@ -16,6 +16,9 @@ namespace YMMKeyboardPlugin
         private static readonly Regex serialEventPattern = new(
             @"(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",
             RegexOptions.Compiled);
+        private static readonly Regex rotaryRawEventPattern = new(
+            @"^(?:(?<uid>[0-9a-fA-F]+):)?(?<switch>SW_?(?<switchId>\d+)):(?<state>[PR])$",
+            RegexOptions.Compiled);
         private static readonly Regex ansiEscapePattern = new(
             @"\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\a]*(?:\a|\x1B\\))",
             RegexOptions.Compiled);
@@ -95,13 +98,24 @@ namespace YMMKeyboardPlugin
                         PluginLogger.Info("SerialKeyboardLink", $"RX {_portName}: {normalizedLine}");
 
                     var match = serialEventPattern.Match(normalizedLine);
+                    var isRotaryRaw = false;
+                    if (!match.Success)
+                    {
+                        match = rotaryRawEventPattern.Match(normalizedLine);
+                        isRotaryRaw = match.Success;
+                    }
+
                     if (!match.Success)
                         continue;
 
-                    var uid = match.Groups["uid"].Value.ToLowerInvariant();
+                    var uid = match.Groups["uid"].Success && !string.IsNullOrWhiteSpace(match.Groups["uid"].Value)
+                        ? match.Groups["uid"].Value.ToLowerInvariant()
+                        : _portName.ToLowerInvariant();
                     var state = match.Groups["state"].Value;
-                    if (!int.TryParse(match.Groups["switch"].Value, out var switchId))
+                    var switchGroupName = isRotaryRaw ? "switchId" : "switch";
+                    if (!int.TryParse(match.Groups[switchGroupName].Value, out var switchId))
                         continue;
+                    switchId = NormalizeRotarySwitchId(switchId);
 
                     SerialKeyboardDevice device;
                     bool isNewDevice;
@@ -186,6 +200,16 @@ namespace YMMKeyboardPlugin
         public void Dispose()
         {
             Stop();
+        }
+
+        private static int NormalizeRotarySwitchId(int switchId)
+        {
+            return switchId switch
+            {
+                36 => 37,
+                37 => 36,
+                _ => switchId
+            };
         }
     }
 }

@@ -7,8 +7,8 @@
 #include "usb_descriptors.h"
 
 #define FW_ID "YMMKeyboard-RP2040-TinyUSB"
-#define FW_VERSION "rotary-host-receive-validation-rc5"
-#define FW_FEATURES "FW_INFO,HID_STATUS,ROTARY_RAW,ROTARY_EDGE,ROTARY_DECODE,ROTARY_STEP,ROTARY_HID"
+#define FW_VERSION "rotary-detent-quality-rc2"
+#define FW_FEATURES "FW_INFO,HID_STATUS,ROTARY_DECODE,ROTARY_STEP,ROTARY_DETENT_QUALITY,ROTARY_HID"
 #define FW_BUILD_TIME __DATE__ " " __TIME__
 #define MATRIX_COL_COUNT 7
 #define MATRIX_ROW_COUNT 6
@@ -16,7 +16,7 @@
 #define MATRIX_DIAG_INTERVAL_US 500000
 #define MATRIX_FORMAL_REPORT_LENGTH 63u
 #define ROTARY_DETENT_THRESHOLD 2
-#define ROTARY_IMMEDIATE_STEP 1
+#define ROTARY_IMMEDIATE_MODE 0
 
 static const uint MATRIX_COL_PINS[MATRIX_COL_COUNT] = {2, 8, 7, 6, 5, 4, 3};
 static const uint MATRIX_ROW_PINS[MATRIX_ROW_COUNT] = {28, 27, 26, 15, 14, 29};
@@ -64,11 +64,14 @@ static uint g_rev_scan_row = 0;
 static bool g_rotary_initialized = false;
 static uint8_t g_rotary_last_state = 0;
 static int8_t g_rotary_accumulator = 0;
+static int8_t g_rotary_direction_accumulator = 0;
 static absolute_time_t g_rotary_last_diag;
 static uint32_t g_rotary_edge_count = 0;
 static uint32_t g_rotary_step_cw_count = 0;
 static uint32_t g_rotary_step_ccw_count = 0;
 static uint32_t g_rotary_invalid_transition_count = 0;
+static uint32_t g_rotary_edges_since_step = 0;
+static uint32_t g_rotary_deltas_since_step = 0;
 
 static void write_cdc_line(const char *line)
 {
@@ -391,6 +394,18 @@ static void write_rotary_step(const char *direction, const char *mapped, bool im
   write_cdc_line(line);
 }
 
+static void write_rotary_click_analysis(const char *direction, uint32_t edge_count, uint32_t delta_count)
+{
+  char line[160];
+  snprintf(line, sizeof(line),
+           "ROTARY_CLICK_ANALYSIS direction=%s edgeCount=%lu deltaCount=%lu threshold=%d",
+           direction,
+           (unsigned long)edge_count,
+           (unsigned long)delta_count,
+           ROTARY_DETENT_THRESHOLD);
+  write_cdc_line(line);
+}
+
 static bool send_hid_report(const char *label, const char *payload_text, uint16_t payload_length, bool pressed);
 
 static void write_rotary_diag(void)
@@ -412,6 +427,9 @@ static void init_rotary_input(void)
 
   g_rotary_last_state = (uint8_t)(((gpio_get(ROTARY_A_PIN) ? 1u : 0u) << 1) | (gpio_get(ROTARY_B_PIN) ? 1u : 0u));
   g_rotary_accumulator = 0;
+  g_rotary_direction_accumulator = 0;
+  g_rotary_edges_since_step = 0;
+  g_rotary_deltas_since_step = 0;
   g_rotary_initialized = true;
   g_rotary_last_diag = get_absolute_time();
 
@@ -476,6 +494,7 @@ static void poll_rotary_input(void)
 
   g_rotary_last_state = curr_state;
   g_rotary_edge_count++;
+  g_rotary_edges_since_step++;
   write_rotary_edge(prev_state, curr_state);
 
   int8_t delta = rotary_transition_delta(prev_state, curr_state);
@@ -487,8 +506,16 @@ static void poll_rotary_input(void)
     return;
   }
 
+  g_rotary_deltas_since_step++;
+  if (g_rotary_direction_accumulator != 0 && ((g_rotary_direction_accumulator > 0 && delta < 0) || (g_rotary_direction_accumulator < 0 && delta > 0)))
+  {
+    g_rotary_direction_accumulator = 0;
+    g_rotary_accumulator = 0;
+  }
+
+  g_rotary_direction_accumulator += delta;
   g_rotary_accumulator += delta;
-  if (ROTARY_IMMEDIATE_STEP)
+  if (ROTARY_IMMEDIATE_MODE)
   {
     if (delta > 0)
     {
@@ -511,6 +538,10 @@ static void poll_rotary_input(void)
     g_rotary_step_cw_count++;
     int8_t accum_before = g_rotary_accumulator;
     g_rotary_accumulator = 0;
+    g_rotary_direction_accumulator = 0;
+    write_rotary_click_analysis("CW", g_rotary_edges_since_step, g_rotary_deltas_since_step);
+    g_rotary_edges_since_step = 0;
+    g_rotary_deltas_since_step = 0;
     emit_rotary_tap("SW36", "CW", false, delta, accum_before);
   }
   else if (g_rotary_accumulator <= -ROTARY_DETENT_THRESHOLD)
@@ -518,6 +549,10 @@ static void poll_rotary_input(void)
     g_rotary_step_ccw_count++;
     int8_t accum_before = g_rotary_accumulator;
     g_rotary_accumulator = 0;
+    g_rotary_direction_accumulator = 0;
+    write_rotary_click_analysis("CCW", g_rotary_edges_since_step, g_rotary_deltas_since_step);
+    g_rotary_edges_since_step = 0;
+    g_rotary_deltas_since_step = 0;
     emit_rotary_tap("SW37", "CCW", false, delta, accum_before);
   }
 }

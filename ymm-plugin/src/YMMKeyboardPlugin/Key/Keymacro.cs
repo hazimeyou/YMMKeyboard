@@ -17,11 +17,6 @@ namespace YMMKeyboardPlugin
     public class Keymacro : IDisposable
     {
         private const int SingleKeyDelayMs = 35;
-        private static readonly HashSet<string> immediateSwitches = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "SW36", // rotary counter-clockwise
-            "SW37", // rotary clockwise
-        };
         private static readonly bool verboseLatencyLog =
             string.Equals(Environment.GetEnvironmentVariable("YMMK_VERBOSE_LATENCY"), "1", StringComparison.Ordinal);
 
@@ -29,6 +24,7 @@ namespace YMMKeyboardPlugin
         private readonly Dictionary<string, HashSet<string>> pressedSwitches = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, HashSet<string>> consumedSwitches = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Dictionary<string, CancellationTokenSource>> pendingSingleActions = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, RotaryState> rotaryStates = new(StringComparer.OrdinalIgnoreCase);
         private readonly object stateLock = new();
 
         public void Initialize()
@@ -187,10 +183,64 @@ namespace YMMKeyboardPlugin
                 return;
             }
 
+            if (IsRotarySwitch(switchName))
+            {
+                if (e.IsPressed)
+                    HandleRotaryPressed(device.Uid, switchName, e.ReceivedAtUtc, e);
+                else
+                    HandleRotaryReleased(device.Uid, switchName, e);
+
+                return;
+            }
+
             if (e.IsPressed)
                 HandleKeyPressed(device.Uid, switchName, e.ReceivedAtUtc, e);
             else
                 HandleKeyReleased(device.Uid, switchName);
+        }
+
+        private void HandleRotaryPressed(string uid, string switchName, DateTime receivedAtUtc, KeyEvent input)
+        {
+            var threshold = Math.Max(1, YMMKeyboardSettings.Current.RotarySensitivity);
+            var direction = GetRotaryDirectionName(switchName);
+            RotaryState state;
+            int accumulatorAfter;
+            var shouldDispatch = false;
+
+            lock (stateLock)
+            {
+                state = GetOrCreateRotaryState(uid);
+                if (!string.Equals(state.LastSwitchName, switchName, StringComparison.OrdinalIgnoreCase))
+                {
+                    state.LastSwitchName = switchName;
+                    state.Accumulator = 0;
+                }
+
+                state.Accumulator++;
+                accumulatorAfter = state.Accumulator;
+                InputDiagnostics.RecordRotaryAccumulated(input, switchName, direction, state.Accumulator, threshold);
+
+                if (state.Accumulator >= threshold)
+                {
+                    state.Accumulator = 0;
+                    shouldDispatch = true;
+                }
+            }
+
+            if (!shouldDispatch)
+            {
+                InputDiagnostics.RecordRotaryFiltered(input, switchName, direction, accumulatorAfter, threshold, "below-threshold");
+                return;
+            }
+
+            LogLatency($"Rotary step uid={uid} switch={switchName}", receivedAtUtc);
+            InputDiagnostics.RecordRotaryDispatched(input, switchName, direction, threshold, threshold, $"switch={switchName}; threshold={threshold}");
+            MappingConverter.ExecuteDeviceSwitch(uid, switchName, input);
+        }
+
+        private static void HandleRotaryReleased(string uid, string switchName, KeyEvent input)
+        {
+            InputDiagnostics.RecordRotaryIgnoredRelease(input, switchName, GetRotaryDirectionName(switchName));
         }
 
         private void HandleKeyPressed(string uid, string switchName, DateTime receivedAtUtc, KeyEvent input)
@@ -205,14 +255,6 @@ namespace YMMKeyboardPlugin
 
                 if (pressed.Count == 1)
                 {
-                    if (immediateSwitches.Contains(switchName))
-                    {
-                        CancelPendingSingles(uid, pressed);
-                        LogLatency($"Immediate action uid={uid} switch={switchName}", receivedAtUtc);
-                        MappingConverter.ExecuteDeviceSwitch(uid, switchName, input);
-                        return;
-                    }
-
                     ScheduleSingleAction(uid, switchName, receivedAtUtc, input);
                     return;
                 }
@@ -404,7 +446,32 @@ namespace YMMKeyboardPlugin
 
                 pressedSwitches.Remove(uid);
                 consumedSwitches.Remove(uid);
+                rotaryStates.Remove(uid);
             }
+        }
+
+        private RotaryState GetOrCreateRotaryState(string uid)
+        {
+            if (!rotaryStates.TryGetValue(uid, out var state))
+            {
+                state = new RotaryState();
+                rotaryStates[uid] = state;
+            }
+
+            return state;
+        }
+
+        private static bool IsRotarySwitch(string switchName)
+        {
+            return string.Equals(switchName, "SW36", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(switchName, "SW37", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string GetRotaryDirectionName(string switchName)
+        {
+            return string.Equals(switchName, "SW36", StringComparison.OrdinalIgnoreCase)
+                ? "CW"
+                : "CCW";
         }
 
         public void Dispose()
@@ -429,6 +496,12 @@ namespace YMMKeyboardPlugin
             }
 
             InputDiagnostics.Flush();
+        }
+
+        private sealed class RotaryState
+        {
+            public string LastSwitchName { get; set; } = string.Empty;
+            public int Accumulator { get; set; }
         }
     }
 }

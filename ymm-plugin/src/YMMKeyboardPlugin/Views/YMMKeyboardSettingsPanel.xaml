@@ -69,6 +69,22 @@
                         <TextBox x:Name="HidManufacturerFilterTextBox" Width="130" Margin="6,0,0,0"/>
                         <Button Margin="8,0,0,0" Padding="8,2" Content="適用" Click="ApplyHidFilter_OnClick"/>
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock VerticalAlignment="Center" Text="ロータリー感度:"/>
+                        <ComboBox x:Name="RotarySensitivityComboBox"
+                                  Margin="6,0,0,0"
+                                  Width="120"
+                                  SelectionChanged="RotarySensitivityComboBox_OnSelectionChanged">
+                            <ComboBoxItem Content="高: 1" Tag="1"/>
+                            <ComboBoxItem Content="標準: 2" Tag="2"/>
+                            <ComboBoxItem Content="低: 3" Tag="3"/>
+                            <ComboBoxItem Content="かなり低: 4" Tag="4"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                               Text="ロータリー入力を何回受け取ったら1回の操作として扱うかを指定します。値を大きくすると反応が鈍くなり、誤入力が減ります。"
+                               TextWrapping="Wrap"/>
                     <TextBlock x:Name="PortStatusTextBlock"
                                Margin="0,6,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"

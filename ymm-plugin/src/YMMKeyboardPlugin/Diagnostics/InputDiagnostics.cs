@@ -191,6 +191,91 @@ public static class InputDiagnostics
         }
     }
 
+    public static void RecordRotaryAccumulated(KeyEvent input, string switchName, string direction, int count, int threshold)
+    {
+        lock (sync)
+        {
+            EnsureSession();
+            session!.Events.Add(new InputDiagnosticEvent
+            {
+                EventType = "RotaryAccumulated",
+                Timestamp = DateTimeOffset.Now,
+                TransportType = input.TransportType,
+                SourceDevice = input.SourceDevice,
+                RawInput = input.RawInput,
+                InputId = input.InputId,
+                FilterName = switchName,
+                MappingSource = $"direction={direction}; count={count}; threshold={threshold}",
+            });
+            FlushLocked();
+        }
+    }
+
+    public static void RecordRotaryFiltered(KeyEvent input, string switchName, string direction, int count, int threshold, string reason)
+    {
+        lock (sync)
+        {
+            EnsureSession();
+            session!.Events.Add(new InputDiagnosticEvent
+            {
+                EventType = "RotaryFiltered",
+                Timestamp = DateTimeOffset.Now,
+                TransportType = input.TransportType,
+                SourceDevice = input.SourceDevice,
+                RawInput = input.RawInput,
+                InputId = input.InputId,
+                FilterName = switchName,
+                Accepted = false,
+                RejectReason = reason,
+                MappingSource = $"direction={direction}; count={count}; threshold={threshold}",
+            });
+            FlushLocked();
+        }
+    }
+
+    public static void RecordRotaryDispatched(KeyEvent input, string switchName, string direction, int count, int threshold, string payloadSummary)
+    {
+        lock (sync)
+        {
+            EnsureSession();
+            session!.Events.Add(new InputDiagnosticEvent
+            {
+                EventType = "RotaryDispatched",
+                Timestamp = DateTimeOffset.Now,
+                TransportType = input.TransportType,
+                SourceDevice = input.SourceDevice,
+                RawInput = input.RawInput,
+                InputId = input.InputId,
+                FilterName = switchName,
+                MappingSource = $"direction={direction}; count={count}; threshold={threshold}",
+                PayloadSummary = payloadSummary,
+                Result = "dispatched",
+            });
+            FlushLocked();
+        }
+    }
+
+    public static void RecordRotaryIgnoredRelease(KeyEvent input, string switchName, string direction)
+    {
+        lock (sync)
+        {
+            EnsureSession();
+            session!.Events.Add(new InputDiagnosticEvent
+            {
+                EventType = "RotaryIgnoredRelease",
+                Timestamp = DateTimeOffset.Now,
+                TransportType = input.TransportType,
+                SourceDevice = input.SourceDevice,
+                RawInput = input.RawInput,
+                InputId = input.InputId,
+                FilterName = switchName,
+                RejectReason = $"direction={direction}; release ignored",
+                Accepted = false,
+            });
+            FlushLocked();
+        }
+    }
+
     public static void Flush()
     {
         lock (sync)

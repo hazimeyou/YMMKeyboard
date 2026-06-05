@@ -13,6 +13,9 @@ public sealed class HidKeyboardLink : IKeyboardLink
     private static readonly Regex serialEventPattern = new(
         @"(?:YMMK:)?(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",
         RegexOptions.Compiled);
+    private static readonly Regex rotaryRawEventPattern = new(
+        @"^(?:YMMK:)?(?:(?<uid>[0-9a-fA-F]+):)?(?<switch>SW_?(?<switchId>\d+)):(?<state>[PR])$",
+        RegexOptions.Compiled);
     private static readonly Regex matrixFormalPattern = new(
         @"^(?:MATRIX:)?K_(?<row>\d+)_(?<col>\d+):(?<state>[PR])$",
         RegexOptions.Compiled);
@@ -506,6 +509,15 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 break;
             }
 
+            var rotaryMatch = rotaryRawEventPattern.Match(candidate);
+            if (rotaryMatch.Success)
+            {
+                matched = rotaryMatch;
+                matchedText = candidate;
+                matchedKind = "rotary";
+                break;
+            }
+
             var matrixMatch = matrixFormalPattern.Match(candidate);
             if (matrixMatch.Success)
             {
@@ -532,6 +544,23 @@ public sealed class HidKeyboardLink : IKeyboardLink
             uid = matched.Groups["uid"].Value.ToLowerInvariant();
             if (!int.TryParse(matched.Groups["switch"].Value, out switchId))
                 return;
+            switchId = NormalizeRotarySwitchId(switchId);
+
+            if (!string.Equals(uid, fallbackUid, StringComparison.OrdinalIgnoreCase))
+            {
+                actualDevice = GetOrCreateDevice(uid, out var isNewUid);
+                if (isNewUid)
+                    DeviceDetected?.Invoke(actualDevice);
+            }
+        }
+        else if (matchedKind == "rotary")
+        {
+            if (matched.Groups["uid"].Success && !string.IsNullOrWhiteSpace(matched.Groups["uid"].Value))
+                uid = matched.Groups["uid"].Value.ToLowerInvariant();
+
+            if (!int.TryParse(matched.Groups["switchId"].Value, out switchId))
+                return;
+            switchId = NormalizeRotarySwitchId(switchId);
 
             if (!string.Equals(uid, fallbackUid, StringComparison.OrdinalIgnoreCase))
             {
@@ -583,6 +612,16 @@ public sealed class HidKeyboardLink : IKeyboardLink
             matchedKind == "matrix"
                 ? $"Parsed matrix HID event via HID. uid={uid}, row={matched.Groups["row"].Value}, col={matched.Groups["col"].Value}, pressed={(state == "P")}, source=\"{matchedText}\""
                 : $"Parsed key event via HID. uid={uid}, switch={switchId}, pressed={(state == "P")}, source=\"{matchedText}\"");
+    }
+
+    private static int NormalizeRotarySwitchId(int switchId)
+    {
+        return switchId switch
+        {
+            36 => 37,
+            37 => 36,
+            _ => switchId
+        };
     }
 
     private static List<string> ExtractAsciiCandidates(byte[] report, int length)

@@ -45,6 +45,16 @@ namespace YMMKeyboardPlugin.Views
             HidProductIdTextBox.Text = settings.HidProductIdHex;
             HidProductNameFilterTextBox.Text = settings.HidProductNameFilter;
             HidManufacturerFilterTextBox.Text = settings.HidManufacturerFilter;
+
+            var rotarySensitivityTag = Math.Clamp(settings.RotarySensitivity, 1, 4).ToString();
+            foreach (var item in RotarySensitivityComboBox.Items.OfType<ComboBoxItem>())
+            {
+                if (string.Equals(item.Tag?.ToString(), rotarySensitivityTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    RotarySensitivityComboBox.SelectedItem = item;
+                    break;
+                }
+            }
         }
 
         private void LoadPorts()
@@ -162,6 +172,18 @@ namespace YMMKeyboardPlugin.Views
             HidProductNameFilterTextBox.Text = settings.HidProductNameFilter;
             HidManufacturerFilterTextBox.Text = settings.HidManufacturerFilter;
             PortStatusTextBlock.Text = $"HIDフィルタを設定しました。VID={settings.HidVendorIdHex}, PID={settings.HidProductIdHex}, 製品名={settings.HidProductNameFilter}, メーカー={settings.HidManufacturerFilter}";
+        }
+
+        private void RotarySensitivityComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (RotarySensitivityComboBox.SelectedItem is not ComboBoxItem selected)
+                return;
+
+            if (!int.TryParse(selected.Tag?.ToString(), out var sensitivity))
+                return;
+
+            settings.UpdateRotarySensitivity(sensitivity);
+            PortStatusTextBlock.Text = $"ロータリー感度を {selected.Content} に設定しました。";
         }
 
         private void Connect_OnClick(object sender, RoutedEventArgs e)
