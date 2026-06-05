@@ -6,44 +6,5 @@
   <Project Path="ymm-plugin/src/YMMKeyboardPlugin/YMMKeyboardPlugin.csproj">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
-  <Project Path="ymm-plugin/tests/YMMKeyboardPlugin.Tests/YMMKeyboardPlugin.Tests.csproj">
-    <Platform Solution="*|x64" Project="x64" />
-  </Project>
-  <Project Path="tools/HidProbeConsole/HidProbeConsole.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.HidConsoleProbe/YMMKeyboard.HidConsoleProbe.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.CdcTraceCapture/YMMKeyboard.CdcTraceCapture.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.ComHidCorrelationProbe/YMMKeyboard.ComHidCorrelationProbe.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.DeviceInspector/YMMKeyboard.DeviceInspector.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.DiagnosticsComparer/YMMKeyboard.DiagnosticsComparer.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.ProtocolSimulator/YMMKeyboard.ProtocolSimulator.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.InputDiagnosticsViewer/YMMKeyboard.InputDiagnosticsViewer.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.InputSimulator/YMMKeyboard.InputSimulator.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.MacroDiagnosticsViewer/YMMKeyboard.MacroDiagnosticsViewer.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.DispatchDiagnosticsViewer/YMMKeyboard.DispatchDiagnosticsViewer.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
-  <Project Path="tools/YMMKeyboard.DiagnosticsReplay/YMMKeyboard.DiagnosticsReplay.csproj">
-    <Platform Solution="*|x64" Project="Any CPU" />
-  </Project>
 </Solution>
 
