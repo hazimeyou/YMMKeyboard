@@ -44,11 +44,11 @@ def emit_event(state, switch_id):
     line = f"{DEVICE_UID}:{state}:SW_{switch_id:02d}"
     hid_line = f"YMMK:{line}"
 
-    # Serial (existing path)
+    # Legacy serial fallback
     print(line)
     _append_runtime_log(f"SERIAL_TX:{line}")
 
-    # HID (new path): report_id(1) + 64-byte payload
+    # Primary HID path: report_id(1) + 64-byte payload
     if CUSTOM_HID is not None:
         try:
             payload = hid_line.encode("ascii", "ignore")
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     try:
         _append_runtime_log(f"BOOT UID:{DEVICE_UID}")
         print(f"UID:{DEVICE_UID}")
-        # One-shot self-diagnostic frame (SW_00) to verify COM/HID path after boot.
+        # One-shot diagnostic frame (SW_00) to verify serial/HID path after boot.
         # Plugin mapping ignores unknown switch IDs, so this should not trigger user actions.
         emit_event("P", 0)
         emit_event("R", 0)

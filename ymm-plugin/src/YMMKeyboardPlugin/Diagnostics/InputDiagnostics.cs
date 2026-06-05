@@ -184,7 +184,7 @@ public static class InputDiagnostics
                 PayloadSummary = payloadSummary,
                 Succeeded = false,
                 Result = result,
-                ExceptionType = ex.GetType().FullName,
+                ExceptionType = ex.GetType().FullName ?? ex.GetType().Name,
                 ExceptionMessage = ex.Message,
             });
             FlushLocked();

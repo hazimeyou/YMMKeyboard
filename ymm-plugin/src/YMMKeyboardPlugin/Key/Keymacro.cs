@@ -106,13 +106,13 @@ namespace YMMKeyboardPlugin
         {
             if (string.IsNullOrWhiteSpace(portName))
             {
-                Debug.WriteLine("[Keymacro] COM port is not configured");
+                Debug.WriteLine("[Keymacro] Legacy serial port is not configured");
                 return;
             }
 
             if (YMMKeyboardSettings.Current.ConnectionMode == ConnectionMode.Hid)
             {
-                PluginLogger.Info("Keymacro", "COM connect request ignored because mode is HID only.");
+                PluginLogger.Info("Keymacro", "Legacy serial connect request ignored because mode is HID only.");
                 return;
             }
 

@@ -20,10 +20,10 @@ const uint8_t hid_report_descriptor[] = {
   0x15, 0x00,              // Logical Minimum (0)
   0x26, 0xFF, 0x00,        // Logical Maximum (255)
   0x75, 0x08,              // Report Size (8)
-  0x95, 0x3F,              // Report Count (63)
+  0x95, 0x3F,              // Report Count (63-byte fixed payload)
   0x09, 0x01,              // Usage
   0x81, 0x02,              // Input
-  0x95, 0x3F,              // Report Count (63)
+  0x95, 0x3F,              // Report Count (63-byte fixed payload)
   0x09, 0x01,              // Usage
   0x91, 0x02,              // Output
   0xC0                     // End Collection
@@ -53,6 +53,7 @@ uint8_t const *tud_descriptor_device_cb(void)
   return (uint8_t const *)&desc_device;
 }
 
+// Keep the composite descriptor length aligned with the fixed CDC + HID layout.
 enum { CONFIG_TOTAL_LEN = TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_HID_DESC_LEN };
 
 uint8_t const desc_configuration[] = {

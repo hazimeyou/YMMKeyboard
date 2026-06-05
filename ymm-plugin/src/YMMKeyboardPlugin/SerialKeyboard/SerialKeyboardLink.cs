@@ -172,7 +172,7 @@ namespace YMMKeyboardPlugin
 
         private static string NormalizeSerialLine(string line)
         {
-            // ターミナル制御シーケンスや不可視文字が混入してもイベント行を抽出できるよう正規化する。
+            // Strip ANSI escapes and control characters so legacy serial diagnostics stay parseable.
             var stripped = ansiEscapePattern.Replace(line, string.Empty);
             var sb = new StringBuilder(stripped.Length);
             foreach (var ch in stripped)

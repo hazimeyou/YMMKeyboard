@@ -583,8 +583,6 @@ static void write_matrix_key(uint row, uint col, const char *key_id, bool presse
   write_cdc_line(line);
 }
 
-static bool send_hid_report(const char *label, const char *payload_text, uint16_t payload_length, bool pressed);
-
 static void init_matrix_input(void)
 {
   for (uint col = 0; col < MATRIX_COL_COUNT; col++)
