@@ -62,7 +62,7 @@ public static class PluginConnectionDiagnosticCollector
             warnings.Add($"HID raw enumeration had {problematicHidDevices} problematic device(s).");
 
         if (comPorts.Count == 0)
-            warnings.Add("No COM ports detected.");
+            warnings.Add("No Legacy COM ports detected.");
         if (selected is null)
             warnings.Add("No candidate was selected.");
 
@@ -251,7 +251,7 @@ public static class PluginConnectionDiagnosticCollector
             if (!selected)
             {
                 if (settings.ConnectionMode != ConnectionMode.Hid)
-                    rejectReasons.Add("mode=COM");
+                    rejectReasons.Add("legacySerialFallbackSelected");
                 if (rejectReasons.Count == 0)
                     rejectReasons.Add("notSelected");
             }
@@ -286,7 +286,7 @@ public static class PluginConnectionDiagnosticCollector
                 ComPort = port,
                 MatchScore = 10,
                 MatchReasons = ["detectedComPort"],
-                RejectReasons = ["selectionIsManagedBySerialTransport"],
+                RejectReasons = ["legacySerialDiagnosticOnly"],
                 Selected = false,
             };
         }
@@ -309,9 +309,9 @@ public static class PluginConnectionDiagnosticCollector
             var rejects = new List<string>();
 
             if (settings.ConnectionMode != ConnectionMode.Com)
-                rejects.Add("mode=HID");
+                rejects.Add("legacySerialFallbackDisabled");
             else
-                reasons.Add("mode=COM");
+                reasons.Add("legacySerialFallbackEnabled");
 
             if (settings.PortName.Equals(port, StringComparison.OrdinalIgnoreCase))
                 reasons.Add("configuredPort");

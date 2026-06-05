@@ -68,11 +68,11 @@ namespace YMMKeyboardPlugin
                 hid.KeyEventReceived += OnKeyEventReceived;
                 hid.Start();
                 links[hidLinkKey] = hid;
-                PluginLogger.Info("Keymacro", "HID link started.");
+                PluginLogger.Info("Keymacro", "HID primary link started.");
             }
             catch (Exception ex)
             {
-                PluginLogger.Error("Keymacro", "Failed to start HID link.", ex);
+                PluginLogger.Error("Keymacro", "Failed to start HID primary link.", ex);
                 WriteConnectionDiagnostics("hid-start-failed");
             }
         }
@@ -112,7 +112,7 @@ namespace YMMKeyboardPlugin
 
             if (YMMKeyboardSettings.Current.ConnectionMode == ConnectionMode.Hid)
             {
-                PluginLogger.Info("Keymacro", "Legacy serial connect request ignored because mode is HID only.");
+                PluginLogger.Info("Keymacro", "Legacy serial connect request ignored because mode is HID primary.");
                 return;
             }
 
@@ -129,12 +129,12 @@ namespace YMMKeyboardPlugin
                 link.KeyEventReceived += OnKeyEventReceived;
                 link.Start();
                 links[portName] = link;
-                Debug.WriteLine($"[Keymacro] Connected to {portName}");
+                Debug.WriteLine($"[Keymacro] Legacy serial diagnostic link connected: {portName}");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[Keymacro] Connection error: {ex}");
-                MessageBox.Show($"COMポート {portName} に接続できませんでした。\n{ex.Message}");
+                MessageBox.Show($"Legacy COMポート {portName} に接続できませんでした。\n{ex.Message}");
                 WriteConnectionDiagnostics($"connect-failed:{SanitizeScanModePort(portName)}");
             }
         }

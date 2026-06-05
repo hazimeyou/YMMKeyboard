@@ -74,9 +74,9 @@ namespace YMMKeyboardPlugin.Views
             PortStatusTextBlock.Text = (!serialPortSupported && ports.Count == 0)
                 ? "この環境ではシリアルポート列挙APIが利用できません。"
                 : ports.Count == 0
-                    ? "利用可能なCOMポートが見つかりません。接続後に再読み込みしてください。"
+                    ? "利用可能なLegacy COMポートが見つかりません。接続後に再読み込みしてください。"
                     : string.IsNullOrWhiteSpace(settings.PortName)
-                        ? "接続するCOMポートを選択してください。"
+                        ? "接続するLegacy COMポートを選択してください。"
                         : $"現在の設定: {settings.PortName}";
         }
 
@@ -190,24 +190,24 @@ namespace YMMKeyboardPlugin.Views
         {
             if (settings.ConnectionMode == ConnectionMode.Hid)
             {
-                PortStatusTextBlock.Text = "HIDモードではCOM接続は不要です。実機入力は自動検出されます。";
+                PortStatusTextBlock.Text = "HIDモードではLegacy COM接続は不要です。実機入力は自動検出されます。";
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(settings.PortName))
             {
-                PortStatusTextBlock.Text = "先に接続するCOMポートを選択してください。";
+                PortStatusTextBlock.Text = "先に接続するLegacy COMポートを選択してください。";
                 return;
             }
 
             settings.RequestConnection();
-            PortStatusTextBlock.Text = $"{settings.PortName} への接続を開始しました。キー入力でUIDを自動登録します。";
+            PortStatusTextBlock.Text = $"{settings.PortName} へのLegacy COM診断接続を開始しました。キー入力でUIDを自動登録します。";
         }
 
         private void Disconnect_OnClick(object sender, RoutedEventArgs e)
         {
             settings.RequestDisconnection();
-            PortStatusTextBlock.Text = "シリアル接続の切断を要求しました。";
+            PortStatusTextBlock.Text = "Legacy serial 診断接続の切断を要求しました。";
         }
 
         private void AddStartupPort_OnClick(object sender, RoutedEventArgs e)

@@ -76,7 +76,7 @@ namespace YMMKeyboardPlugin
             _port.DtrEnable = true;
             Thread.Sleep(180);
             _port.DiscardInBuffer();
-            PluginLogger.Info("SerialKeyboardLink", $"Port opened: {_portName}");
+            PluginLogger.Info("SerialKeyboardLink", $"Legacy serial diagnostic port opened: {_portName}");
             Task.Run(() => ReadLoop(_cts.Token));
         }
 
@@ -95,7 +95,7 @@ namespace YMMKeyboardPlugin
                     var normalizedLine = NormalizeSerialLine(line);
                     Debug.WriteLine($"[SERIAL] {normalizedLine}");
                     if (verboseSerialLog)
-                        PluginLogger.Info("SerialKeyboardLink", $"RX {_portName}: {normalizedLine}");
+                        PluginLogger.Info("SerialKeyboardLink", $"RX legacy serial {_portName}: {normalizedLine}");
 
                     var match = serialEventPattern.Match(normalizedLine);
                     var isRotaryRaw = false;
@@ -135,7 +135,7 @@ namespace YMMKeyboardPlugin
 
                     if (isNewDevice)
                     {
-                        PluginLogger.Info("SerialKeyboardLink", $"Device detected on {_portName}: {uid}");
+                        PluginLogger.Info("SerialKeyboardLink", $"Legacy serial diagnostic device detected on {_portName}: {uid}");
                         DeviceDetected?.Invoke(device);
                     }
 
@@ -163,11 +163,11 @@ namespace YMMKeyboardPlugin
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"[SerialKeyboardLink] Error: {ex.Message}");
-                    PluginLogger.Error("SerialKeyboardLink", $"Read loop error on {_portName}", ex);
+                    PluginLogger.Error("SerialKeyboardLink", $"Legacy serial read loop error on {_portName}", ex);
                 }
             }
 
-            Debug.WriteLine($"[SerialKeyboardLink] Stop reading {_portName}");
+            Debug.WriteLine($"[SerialKeyboardLink] Stop reading legacy serial {_portName}");
         }
 
         private static string NormalizeSerialLine(string line)
@@ -193,7 +193,7 @@ namespace YMMKeyboardPlugin
                 try { _port.Close(); } catch { }
                 _port.Dispose();
                 _port = null;
-                PluginLogger.Info("SerialKeyboardLink", $"Port closed: {_portName}");
+                PluginLogger.Info("SerialKeyboardLink", $"Legacy serial diagnostic port closed: {_portName}");
             }
         }
 

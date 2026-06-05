@@ -47,7 +47,7 @@ namespace YMMKeyboardPlugin.Plugin
             {
                 PluginLogger.Error("MyToolPlugin", "Constructor Exception", ex);
                 Debug.WriteLine($"[MyToolPlugin] Constructor Exception: {ex}");
-                MessageBox.Show($"USB 接続または COM ポート設定を確認してください。\n{ex}", "キーボードプラグイン");
+                MessageBox.Show($"USB 接続または HID / Legacy COM 診断設定を確認してください。\n{ex}", "キーボードプラグイン");
             }
         }
 

@@ -58,7 +58,7 @@ def emit_event(state, switch_id):
             CUSTOM_HID.send_report(report)
             _append_runtime_log(f"HID_TX_OK:{hid_line}")
         except Exception:
-            # Keep serial path alive even when HID send fails
+            # Keep the legacy serial fallback alive even when HID send fails.
             _append_runtime_log(f"HID_TX_FAIL:{hid_line}")
 
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     try:
         _append_runtime_log(f"BOOT UID:{DEVICE_UID}")
         print(f"UID:{DEVICE_UID}")
-        # One-shot diagnostic frame (SW_00) to verify serial/HID path after boot.
+        # One-shot diagnostic frame (SW_00) to verify HID plus legacy serial fallback after boot.
         # Plugin mapping ignores unknown switch IDs, so this should not trigger user actions.
         emit_event("P", 0)
         emit_event("R", 0)

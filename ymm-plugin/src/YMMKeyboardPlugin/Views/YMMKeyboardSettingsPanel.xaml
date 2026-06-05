@@ -24,7 +24,7 @@
                        FontWeight="Bold"/>
             <TextBlock Margin="0,4,0,0"
                        Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                       Text="接続するCOMポートと、起動時に接続するポート、キー割り当て設定を管理します。"/>
+                       Text="HID を正式経路として使い、Legacy COM 診断ポートとキー割り当て設定を管理します。"/>
         </StackPanel>
 
         <Border Grid.Row="2"
@@ -40,15 +40,15 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="COMポート" FontWeight="Bold"/>
+                    <TextBlock Text="Legacy COM / Serial" FontWeight="Bold"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <TextBlock VerticalAlignment="Center" Text="接続モード:"/>
                         <ComboBox x:Name="ConnectionModeComboBox"
                                   Margin="8,0,0,0"
                                   Width="120"
                                   SelectionChanged="ConnectionModeComboBox_OnSelectionChanged">
-                            <ComboBoxItem Content="自動" Tag="Auto"/>
-                            <ComboBoxItem Content="COM" Tag="Com"/>
+                            <ComboBoxItem Content="HID優先" Tag="Auto"/>
+                            <ComboBoxItem Content="Legacy COM" Tag="Com"/>
                             <ComboBoxItem Content="HID" Tag="Hid"/>
                         </ComboBox>
                     </StackPanel>
@@ -132,7 +132,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="起動時に接続するCOMポート" FontWeight="Bold"/>
+                    <TextBlock Text="起動時に接続するLegacy COMポート" FontWeight="Bold"/>
                     <ListBox x:Name="StartupPortsListBox"
                              Margin="0,6,0,0"
                              MinHeight="68"/>
