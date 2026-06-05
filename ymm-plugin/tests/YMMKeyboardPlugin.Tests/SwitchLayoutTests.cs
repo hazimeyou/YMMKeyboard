@@ -25,6 +25,31 @@ public class SwitchLayoutTests
         Assert.Equal(string.Empty, switchName);
     }
 
+    [Theory]
+    [InlineData(0, 1, "SW02")]
+    [InlineData(0, 4, "SW05")]
+    [InlineData(4, 1, "SW30")]
+    [InlineData(5, 0, "SW35")]
+    public void TryGetMatrixSwitchName_ReturnsCoordMappingName(int row, int col, string expected)
+    {
+        var result = SwitchLayout.TryGetMatrixSwitchName(row, col, out var switchName);
+
+        Assert.True(result);
+        Assert.Equal(expected, switchName);
+    }
+
+    [Theory]
+    [InlineData(0, 6)]
+    [InlineData(1, 6)]
+    [InlineData(5, 1)]
+    public void TryGetMatrixSwitchName_ReturnsFalseForUnmappedCoordinates(int row, int col)
+    {
+        var result = SwitchLayout.TryGetMatrixSwitchName(row, col, out var switchName);
+
+        Assert.False(result);
+        Assert.Equal(string.Empty, switchName);
+    }
+
     [Fact]
     public void NormalizeCombination_RemovesDuplicatesAndSortsByLayoutOrder()
     {

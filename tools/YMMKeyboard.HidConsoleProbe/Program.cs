@@ -366,6 +366,12 @@ sealed class HidConsoleProbeRunner
             return "TEST_KEY";
         if (payload.StartsWith("KEY_", StringComparison.OrdinalIgnoreCase))
             return "KEY";
+        if (payload.StartsWith("SW35", StringComparison.OrdinalIgnoreCase))
+            return "SW35";
+        if (payload.StartsWith("SW36", StringComparison.OrdinalIgnoreCase))
+            return "SW36";
+        if (payload.StartsWith("SW37", StringComparison.OrdinalIgnoreCase))
+            return "SW37";
         if (payload.StartsWith("K_", StringComparison.OrdinalIgnoreCase))
             return payload.Contains(":", StringComparison.OrdinalIgnoreCase)
                 ? "K_COLON"

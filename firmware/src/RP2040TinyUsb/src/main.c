@@ -7,17 +7,21 @@
 #include "usb_descriptors.h"
 
 #define FW_ID "YMMKeyboard-RP2040-TinyUSB"
-#define FW_VERSION "matrix-input-formal-payload-rc1"
-#define FW_FEATURES "FW_INFO,HID_STATUS,MATRIX_KEY,MATRIX_HID_FORMAL_PAYLOAD"
+#define FW_VERSION "rotary-host-receive-validation-rc5"
+#define FW_FEATURES "FW_INFO,HID_STATUS,ROTARY_RAW,ROTARY_EDGE,ROTARY_DECODE,ROTARY_STEP,ROTARY_HID"
 #define FW_BUILD_TIME __DATE__ " " __TIME__
 #define MATRIX_COL_COUNT 7
 #define MATRIX_ROW_COUNT 6
 #define MATRIX_DEBOUNCE_US 20000
 #define MATRIX_DIAG_INTERVAL_US 500000
 #define MATRIX_FORMAL_REPORT_LENGTH 63u
+#define ROTARY_DETENT_THRESHOLD 2
+#define ROTARY_IMMEDIATE_STEP 1
 
 static const uint MATRIX_COL_PINS[MATRIX_COL_COUNT] = {2, 8, 7, 6, 5, 4, 3};
 static const uint MATRIX_ROW_PINS[MATRIX_ROW_COUNT] = {28, 27, 26, 15, 14, 29};
+static const uint ROTARY_A_PIN = 0;
+static const uint ROTARY_B_PIN = 1;
 
 static char g_uid_hex[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
 static bool g_hid_last_send_result = false;
@@ -57,6 +61,14 @@ static absolute_time_t g_rev_last_change[MATRIX_ROW_COUNT][MATRIX_COL_COUNT];
 static bool g_rev_col_state_last[MATRIX_COL_COUNT];
 static char g_rev_scan_frame_cols[MATRIX_COL_COUNT + 1];
 static uint g_rev_scan_row = 0;
+static bool g_rotary_initialized = false;
+static uint8_t g_rotary_last_state = 0;
+static int8_t g_rotary_accumulator = 0;
+static absolute_time_t g_rotary_last_diag;
+static uint32_t g_rotary_edge_count = 0;
+static uint32_t g_rotary_step_cw_count = 0;
+static uint32_t g_rotary_step_ccw_count = 0;
+static uint32_t g_rotary_invalid_transition_count = 0;
 
 static void write_cdc_line(const char *line)
 {
@@ -121,10 +133,10 @@ static void write_hid_diag(const char *button, bool pressed, bool hid_ready, uin
 
 static void write_hid_status(const char *phase)
 {
-  char line[220];
+  char line[320];
   bool hid_ready = tud_hid_ready();
   snprintf(line, sizeof(line),
-           "HID_STATUS:%s mounted=%s suspended=%s hidReady=%s mountCount=%lu unmountCount=%lu suspendCount=%lu resumeCount=%lu hidSendAttemptCount=%lu hidReadyTrueCount=%lu hidReadyFalseCount=%lu hidReportCallCount=%lu hidReportSuccessCount=%lu hidReportFailCount=%lu lastSendResult=%s reportId=%u reportLength=%u descriptorLength=%u",
+           "HID_STATUS:%s mounted=%s suspended=%s hidReady=%s mountCount=%lu unmountCount=%lu suspendCount=%lu resumeCount=%lu hidSendAttemptCount=%lu hidReadyTrueCount=%lu hidReadyFalseCount=%lu hidReportCallCount=%lu hidReportSuccessCount=%lu hidReportFailCount=%lu lastSendResult=%s rotaryEdgeCount=%lu rotaryStepCwCount=%lu rotaryStepCcwCount=%lu rotaryInvalidTransitionCount=%lu reportId=%u reportLength=%u descriptorLength=%u",
            phase,
            g_usb_mounted ? "true" : "false",
            g_usb_suspended ? "true" : "false",
@@ -140,6 +152,10 @@ static void write_hid_status(const char *phase)
            (unsigned long)g_hid_report_success_count,
            (unsigned long)g_hid_report_fail_count,
            g_hid_last_send_result ? "true" : "false",
+           (unsigned long)g_rotary_edge_count,
+           (unsigned long)g_rotary_step_cw_count,
+           (unsigned long)g_rotary_step_ccw_count,
+           (unsigned long)g_rotary_invalid_transition_count,
            (unsigned)REPORT_ID_VENDOR,
            (unsigned)63,
            (unsigned)hid_report_descriptor_len);
@@ -148,10 +164,10 @@ static void write_hid_status(const char *phase)
 
 static void write_hid_status_short(void)
 {
-  char line[192];
+  char line[320];
   bool hid_ready = tud_hid_ready();
   snprintf(line, sizeof(line),
-           "HID_STATUS ready=%s mounted=%s suspended=%s hidSendAttemptCount=%lu hidReadyTrueCount=%lu hidReadyFalseCount=%lu hidReportCallCount=%lu hidReportSuccessCount=%lu hidReportFailCount=%lu lastSendResult=%s sendCount=%lu failCount=%lu",
+           "HID_STATUS ready=%s mounted=%s suspended=%s hidSendAttemptCount=%lu hidReadyTrueCount=%lu hidReadyFalseCount=%lu hidReportCallCount=%lu hidReportSuccessCount=%lu hidReportFailCount=%lu lastSendResult=%s rotaryEdgeCount=%lu rotaryStepCwCount=%lu rotaryStepCcwCount=%lu rotaryInvalidTransitionCount=%lu sendCount=%lu failCount=%lu",
            hid_ready ? "true" : "false",
            g_usb_mounted ? "true" : "false",
            g_usb_suspended ? "true" : "false",
@@ -162,6 +178,10 @@ static void write_hid_status_short(void)
            (unsigned long)g_hid_report_success_count,
            (unsigned long)g_hid_report_fail_count,
            g_hid_last_send_result ? "true" : "false",
+           (unsigned long)g_rotary_edge_count,
+           (unsigned long)g_rotary_step_cw_count,
+           (unsigned long)g_rotary_step_ccw_count,
+           (unsigned long)g_rotary_invalid_transition_count,
            (unsigned long)g_hid_send_attempt_count,
            (unsigned long)g_hid_report_fail_count);
   write_cdc_line(line);
@@ -297,6 +317,209 @@ static void write_rev_matrix_candidate(uint row, uint col)
            (unsigned)row,
            (unsigned)col);
   write_cdc_line(line);
+}
+
+static void write_rotary_config(void)
+{
+  char line[64];
+
+  snprintf(line, sizeof(line),
+           "ROTARY_CONFIG GP%u INPUT_PULLUP",
+           (unsigned)ROTARY_A_PIN);
+  write_cdc_line(line);
+
+  snprintf(line, sizeof(line),
+           "ROTARY_CONFIG GP%u INPUT_PULLUP",
+           (unsigned)ROTARY_B_PIN);
+  write_cdc_line(line);
+}
+
+static void write_rotary_edge(uint8_t prev_state, uint8_t curr_state)
+{
+  uint8_t old_a = (prev_state >> 1) & 1u;
+  uint8_t old_b = prev_state & 1u;
+  uint8_t new_a = (curr_state >> 1) & 1u;
+  uint8_t new_b = curr_state & 1u;
+  char line[112];
+  snprintf(line, sizeof(line),
+           "ROTARY_EDGE old=%u new=%u oldA=%u oldB=%u newA=%u newB=%u",
+           (unsigned)prev_state,
+           (unsigned)curr_state,
+           (unsigned)old_a,
+           (unsigned)old_b,
+           (unsigned)new_a,
+           (unsigned)new_b);
+  write_cdc_line(line);
+}
+
+static void write_rotary_raw(uint8_t a_value, uint8_t b_value)
+{
+  uint8_t ab = (uint8_t)((a_value << 1) | b_value);
+  char line[96];
+  snprintf(line, sizeof(line),
+           "ROTARY_RAW a=%u b=%u ab=%u",
+           (unsigned)a_value,
+           (unsigned)b_value,
+           (unsigned)ab);
+  write_cdc_line(line);
+}
+
+static void write_rotary_decode(uint8_t prev_state, uint8_t curr_state, int8_t delta, int8_t accum)
+{
+  char line[112];
+  snprintf(line, sizeof(line),
+           "ROTARY_DECODE old=%u new=%u delta=%d accum=%d threshold=%d",
+           (unsigned)prev_state,
+           (unsigned)curr_state,
+           (int)delta,
+           (int)accum,
+           ROTARY_DETENT_THRESHOLD);
+  write_cdc_line(line);
+}
+
+static void write_rotary_step(const char *direction, const char *mapped, bool immediate, int8_t delta, int8_t accum_before)
+{
+  char line[160];
+  snprintf(line, sizeof(line),
+           "ROTARY_STEP immediate=%s delta=%d direction=%s mapped=%s accumBefore=%d threshold=%d",
+           immediate ? "true" : "false",
+           (int)delta,
+           direction,
+           mapped,
+           (int)accum_before,
+           ROTARY_DETENT_THRESHOLD);
+  write_cdc_line(line);
+}
+
+static bool send_hid_report(const char *label, const char *payload_text, uint16_t payload_length, bool pressed);
+
+static void write_rotary_diag(void)
+{
+  uint8_t a_value = gpio_get(ROTARY_A_PIN) ? 1u : 0u;
+  uint8_t b_value = gpio_get(ROTARY_B_PIN) ? 1u : 0u;
+  write_rotary_raw(a_value, b_value);
+}
+
+static void init_rotary_input(void)
+{
+  gpio_init(ROTARY_A_PIN);
+  gpio_set_dir(ROTARY_A_PIN, GPIO_IN);
+  gpio_pull_up(ROTARY_A_PIN);
+
+  gpio_init(ROTARY_B_PIN);
+  gpio_set_dir(ROTARY_B_PIN, GPIO_IN);
+  gpio_pull_up(ROTARY_B_PIN);
+
+  g_rotary_last_state = (uint8_t)(((gpio_get(ROTARY_A_PIN) ? 1u : 0u) << 1) | (gpio_get(ROTARY_B_PIN) ? 1u : 0u));
+  g_rotary_accumulator = 0;
+  g_rotary_initialized = true;
+  g_rotary_last_diag = get_absolute_time();
+
+  write_rotary_config();
+}
+
+static int8_t rotary_transition_delta(uint8_t prev_state, uint8_t curr_state)
+{
+  static const int8_t delta_table[16] = {
+    0, -1, 1, 0,
+    1, 0, 0, -1,
+    -1, 0, 0, 1,
+    0, 1, -1, 0
+  };
+
+  return delta_table[((prev_state & 0x03u) << 2) | (curr_state & 0x03u)];
+}
+
+static void emit_rotary_tap(const char *mapped, const char *direction, bool immediate, int8_t delta, int8_t accum_before)
+{
+  write_rotary_step(direction, mapped, immediate, delta, accum_before);
+
+  char press_payload[63] = {0};
+  char release_payload[63] = {0};
+  snprintf(press_payload, sizeof(press_payload), "%s:P", mapped);
+  snprintf(release_payload, sizeof(release_payload), "%s:R", mapped);
+
+  bool press_sent = send_hid_report(mapped, press_payload, MATRIX_FORMAL_REPORT_LENGTH, true);
+  {
+    char line[160];
+    snprintf(line, sizeof(line),
+             "ROTARY_STEP_RESULT mapped=%s payload=%s sent=%s",
+             mapped,
+             press_payload,
+             press_sent ? "true" : "false");
+    write_cdc_line(line);
+  }
+  bool release_sent = send_hid_report(mapped, release_payload, MATRIX_FORMAL_REPORT_LENGTH, false);
+  {
+    char line[160];
+    snprintf(line, sizeof(line),
+             "ROTARY_STEP_RESULT mapped=%s payload=%s sent=%s",
+             mapped,
+             release_payload,
+             release_sent ? "true" : "false");
+    write_cdc_line(line);
+  }
+}
+
+static void poll_rotary_input(void)
+{
+  if (!g_rotary_initialized)
+    return;
+
+  uint8_t a_value = gpio_get(ROTARY_A_PIN) ? 1u : 0u;
+  uint8_t b_value = gpio_get(ROTARY_B_PIN) ? 1u : 0u;
+  uint8_t curr_state = (uint8_t)((a_value << 1) | b_value);
+  uint8_t prev_state = g_rotary_last_state;
+
+  if (curr_state == prev_state)
+    return;
+
+  g_rotary_last_state = curr_state;
+  g_rotary_edge_count++;
+  write_rotary_edge(prev_state, curr_state);
+
+  int8_t delta = rotary_transition_delta(prev_state, curr_state);
+  write_rotary_decode(prev_state, curr_state, delta, g_rotary_accumulator);
+  if (delta == 0)
+  {
+    g_rotary_invalid_transition_count++;
+    g_rotary_accumulator = 0;
+    return;
+  }
+
+  g_rotary_accumulator += delta;
+  if (ROTARY_IMMEDIATE_STEP)
+  {
+    if (delta > 0)
+    {
+      g_rotary_step_cw_count++;
+      int8_t accum_before = g_rotary_accumulator;
+      g_rotary_accumulator = 0;
+      emit_rotary_tap("SW36", "CW", true, delta, accum_before);
+    }
+    else
+    {
+      g_rotary_step_ccw_count++;
+      int8_t accum_before = g_rotary_accumulator;
+      g_rotary_accumulator = 0;
+      emit_rotary_tap("SW37", "CCW", true, delta, accum_before);
+    }
+    return;
+  }
+  if (g_rotary_accumulator >= ROTARY_DETENT_THRESHOLD)
+  {
+    g_rotary_step_cw_count++;
+    int8_t accum_before = g_rotary_accumulator;
+    g_rotary_accumulator = 0;
+    emit_rotary_tap("SW36", "CW", false, delta, accum_before);
+  }
+  else if (g_rotary_accumulator <= -ROTARY_DETENT_THRESHOLD)
+  {
+    g_rotary_step_ccw_count++;
+    int8_t accum_before = g_rotary_accumulator;
+    g_rotary_accumulator = 0;
+    emit_rotary_tap("SW37", "CCW", false, delta, accum_before);
+  }
 }
 
 static void write_matrix_edge(uint row, uint col, bool pressed)
@@ -664,6 +887,7 @@ int main(void)
   tusb_init();
   make_uid_hex();
   init_matrix_reverse_input();
+  init_rotary_input();
 
   absolute_time_t last_hb = get_absolute_time();
   absolute_time_t last_status = get_absolute_time();
@@ -675,6 +899,7 @@ int main(void)
 
     emit_fw_info_if_ready();
     poll_matrix_reverse_input();
+    poll_rotary_input();
 
     if (absolute_time_diff_us(g_matrix_last_diag, get_absolute_time()) >= MATRIX_DIAG_INTERVAL_US)
     {
@@ -695,6 +920,13 @@ int main(void)
       last_status = get_absolute_time();
       write_hid_status("poll");
       write_hid_status_short();
+    }
+
+    if (g_rotary_initialized &&
+        absolute_time_diff_us(g_rotary_last_diag, get_absolute_time()) >= 500000)
+    {
+      g_rotary_last_diag = get_absolute_time();
+      write_rotary_diag();
     }
 
     sleep_ms(1);

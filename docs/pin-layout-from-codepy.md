@@ -20,6 +20,7 @@ No other Python files were present in `firmware/src/RP2040ZeroCode/` at the time
 - `encoder_handler.pins = ((board.GP0, board.GP1, None, False),)`
 - `ENC_CW` emits switch `36`
 - `ENC_CCW` emits switch `37`
+- The current firmware probe now reads `GP0/GP1` directly as rotary encoder inputs and logs raw state, edges, and decode transitions.
 
 ### Other I/O
 
@@ -62,6 +63,7 @@ The current firmware target for this work is `matrix-scan-probe-rc1`.
 - `MATRIX_SCAN` is active in firmware
 - `MATRIX_KEY` has not yet been observed during the current capture
 - `GPIO29` remains a matrix row line, not a standalone key input
+- Rotary push-in is still `SW35`, and rotary rotation is now being probed from `GP0/GP1`
 
 The next cut is to probe a smaller, more targeted matrix transition rather than treating the board as a single input.
 
@@ -74,3 +76,4 @@ The new reverse-direction experiment is `matrix-reverse-direction-probe-rc1`, wh
 `GPIO29` is not the whole story. It is only one row line in the matrix.
 
 The next firmware probe should be a matrix scan probe, not a single-pin GPIO probe.
+The rotary encoder is a separate probe path on `GP0/GP1`, and it should be validated independently before the `SW36` / `SW37` labels are treated as final.

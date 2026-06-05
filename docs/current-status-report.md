@@ -11,6 +11,7 @@
 | Macro & Dispatch Diagnostics RC1 | Completed | Macro / dispatch visibility exists. |
 | Unified Diagnostics Replay | Completed | Cross-diagnostic replay is working. |
 | Hardware Validation RC2 | Completed | Formal identity is applied and verified on the device. |
+| Rotary Host Receive Validation RC5 | Completed | `GP0/GP1` raw state, edge, and decode are in place; immediate `SW36` / `SW37` step emission and host HID receive are confirmed. |
 
 ## 2. Current Successes
 
@@ -21,11 +22,13 @@
 - Formal payload `K_<row>_<col>:P/R` is observable on the host when the HID report length is fixed to 63 bytes.
 - `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` are now connected in the plugin path for HID events.
 - The live `K_0_1 -> A` path has been verified as an actual YMM UI action.
+- Rotary push-in is confirmed on `SW35`; rotary motion is now fully confirmed on `GP0/GP1` with raw-state, decode, and immediate HID host-receive diagnostics.
 
 ## 3. Current Blockers
 
 - Some historical docs still reference earlier matrix probes; they should be treated as background unless updated to the latest formal-payload run.
-- Rotary direction labels were clarified so that left / counter-clockwise is `SW36`, push is `SW35`, and right / clockwise is `SW37`.
+- Rotary direction labels were clarified so that left / counter-clockwise is `SW36`, push-in is `SW35`, and right / clockwise is `SW37`.
+- Rotary step emission is confirmed in immediate mode; `ROTARY_STEP` and host `SW36` / `SW37` reception both worked in RC5.
 
 ## 4. Cause Candidates
 
@@ -61,6 +64,7 @@ Current likely causes, in priority order:
 - Keep the formal matrix payload path stable.
 - Preserve the fixed 63-byte HID report length.
 - Avoid reintroducing the earlier `reportLength=7` behavior.
+- Rotary `GP0/GP1` electrical and host receive validation is now confirmed in RC5.
 
 ### Plugin
 
@@ -117,4 +121,4 @@ Current likely causes, in priority order:
 
 ## 10. Conclusion
 
-The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The plugin runtime now confirms `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` for the live matrix path, and the actual YMM UI action is confirmed for the `K_0_1 -> A` mapping.
+The hardware side is in good shape: formal identity is applied, the host can receive the formal `K_<row>_<col>:P/R` payload, and the 63-byte report length is confirmed as the working transport shape. The plugin runtime now confirms `InputReceived`, `InputMapped`, `DispatchPrepared`, and `DispatchExecuted` for the live matrix path, and the actual YMM UI action is confirmed for the `K_0_1 -> A` mapping. Rotary push-in is confirmed, and rotary rotation is now confirmed end-to-end from `GP0/GP1` through host `HidConsoleProbe`.

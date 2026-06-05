@@ -4,12 +4,12 @@ using System.Text.RegularExpressions;
 using HidSharp;
 using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Logging;
+using YMMKeyboardPlugin.Models;
 
 namespace YMMKeyboardPlugin.Hid;
 
 public sealed class HidKeyboardLink : IKeyboardLink
 {
-    private const int MatrixColumnCount = 7;
     private static readonly Regex serialEventPattern = new(
         @"(?:YMMK:)?(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",
         RegexOptions.Compiled);
@@ -547,7 +547,15 @@ public sealed class HidKeyboardLink : IKeyboardLink
             if (!int.TryParse(matched.Groups["col"].Value, out var col))
                 return;
 
-            switchId = row * MatrixColumnCount + col + 1;
+            if (!SwitchLayout.TryGetMatrixSwitchName(row, col, out var matrixSwitchName))
+            {
+                PluginLogger.Warn("HidKeyboardLink",
+                    $"Ignoring unmapped matrix coordinate via HID. row={row}, col={col}, source=\"{matchedText}\"");
+                return;
+            }
+
+            if (!int.TryParse(matrixSwitchName.AsSpan(2), out switchId))
+                return;
             uid = fallbackUid.ToLowerInvariant();
         }
         else
