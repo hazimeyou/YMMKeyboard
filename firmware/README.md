@@ -5,7 +5,6 @@
 ## 構成
 
 - `src/` : 実装コード (RP2040 など)
-- `src/RP2040ZeroCode/` : CircuitPython 実装
 - `src/RP2040TinyUsb/` : pico-sdk + TinyUSB(C) 実装
 
 ## メモ

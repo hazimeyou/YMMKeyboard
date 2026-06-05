@@ -23,7 +23,7 @@
 	</ItemGroup>
 
 	<Target Name="ValidateYMM4DirPath" BeforeTargets="ResolveReferences" Condition="!Exists('$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll')">
-		<Error Text="YMM4 libraries were not found at '$(YMM4DirPath)'. Run tools/scripts/fetch-ymm4-libs.ps1 or specify /p:YMM4DirPath=&lt;YMM4 folder&gt;." />
+		<Error Text="YMM4 libraries were not found at '$(YMM4DirPath)'. Specify /p:YMM4DirPath=&lt;YMM4 folder&gt;." />
 	</Target>
 
 
@@ -50,14 +50,6 @@
 		<!-- コピー -->
 		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" ContinueOnError="WarnAndContinue" />
 		<Copy SourceFiles="@(RuntimeFiles)" DestinationFiles="@(RuntimeFiles->'$(PluginOutputDir)\runtimes\%(RecursiveDir)%(Filename)%(Extension)')" ContinueOnError="WarnAndContinue" />
-	</Target>
-
-	<Target Name="CopyCodePyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py')">
-		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py" DestinationFiles="D:\code.py" OverwriteReadOnlyFiles="true" ContinueOnError="WarnAndContinue" />
-	</Target>
-
-	<Target Name="CopyBootPyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\boot.py')">
-		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\boot.py" DestinationFiles="D:\boot.py" OverwriteReadOnlyFiles="true" ContinueOnError="WarnAndContinue" />
 	</Target>
 
 </Project>

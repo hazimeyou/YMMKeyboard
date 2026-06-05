@@ -11,7 +11,7 @@ public static class SwitchLayout
             .Select((item, index) => new { item.SwitchName, Index = index })
             .ToDictionary(item => item.SwitchName, item => item.Index, StringComparer.OrdinalIgnoreCase);
 
-        // Keep this aligned with firmware/src/RP2040ZeroCode/code.py keyboard.coord_mapping.
+        // Keep this aligned with firmware/src/RP2040TinyUsb/src/main.c matrix mapping.
         matrixSwitchIds = new Dictionary<(int Row, int Col), int>
         {
             [(0, 0)] = 1,
