@@ -238,6 +238,8 @@ ClientBin/
 *.jfm
 *.pfx
 *.publishsettings
+tmp/
+captures/
 orleans.codegen.cs
 
 # Including strong name files can present a security risk
@@ -394,3 +396,6 @@ hardware/pcb/KiCad/YMMkeyboardMX/YmmKeyboardMX-backups/
 /_inspect/InspectYmm
 *.zip
 ymm-plugin/libs/YMM4/
+/tmp
+firmware/src/RP2040TinyUsb/build/
+tmp/pico/

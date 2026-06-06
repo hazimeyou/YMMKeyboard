@@ -9,49 +9,97 @@ using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
 using YMMKeyboardPlugin.Settings;
+using YMMKeyboardPlugin.Hid;
+using YMMKeyboardPlugin.Diagnostics;
 
 namespace YMMKeyboardPlugin
 {
     public class Keymacro : IDisposable
     {
         private const int SingleKeyDelayMs = 35;
-        private static readonly HashSet<string> immediateSwitches = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "SW36", // rotary clockwise
-            "SW37", // rotary counter-clockwise
-        };
         private static readonly bool verboseLatencyLog =
             string.Equals(Environment.GetEnvironmentVariable("YMMK_VERBOSE_LATENCY"), "1", StringComparison.Ordinal);
 
-        private readonly Dictionary<string, SerialKeyboardLink> links = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, IKeyboardLink> links = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, HashSet<string>> pressedSwitches = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, HashSet<string>> consumedSwitches = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Dictionary<string, CancellationTokenSource>> pendingSingleActions = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, RotaryState> rotaryStates = new(StringComparer.OrdinalIgnoreCase);
         private readonly object stateLock = new();
 
         public void Initialize()
         {
             Debug.WriteLine("[Keymacro] Initialize START");
+            InputDiagnostics.Initialize();
+            YMMKeyboardLogger.DeviceSearchStarted("transport=HID; phase=initialize");
+            YMMKeyboardLogger.DeviceSearchStarted("transport=Serial; phase=initialize");
             YMMKeyboardSettings.ConnectionRequested += OnConnectionRequested;
             YMMKeyboardSettings.DisconnectionRequested += OnDisconnectionRequested;
             YMMKeyboardSettings.SettingsLoaded += OnSettingsLoaded;
+            StartHidIfConfigured();
             ConnectStartupPorts();
+            WriteConnectionDiagnostics("startup");
             Debug.WriteLine("[Keymacro] Initialize END");
         }
 
         private void OnSettingsLoaded()
         {
+            YMMKeyboardLogger.DeviceSearchStarted("transport=HID; phase=settings-loaded");
+            YMMKeyboardLogger.DeviceSearchStarted("transport=Serial; phase=settings-loaded");
+            StartHidIfConfigured();
             ConnectStartupPorts();
+            WriteConnectionDiagnostics("settings-loaded");
+        }
+
+        private void StartHidIfConfigured()
+        {
+            var mode = YMMKeyboardSettings.Current.ConnectionMode;
+            if (mode == ConnectionMode.Com)
+                return;
+
+            const string hidLinkKey = "__hid__";
+            if (links.ContainsKey(hidLinkKey))
+                return;
+
+            try
+            {
+                var hid = new HidKeyboardLink(
+                    YMMKeyboardSettings.Current.GetHidVendorId(),
+                    YMMKeyboardSettings.Current.GetHidProductId(),
+                    YMMKeyboardSettings.Current.HidProductNameFilter,
+                    YMMKeyboardSettings.Current.HidManufacturerFilter);
+                hid.DeviceDetected += OnDeviceDetected;
+                hid.KeyEventReceived += OnKeyEventReceived;
+                hid.Start();
+                links[hidLinkKey] = hid;
+                PluginLogger.Info("Keymacro", "HID primary link started.");
+            }
+            catch (Exception ex)
+            {
+                PluginLogger.Error("Keymacro", "Failed to start HID primary link.", ex);
+                YMMKeyboardLogger.Error("Exception", "Failed to start HID primary link.", ex);
+                WriteConnectionDiagnostics("hid-start-failed");
+            }
         }
 
         private void ConnectStartupPorts()
         {
+            YMMKeyboardLogger.DeviceSearchStarted($"transport=Serial; phase=startup; ports={string.Join(',', YMMKeyboardSettings.Current.GetStartupPortNames())}");
+            var ports = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var portName in YMMKeyboardSettings.Current.GetStartupPortNames())
+                ports.Add(portName);
+
+            if (!string.IsNullOrWhiteSpace(YMMKeyboardSettings.Current.PortName))
+                ports.Add(YMMKeyboardSettings.Current.PortName);
+
+            foreach (var portName in ports)
                 ConnectPort(portName);
         }
 
         private void OnConnectionRequested(string portName)
         {
+            YMMKeyboardLogger.DeviceSearchStarted($"transport=Serial; phase=manual-request; port={portName}");
+            WriteConnectionDiagnostics($"connection-request:{SanitizeScanModePort(portName)}");
             ConnectPort(portName);
         }
 
@@ -65,7 +113,13 @@ namespace YMMKeyboardPlugin
         {
             if (string.IsNullOrWhiteSpace(portName))
             {
-                Debug.WriteLine("[Keymacro] COM port is not configured");
+                Debug.WriteLine("[Keymacro] Legacy serial port is not configured");
+                return;
+            }
+
+            if (YMMKeyboardSettings.Current.ConnectionMode == ConnectionMode.Hid)
+            {
+                PluginLogger.Info("Keymacro", "Legacy serial connect request ignored because mode is HID primary.");
                 return;
             }
 
@@ -77,17 +131,20 @@ namespace YMMKeyboardPlugin
 
             try
             {
-                var link = new SerialKeyboardLink(portName);
+                IKeyboardLink link = new SerialKeyboardLink(portName);
                 link.DeviceDetected += OnDeviceDetected;
                 link.KeyEventReceived += OnKeyEventReceived;
                 link.Start();
                 links[portName] = link;
-                Debug.WriteLine($"[Keymacro] Connected to {portName}");
+                YMMKeyboardLogger.DeviceConnected($"transport=Serial; source=Keymacro; port={portName}");
+                Debug.WriteLine($"[Keymacro] Legacy serial diagnostic link connected: {portName}");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[Keymacro] Connection error: {ex}");
-                MessageBox.Show($"COMポート {portName} に接続できませんでした。\n{ex.Message}");
+                MessageBox.Show($"Legacy COMポート {portName} に接続できませんでした。\n{ex.Message}");
+                YMMKeyboardLogger.Error("Exception", $"Failed to connect legacy serial port. port={portName}", ex);
+                WriteConnectionDiagnostics($"connect-failed:{SanitizeScanModePort(portName)}");
             }
         }
 
@@ -126,20 +183,76 @@ namespace YMMKeyboardPlugin
         private void OnKeyEventReceived(SerialKeyboardDevice device, KeyEvent e)
         {
             Debug.WriteLine($"[Keymacro] KeyEventReceived UID={device.Uid} SW={e.SwitchId} Pressed={e.IsPressed}");
+            InputDiagnostics.RecordInputReceived(e);
 
             if (!SwitchLayout.TryGetSwitchName(e.SwitchId, out var switchName))
             {
                 Debug.WriteLine("[Keymacro] Unknown switch id");
+                InputDiagnostics.RecordInputFiltered(e, "UnknownSwitchId", accepted: false, "unknown switch id");
+                return;
+            }
+
+            if (IsRotarySwitch(switchName))
+            {
+                if (e.IsPressed)
+                    HandleRotaryPressed(device.Uid, switchName, e.ReceivedAtUtc, e);
+                else
+                    HandleRotaryReleased(device.Uid, switchName, e);
+
                 return;
             }
 
             if (e.IsPressed)
-                HandleKeyPressed(device.Uid, switchName, e.ReceivedAtUtc);
+                HandleKeyPressed(device.Uid, switchName, e.ReceivedAtUtc, e);
             else
                 HandleKeyReleased(device.Uid, switchName);
         }
 
-        private void HandleKeyPressed(string uid, string switchName, DateTime receivedAtUtc)
+        private void HandleRotaryPressed(string uid, string switchName, DateTime receivedAtUtc, KeyEvent input)
+        {
+            var threshold = Math.Max(1, YMMKeyboardSettings.Current.RotarySensitivity);
+            var direction = GetRotaryDirectionName(switchName);
+            RotaryState state;
+            int accumulatorAfter;
+            var shouldDispatch = false;
+
+            lock (stateLock)
+            {
+                state = GetOrCreateRotaryState(uid);
+                if (!string.Equals(state.LastSwitchName, switchName, StringComparison.OrdinalIgnoreCase))
+                {
+                    state.LastSwitchName = switchName;
+                    state.Accumulator = 0;
+                }
+
+                state.Accumulator++;
+                accumulatorAfter = state.Accumulator;
+                InputDiagnostics.RecordRotaryAccumulated(input, switchName, direction, state.Accumulator, threshold);
+
+                if (state.Accumulator >= threshold)
+                {
+                    state.Accumulator = 0;
+                    shouldDispatch = true;
+                }
+            }
+
+            if (!shouldDispatch)
+            {
+                InputDiagnostics.RecordRotaryFiltered(input, switchName, direction, accumulatorAfter, threshold, "below-threshold");
+                return;
+            }
+
+            LogLatency($"Rotary step uid={uid} switch={switchName}", receivedAtUtc);
+            InputDiagnostics.RecordRotaryDispatched(input, switchName, direction, threshold, threshold, $"switch={switchName}; threshold={threshold}");
+            MappingConverter.ExecuteDeviceSwitch(uid, switchName, input);
+        }
+
+        private static void HandleRotaryReleased(string uid, string switchName, KeyEvent input)
+        {
+            InputDiagnostics.RecordRotaryIgnoredRelease(input, switchName, GetRotaryDirectionName(switchName));
+        }
+
+        private void HandleKeyPressed(string uid, string switchName, DateTime receivedAtUtc, KeyEvent input)
         {
             ButtonConfig? comboConfig = null;
             string combinationKey = string.Empty;
@@ -151,22 +264,17 @@ namespace YMMKeyboardPlugin
 
                 if (pressed.Count == 1)
                 {
-                    if (immediateSwitches.Contains(switchName))
-                    {
-                        CancelPendingSingles(uid, pressed);
-                        LogLatency($"Immediate action uid={uid} switch={switchName}", receivedAtUtc);
-                        MappingConverter.ExecuteDeviceSwitch(uid, switchName);
-                        return;
-                    }
-
-                    ScheduleSingleAction(uid, switchName, receivedAtUtc);
+                    ScheduleSingleAction(uid, switchName, receivedAtUtc, input);
                     return;
                 }
 
                 combinationKey = SwitchLayout.NormalizeCombination(pressed);
                 comboConfig = YMMKeyboardSettings.Current.GetDeviceComboButtonConfig(uid, combinationKey);
-                if (!HasExecutableAction(comboConfig))
+                if (comboConfig is null || !HasExecutableAction(comboConfig))
+                {
+                    InputDiagnostics.RecordInputFiltered(input, "NoExecutableAction", accepted: false, $"combo={combinationKey}");
                     return;
+                }
 
                 CancelPendingSingles(uid, pressed);
                 var consumed = GetOrCreateSwitchSet(consumedSwitches, uid);
@@ -176,8 +284,31 @@ namespace YMMKeyboardPlugin
 
             if (comboConfig is not null)
             {
+                InputDiagnostics.RecordInputMapped(input, comboConfig.ActionName, $"device-combo:{uid}:{combinationKey}");
                 LogLatency($"Combo action uid={uid} combo={combinationKey}", receivedAtUtc);
-                MappingConverter.ExecuteAction(comboConfig.ActionName, comboConfig.Parameter, combinationKey, uid);
+                MappingConverter.ExecuteAction(comboConfig.ActionName, comboConfig.Parameter, combinationKey, uid, input);
+            }
+        }
+
+        private static string SanitizeScanModePort(string? portName)
+        {
+            if (string.IsNullOrWhiteSpace(portName))
+                return "empty";
+
+            return new string(portName.Where(ch => char.IsLetterOrDigit(ch) || ch == '_' || ch == '-').ToArray());
+        }
+
+        private void WriteConnectionDiagnostics(string scanMode)
+        {
+            try
+            {
+                var report = PluginConnectionDiagnosticCollector.Capture(scanMode);
+                PluginConnectionDiagnosticWriter.Write(report);
+            }
+            catch (Exception ex)
+            {
+                PluginLogger.Warn("Keymacro", $"Connection diagnostics failed: {ex.Message}");
+                YMMKeyboardLogger.Error("Exception", $"Connection diagnostics failed. scanMode={scanMode}", ex);
             }
         }
 
@@ -201,7 +332,7 @@ namespace YMMKeyboardPlugin
             }
         }
 
-        private void ScheduleSingleAction(string uid, string switchName, DateTime receivedAtUtc)
+        private void ScheduleSingleAction(string uid, string switchName, DateTime receivedAtUtc, KeyEvent input)
         {
             var pendingByUid = GetOrCreatePendingSingles(uid);
             if (pendingByUid.TryGetValue(switchName, out var existing))
@@ -231,7 +362,7 @@ namespace YMMKeyboardPlugin
                     }
 
                     LogLatency($"Single action uid={uid} switch={switchName}", receivedAtUtc);
-                    MappingConverter.ExecuteDeviceSwitch(uid, switchName);
+                    MappingConverter.ExecuteDeviceSwitch(uid, switchName, input);
                 }
                 catch (TaskCanceledException)
                 {
@@ -325,7 +456,32 @@ namespace YMMKeyboardPlugin
 
                 pressedSwitches.Remove(uid);
                 consumedSwitches.Remove(uid);
+                rotaryStates.Remove(uid);
             }
+        }
+
+        private RotaryState GetOrCreateRotaryState(string uid)
+        {
+            if (!rotaryStates.TryGetValue(uid, out var state))
+            {
+                state = new RotaryState();
+                rotaryStates[uid] = state;
+            }
+
+            return state;
+        }
+
+        private static bool IsRotarySwitch(string switchName)
+        {
+            return string.Equals(switchName, "SW36", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(switchName, "SW37", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string GetRotaryDirectionName(string switchName)
+        {
+            return string.Equals(switchName, "SW36", StringComparison.OrdinalIgnoreCase)
+                ? "CW"
+                : "CCW";
         }
 
         public void Dispose()
@@ -348,6 +504,14 @@ namespace YMMKeyboardPlugin
                 pressedSwitches.Clear();
                 consumedSwitches.Clear();
             }
+
+            InputDiagnostics.Flush();
+        }
+
+        private sealed class RotaryState
+        {
+            public string LastSwitchName { get; set; } = string.Empty;
+            public int Accumulator { get; set; }
         }
     }
 }

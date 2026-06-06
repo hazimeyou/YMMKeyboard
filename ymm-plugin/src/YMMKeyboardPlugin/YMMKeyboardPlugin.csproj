@@ -6,6 +6,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<PlatformTarget>x64</PlatformTarget>
 		<Version Condition="'$(Version)'==''">0.0.0</Version>
 		<Platforms>AnyCPU;x64</Platforms>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -22,36 +23,33 @@
 	</ItemGroup>
 
 	<Target Name="ValidateYMM4DirPath" BeforeTargets="ResolveReferences" Condition="!Exists('$(YMM4DirPath)\YukkuriMovieMaker.Plugin.dll')">
-		<Error Text="YMM4 libraries were not found at '$(YMM4DirPath)'. Run tools/scripts/fetch-ymm4-libs.ps1 or specify /p:YMM4DirPath=&lt;YMM4 folder&gt;." />
+		<Error Text="YMM4 libraries were not found at '$(YMM4DirPath)'. Specify /p:YMM4DirPath=&lt;YMM4 folder&gt;." />
 	</Target>
 
 
 	<ItemGroup>
 	  <PackageReference Include="System.IO.Ports" Version="10.0.2" GeneratePathProperty="true" />
+	  <PackageReference Include="HidSharp" Version="2.1.0" />
 	</ItemGroup>
 	<Target Name="CopyToYMM4" AfterTargets="Build" Condition="Exists('$(YMM4DirPath)')">
 
 		<!-- コピー先フォルダ -->
 		<PropertyGroup>
-			<PluginOutputDir>
-				$(YMM4DirPath)\user\plugin\$(AssemblyName)
-			</PluginOutputDir>
+			<PluginOutputDir>$(YMM4DirPath)\user\plugin\$(AssemblyName)</PluginOutputDir>
 		</PropertyGroup>
 
 		<!-- フォルダ作成 -->
 		<MakeDir Directories="$(PluginOutputDir)" Condition="!Exists('$(PluginOutputDir)')" />
 
-		<!-- コピー対象（プラグイン本体のみ） -->
+		<!-- コピー対象（プラグイン本体と実行時依存） -->
 		<ItemGroup>
-			<PluginFiles Include="$(TargetPath)" />
-			<PluginFiles Include="$(SystemIOPortsRuntimePath)" Condition="Exists('$(SystemIOPortsRuntimePath)')" />
+			<PluginFiles Include="$(TargetDir)*.dll" />
+			<PluginFiles Include="$(TargetDir)$(AssemblyName).deps.json" Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
+			<RuntimeFiles Include="$(TargetDir)runtimes\**\*.*" Condition="Exists('$(TargetDir)runtimes')" />
 		</ItemGroup>
 		<!-- コピー -->
 		<Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginOutputDir)" ContinueOnError="WarnAndContinue" />
-	</Target>
-
-	<Target Name="CopyCodePyToRP2040" AfterTargets="Build" Condition="Exists('D:\') and Exists('$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py')">
-		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\..\..\firmware\src\RP2040ZeroCode\code.py" DestinationFiles="D:\code.py" OverwriteReadOnlyFiles="true" ContinueOnError="WarnAndContinue" />
+		<Copy SourceFiles="@(RuntimeFiles)" DestinationFiles="@(RuntimeFiles->'$(PluginOutputDir)\runtimes\%(RecursiveDir)%(Filename)%(Extension)')" ContinueOnError="WarnAndContinue" />
 	</Target>
 
 </Project>

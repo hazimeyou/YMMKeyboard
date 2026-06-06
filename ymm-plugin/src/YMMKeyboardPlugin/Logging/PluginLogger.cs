@@ -36,6 +36,8 @@ public static class PluginLogger
         }
     }
 
+    public static string DiagnosticsDirectoryPath => diagnosticsDirectoryPath;
+
     public static void Info(string category, string message) => Write("INFO", category, message, null);
 
     public static void Warn(string category, string message) => Write("WARN", category, message, null);
@@ -96,11 +98,8 @@ public static class PluginLogger
 
             lock (sync)
             {
-                Directory.CreateDirectory(LogDirectoryPath);
-                File.AppendAllText(CurrentLogFilePath, line + Environment.NewLine, Encoding.UTF8);
-
-                Directory.CreateDirectory(diagnosticsDirectoryPath);
-                File.AppendAllText(DiagnosticsLogFilePath, line + Environment.NewLine, Encoding.UTF8);
+                LogFileWriter.AppendLine(CurrentLogFilePath, line);
+                LogFileWriter.AppendLine(DiagnosticsLogFilePath, line);
             }
         }
         catch

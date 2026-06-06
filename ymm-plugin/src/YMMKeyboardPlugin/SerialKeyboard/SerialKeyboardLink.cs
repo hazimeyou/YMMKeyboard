@@ -11,10 +11,13 @@ using YMMKeyboardPlugin.Logging;
 
 namespace YMMKeyboardPlugin
 {
-    public class SerialKeyboardLink : IDisposable
+    public class SerialKeyboardLink : IKeyboardLink
     {
         private static readonly Regex serialEventPattern = new(
             @"(?<uid>[0-9a-fA-F]+):(?<state>[PR]):SW_(?<switch>\d+)",
+            RegexOptions.Compiled);
+        private static readonly Regex rotaryRawEventPattern = new(
+            @"^(?:(?<uid>[0-9a-fA-F]+):)?(?<switch>SW_?(?<switchId>\d+)):(?<state>[PR])$",
             RegexOptions.Compiled);
         private static readonly Regex ansiEscapePattern = new(
             @"\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\a]*(?:\a|\x1B\\))",
@@ -61,12 +64,19 @@ namespace YMMKeyboardPlugin
                 Encoding = Encoding.ASCII,
                 ReadTimeout = 1000,
                 WriteTimeout = 1000,
+                Handshake = Handshake.None,
                 DtrEnable = true,
                 RtsEnable = true
             };
 
             _port.Open();
-            PluginLogger.Info("SerialKeyboardLink", $"Port opened: {_portName}");
+            // Some USB CDC firmwares require a post-open DTR assert edge.
+            _port.DtrEnable = false;
+            Thread.Sleep(40);
+            _port.DtrEnable = true;
+            Thread.Sleep(180);
+            _port.DiscardInBuffer();
+            PluginLogger.Info("SerialKeyboardLink", $"Legacy serial diagnostic port opened: {_portName}");
             Task.Run(() => ReadLoop(_cts.Token));
         }
 
@@ -85,16 +95,27 @@ namespace YMMKeyboardPlugin
                     var normalizedLine = NormalizeSerialLine(line);
                     Debug.WriteLine($"[SERIAL] {normalizedLine}");
                     if (verboseSerialLog)
-                        PluginLogger.Info("SerialKeyboardLink", $"RX {_portName}: {normalizedLine}");
+                        PluginLogger.Info("SerialKeyboardLink", $"RX legacy serial {_portName}: {normalizedLine}");
 
                     var match = serialEventPattern.Match(normalizedLine);
+                    var isRotaryRaw = false;
+                    if (!match.Success)
+                    {
+                        match = rotaryRawEventPattern.Match(normalizedLine);
+                        isRotaryRaw = match.Success;
+                    }
+
                     if (!match.Success)
                         continue;
 
-                    var uid = match.Groups["uid"].Value.ToLowerInvariant();
+                    var uid = match.Groups["uid"].Success && !string.IsNullOrWhiteSpace(match.Groups["uid"].Value)
+                        ? match.Groups["uid"].Value.ToLowerInvariant()
+                        : _portName.ToLowerInvariant();
                     var state = match.Groups["state"].Value;
-                    if (!int.TryParse(match.Groups["switch"].Value, out var switchId))
+                    var switchGroupName = isRotaryRaw ? "switchId" : "switch";
+                    if (!int.TryParse(match.Groups[switchGroupName].Value, out var switchId))
                         continue;
+                    switchId = NormalizeRotarySwitchId(switchId);
 
                     SerialKeyboardDevice device;
                     bool isNewDevice;
@@ -114,13 +135,18 @@ namespace YMMKeyboardPlugin
 
                     if (isNewDevice)
                     {
-                        PluginLogger.Info("SerialKeyboardLink", $"Device detected on {_portName}: {uid}");
+                        PluginLogger.Info("SerialKeyboardLink", $"Legacy serial diagnostic device detected on {_portName}: {uid}");
+                        YMMKeyboardLogger.DeviceConnected($"transport=Serial; port={_portName}; uid={uid}");
                         DeviceDetected?.Invoke(device);
                     }
 
                     var keyEvent = new KeyEvent
                     {
                         Uid = uid,
+                        TransportType = "Serial",
+                        SourceDevice = _portName,
+                        RawInput = normalizedLine,
+                        InputId = $"{uid}:{state}:SW_{switchId:00}",
                         IsPressed = state == "P",
                         SwitchId = switchId,
                         ReceivedAtUtc = DateTime.UtcNow
@@ -138,16 +164,17 @@ namespace YMMKeyboardPlugin
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"[SerialKeyboardLink] Error: {ex.Message}");
-                    PluginLogger.Error("SerialKeyboardLink", $"Read loop error on {_portName}", ex);
+                    PluginLogger.Error("SerialKeyboardLink", $"Legacy serial read loop error on {_portName}", ex);
+                    YMMKeyboardLogger.Error("Exception", $"Legacy serial read loop error. port={_portName}", ex);
                 }
             }
 
-            Debug.WriteLine($"[SerialKeyboardLink] Stop reading {_portName}");
+            Debug.WriteLine($"[SerialKeyboardLink] Stop reading legacy serial {_portName}");
         }
 
         private static string NormalizeSerialLine(string line)
         {
-            // ターミナル制御シーケンスや不可視文字が混入してもイベント行を抽出できるよう正規化する。
+            // Strip ANSI escapes and control characters so legacy serial diagnostics stay parseable.
             var stripped = ansiEscapePattern.Replace(line, string.Empty);
             var sb = new StringBuilder(stripped.Length);
             foreach (var ch in stripped)
@@ -168,13 +195,24 @@ namespace YMMKeyboardPlugin
                 try { _port.Close(); } catch { }
                 _port.Dispose();
                 _port = null;
-                PluginLogger.Info("SerialKeyboardLink", $"Port closed: {_portName}");
+                PluginLogger.Info("SerialKeyboardLink", $"Legacy serial diagnostic port closed: {_portName}");
+                YMMKeyboardLogger.DeviceDisconnected($"transport=Serial; port={_portName}");
             }
         }
 
         public void Dispose()
         {
             Stop();
+        }
+
+        private static int NormalizeRotarySwitchId(int switchId)
+        {
+            return switchId switch
+            {
+                36 => 37,
+                37 => 36,
+                _ => switchId
+            };
         }
     }
 }

@@ -1,10 +1,12 @@
 ﻿using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Mapping;
 using YMMKeyboardPlugin.Models;
+using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Views;
 using YukkuriMovieMaker.Plugin;
 
@@ -21,6 +23,12 @@ namespace YMMKeyboardPlugin.Settings
     public class YMMKeyboardSettings : SettingsBase<YMMKeyboardSettings>
     {
         private static readonly Regex uidPattern = new("^[0-9a-fA-F]{8,64}$", RegexOptions.Compiled);
+        private const string FormalHidVendorIdHex = "2E8A";
+        private const string FormalHidProductIdHex = "4020";
+        private const string FormalHidProductNameFilter = "";
+        private const string LegacyFormalHidProductNameFilter = "YMMKeyboard RP2040";
+        private const string FormalHidManufacturerFilter = "YMMKeyboard";
+        private const int DefaultRotarySensitivity = 2;
         private const string SettingsDirectoryName = "settings";
         private const string SettingsFileName = "YMMKeyboardSettings.json";
         private static readonly object saveLock = new();
@@ -30,8 +38,10 @@ namespace YMMKeyboardPlugin.Settings
         };
         private static bool hasShownLoadError;
         private static bool hasShownSaveError;
+        private static bool runtimeLoggingEnabledCache;
 
         public static YMMKeyboardSettings Current { get; private set; } = new();
+        public static bool IsRuntimeLoggingEnabled => runtimeLoggingEnabledCache;
         public static event Action<string>? ConnectionRequested;
         public static event Action<string>? DisconnectionRequested;
         public static event Action? SettingsLoaded;
@@ -42,8 +52,15 @@ namespace YMMKeyboardPlugin.Settings
         public override object? SettingView => new YMMKeyboardSettingsPanel(this);
 
         [DataMember] public string PortName { get; set; } = string.Empty;
+        [DataMember] public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Hid;
+        [DataMember] public string HidVendorIdHex { get; set; } = FormalHidVendorIdHex;
+        [DataMember] public string HidProductIdHex { get; set; } = FormalHidProductIdHex;
+        [DataMember] public string HidProductNameFilter { get; set; } = FormalHidProductNameFilter;
+        [DataMember] public string HidManufacturerFilter { get; set; } = FormalHidManufacturerFilter;
         [DataMember] public List<string> StartupPortNames { get; set; } = new();
         [DataMember] public List<string> KnownDeviceUids { get; set; } = new();
+        [DataMember] public int RotarySensitivity { get; set; } = DefaultRotarySensitivity;
+        [DataMember] public bool RuntimeLoggingEnabled { get; set; }
         [DataMember] public Dictionary<string, ButtonConfig> UiButtonConfigs { get; set; } = new();
         [DataMember] public Dictionary<string, ButtonConfig> UiComboButtonConfigs { get; set; } = new();
         [DataMember] public Dictionary<string, Dictionary<string, ButtonConfig>> DeviceButtonConfigs { get; set; } = new();
@@ -53,6 +70,7 @@ namespace YMMKeyboardPlugin.Settings
         {
             Current = this;
             LoadFromPluginDirectory();
+            runtimeLoggingEnabledCache = RuntimeLoggingEnabled;
         }
 
         public override void Initialize()
@@ -60,6 +78,7 @@ namespace YMMKeyboardPlugin.Settings
             Current = this;
             LoadFromPluginDirectory();
             NormalizeSettings();
+            runtimeLoggingEnabledCache = RuntimeLoggingEnabled;
             SettingsLoaded?.Invoke();
         }
 
@@ -172,6 +191,38 @@ namespace YMMKeyboardPlugin.Settings
             SaveToPluginDirectory();
         }
 
+        public void UpdateConnectionMode(ConnectionMode mode)
+        {
+            ConnectionMode = mode;
+            SaveToPluginDirectory();
+        }
+
+        public void UpdateRotarySensitivity(int sensitivity)
+        {
+            RotarySensitivity = ClampRotarySensitivity(sensitivity);
+            SaveToPluginDirectory();
+        }
+
+        public void UpdateRuntimeLoggingEnabled(bool enabled)
+        {
+            RuntimeLoggingEnabled = enabled;
+            runtimeLoggingEnabledCache = enabled;
+            SaveToPluginDirectory();
+        }
+
+        public void UpdateHidFilter(string vendorIdHex, string productIdHex, string productNameFilter, string manufacturerFilter)
+        {
+            HidVendorIdHex = NormalizeHex(vendorIdHex);
+            HidProductIdHex = NormalizeHex(productIdHex);
+            HidProductNameFilter = (productNameFilter ?? string.Empty).Trim();
+            HidManufacturerFilter = (manufacturerFilter ?? string.Empty).Trim();
+            SaveToPluginDirectory();
+        }
+
+        public int? GetHidVendorId() => TryParseHex16(HidVendorIdHex);
+
+        public int? GetHidProductId() => TryParseHex16(HidProductIdHex);
+
         public void AddStartupPort(string portName)
         {
             if (string.IsNullOrWhiteSpace(portName))
@@ -223,18 +274,27 @@ namespace YMMKeyboardPlugin.Settings
                     return;
 
                 PortName = data.PortName ?? string.Empty;
+                ConnectionMode = data.ConnectionMode;
+                HidVendorIdHex = data.HidVendorIdHex ?? string.Empty;
+                HidProductIdHex = data.HidProductIdHex ?? string.Empty;
+                HidProductNameFilter = data.HidProductNameFilter ?? string.Empty;
+                HidManufacturerFilter = data.HidManufacturerFilter ?? string.Empty;
                 StartupPortNames = data.StartupPortNames ?? new();
                 KnownDeviceUids = data.KnownDeviceUids ?? new();
+                RotarySensitivity = data.RotarySensitivity;
+                RuntimeLoggingEnabled = data.RuntimeLoggingEnabled;
                 UiButtonConfigs = data.UiButtonConfigs ?? new();
                 UiComboButtonConfigs = data.UiComboButtonConfigs ?? new();
                 DeviceButtonConfigs = data.DeviceButtonConfigs ?? new();
                 DeviceComboButtonConfigs = data.DeviceComboButtonConfigs ?? new();
                 NormalizeSettings();
+                runtimeLoggingEnabledCache = RuntimeLoggingEnabled;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[YMMKeyboardSettings] Load failed: {ex}");
                 PluginLogger.Error("YMMKeyboardSettings", "Load failed.", ex);
+                YMMKeyboardLogger.Exception("SettingsLoadFailed", ex);
                 if (!hasShownLoadError)
                 {
                     hasShownLoadError = true;
@@ -245,25 +305,34 @@ namespace YMMKeyboardPlugin.Settings
 
         private void SaveToPluginDirectory()
         {
+            string? tempFilePath = null;
+            string? backupFilePath = null;
+
             try
             {
                 NormalizeSettings();
                 PersistedSettings data;
                 string settingsFilePath;
-                string tempFilePath;
 
                 lock (saveLock)
                 {
                     var directory = GetSettingsDirectoryPath();
                     Directory.CreateDirectory(directory);
                     settingsFilePath = GetSettingsFilePath();
-                    tempFilePath = settingsFilePath + ".tmp";
+                    tempFilePath = settingsFilePath + $".tmp.{Guid.NewGuid():N}";
 
                     data = new PersistedSettings
                     {
                         PortName = PortName,
+                        ConnectionMode = ConnectionMode,
+                        HidVendorIdHex = HidVendorIdHex,
+                        HidProductIdHex = HidProductIdHex,
+                        HidProductNameFilter = HidProductNameFilter,
+                        HidManufacturerFilter = HidManufacturerFilter,
                         StartupPortNames = StartupPortNames.ToList(),
                         KnownDeviceUids = KnownDeviceUids.ToList(),
+                        RotarySensitivity = RotarySensitivity,
+                        RuntimeLoggingEnabled = RuntimeLoggingEnabled,
                         UiButtonConfigs = CloneConfigs(UiButtonConfigs),
                         UiComboButtonConfigs = CloneConfigs(UiComboButtonConfigs),
                         DeviceButtonConfigs = CloneNestedConfigs(DeviceButtonConfigs),
@@ -271,25 +340,62 @@ namespace YMMKeyboardPlugin.Settings
                     };
 
                     var json = JsonSerializer.Serialize(data, jsonSerializerOptions);
-                    File.WriteAllText(tempFilePath, json);
+                    using (var stream = new FileStream(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+                    using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
+                    {
+                        writer.Write(json);
+                        writer.Flush();
+                        stream.Flush(flushToDisk: true);
+                    }
 
                     if (File.Exists(settingsFilePath))
-                        File.Copy(tempFilePath, settingsFilePath, overwrite: true);
-                    else
-                        File.Move(tempFilePath, settingsFilePath);
+                    {
+                        backupFilePath = settingsFilePath + ".bak";
+                        if (File.Exists(backupFilePath))
+                            File.Delete(backupFilePath);
 
-                    if (File.Exists(tempFilePath))
-                        File.Delete(tempFilePath);
+                        File.Replace(tempFilePath, settingsFilePath, backupFilePath, ignoreMetadataErrors: true);
+                    }
+                    else
+                    {
+                        File.Move(tempFilePath, settingsFilePath);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(backupFilePath) && File.Exists(backupFilePath))
+                        File.Delete(backupFilePath);
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[YMMKeyboardSettings] Save failed: {ex}");
                 PluginLogger.Error("YMMKeyboardSettings", "Save failed.", ex);
+                YMMKeyboardLogger.Exception("SettingsSaveFailed", ex);
                 if (!hasShownSaveError)
                 {
                     hasShownSaveError = true;
                     MessageBox.Show($"設定の保存に失敗しました。\n{ex.Message}", "キーボード設定");
+                }
+            }
+            finally
+            {
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
+                        File.Delete(tempFilePath);
+                }
+                catch
+                {
+                    // Best-effort cleanup only.
+                }
+
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(backupFilePath) && File.Exists(backupFilePath))
+                        File.Delete(backupFilePath);
+                }
+                catch
+                {
+                    // Best-effort cleanup only.
                 }
             }
         }
@@ -303,6 +409,27 @@ namespace YMMKeyboardPlugin.Settings
 
         private void NormalizeSettings()
         {
+            HidVendorIdHex = NormalizeHex(HidVendorIdHex);
+            if (string.IsNullOrWhiteSpace(HidVendorIdHex))
+                HidVendorIdHex = FormalHidVendorIdHex;
+            HidProductIdHex = NormalizeHex(HidProductIdHex);
+            if (string.IsNullOrWhiteSpace(HidProductIdHex))
+                HidProductIdHex = FormalHidProductIdHex;
+            HidProductNameFilter = (HidProductNameFilter ?? string.Empty).Trim();
+            HidManufacturerFilter = (HidManufacturerFilter ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(HidManufacturerFilter))
+                HidManufacturerFilter = FormalHidManufacturerFilter;
+
+            if (string.Equals(HidVendorIdHex, FormalHidVendorIdHex, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(HidProductIdHex, FormalHidProductIdHex, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(HidManufacturerFilter, FormalHidManufacturerFilter, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(HidProductNameFilter, LegacyFormalHidProductNameFilter, StringComparison.OrdinalIgnoreCase))
+            {
+                HidProductNameFilter = FormalHidProductNameFilter;
+            }
+
+            RotarySensitivity = ClampRotarySensitivity(RotarySensitivity);
+
             StartupPortNames = StartupPortNames
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -314,7 +441,7 @@ namespace YMMKeyboardPlugin.Settings
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            DeviceButtonConfigs = DeviceButtonConfigs
+                DeviceButtonConfigs = DeviceButtonConfigs
                 .Where(pair => IsValidUid(pair.Key))
                 .ToDictionary(pair => pair.Key.Trim().ToLowerInvariant(), pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
@@ -339,6 +466,8 @@ namespace YMMKeyboardPlugin.Settings
                 NormalizeActionNames(DeviceButtonConfigs[uid]);
                 NormalizeActionNames(DeviceComboButtonConfigs[uid]);
             }
+
+            runtimeLoggingEnabledCache = RuntimeLoggingEnabled;
         }
 
         private static void NormalizeActionNames(Dictionary<string, ButtonConfig> configs)
@@ -353,6 +482,37 @@ namespace YMMKeyboardPlugin.Settings
         {
             var normalized = uid?.Trim();
             return !string.IsNullOrWhiteSpace(normalized) && uidPattern.IsMatch(normalized);
+        }
+
+        private static int? TryParseHex16(string? hex)
+        {
+            if (string.IsNullOrWhiteSpace(hex))
+                return null;
+
+            var s = NormalizeHex(hex);
+            return int.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out var value) ? value : null;
+        }
+
+        private static string NormalizeHex(string? hex)
+        {
+            if (string.IsNullOrWhiteSpace(hex))
+                return string.Empty;
+
+            var s = hex.Trim();
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                s = s[2..];
+            return s.ToUpperInvariant();
+        }
+
+        private static int ClampRotarySensitivity(int sensitivity)
+        {
+            return sensitivity switch
+            {
+                <= 1 => 1,
+                2 => 2,
+                3 => 3,
+                >= 4 => 4,
+            };
         }
 
         private void EnsureUiDefault(string switchName)
@@ -406,8 +566,15 @@ namespace YMMKeyboardPlugin.Settings
         private class PersistedSettings
         {
             public string? PortName { get; set; }
+            public ConnectionMode ConnectionMode { get; set; } = ConnectionMode.Com;
+            public string? HidVendorIdHex { get; set; }
+            public string? HidProductIdHex { get; set; }
+            public string? HidProductNameFilter { get; set; }
+            public string? HidManufacturerFilter { get; set; }
             public List<string>? StartupPortNames { get; set; }
             public List<string>? KnownDeviceUids { get; set; }
+            public int RotarySensitivity { get; set; } = DefaultRotarySensitivity;
+            public bool RuntimeLoggingEnabled { get; set; }
             public Dictionary<string, ButtonConfig>? UiButtonConfigs { get; set; }
             public Dictionary<string, ButtonConfig>? UiComboButtonConfigs { get; set; }
             public Dictionary<string, Dictionary<string, ButtonConfig>>? DeviceButtonConfigs { get; set; }

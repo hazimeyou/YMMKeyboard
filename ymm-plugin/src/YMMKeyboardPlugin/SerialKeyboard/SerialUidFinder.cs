@@ -20,11 +20,17 @@ public class SerialUidFinder
                     NewLine = "\n",
                     ReadTimeout = 200,
                     WriteTimeout = 200,
+                    Handshake = Handshake.None,
                     DtrEnable = true,
                     RtsEnable = true,
                 };
 
                 port.Open();
+                port.DtrEnable = false;
+                await Task.Delay(40);
+                port.DtrEnable = true;
+                await Task.Delay(180);
+                port.DiscardInBuffer();
 
                 var sw = Stopwatch.StartNew();
                 var buffer = new StringBuilder();

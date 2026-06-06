@@ -3,6 +3,9 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using YMMKeyboardPlugin.Hid;
+using YMMKeyboardPlugin.Logging;
+using YMMKeyboardPlugin.Key;
 using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Views
@@ -11,6 +14,7 @@ namespace YMMKeyboardPlugin.Views
     {
         private readonly YMMKeyboardSettings settings;
         private bool serialPortSupported = true;
+        private bool isInitializing;
 
         public YMMKeyboardSettingsPanel()
             : this(YMMKeyboardSettings.Current)
@@ -20,9 +24,47 @@ namespace YMMKeyboardPlugin.Views
         public YMMKeyboardSettingsPanel(YMMKeyboardSettings settings)
         {
             this.settings = settings;
+            isInitializing = true;
             InitializeComponent();
-            LoadPorts();
-            LoadStartupPorts();
+            try
+            {
+                LoadConnectionSettings();
+                LoadPorts();
+                LoadStartupPorts();
+            }
+            finally
+            {
+                isInitializing = false;
+            }
+        }
+
+        private void LoadConnectionSettings()
+        {
+            var targetTag = settings.ConnectionMode.ToString();
+            foreach (var item in ConnectionModeComboBox.Items.OfType<ComboBoxItem>())
+            {
+                if (string.Equals(item.Tag?.ToString(), targetTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    ConnectionModeComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            HidVendorIdTextBox.Text = settings.HidVendorIdHex;
+            HidProductIdTextBox.Text = settings.HidProductIdHex;
+            HidProductNameFilterTextBox.Text = settings.HidProductNameFilter;
+            HidManufacturerFilterTextBox.Text = settings.HidManufacturerFilter;
+            RuntimeLoggingCheckBox.IsChecked = settings.RuntimeLoggingEnabled;
+
+            var rotarySensitivityTag = Math.Clamp(settings.RotarySensitivity, 1, 4).ToString();
+            foreach (var item in RotarySensitivityComboBox.Items.OfType<ComboBoxItem>())
+            {
+                if (string.Equals(item.Tag?.ToString(), rotarySensitivityTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    RotarySensitivityComboBox.SelectedItem = item;
+                    break;
+                }
+            }
         }
 
         private void LoadPorts()
@@ -42,9 +84,9 @@ namespace YMMKeyboardPlugin.Views
             PortStatusTextBlock.Text = (!serialPortSupported && ports.Count == 0)
                 ? "この環境ではシリアルポート列挙APIが利用できません。"
                 : ports.Count == 0
-                    ? "利用可能なCOMポートが見つかりません。接続後に再読み込みしてください。"
+                    ? "利用可能なLegacy COMポートが見つかりません。接続後に再読み込みしてください。"
                     : string.IsNullOrWhiteSpace(settings.PortName)
-                        ? "接続するCOMポートを選択してください。"
+                        ? "接続するLegacy COMポートを選択してください。"
                         : $"現在の設定: {settings.PortName}";
         }
 
@@ -116,22 +158,66 @@ namespace YMMKeyboardPlugin.Views
             PortStatusTextBlock.Text = $"現在の設定: {selectedPort}";
         }
 
+        private void ConnectionModeComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ConnectionModeComboBox.SelectedItem is not ComboBoxItem selected)
+                return;
+
+            if (!Enum.TryParse<ConnectionMode>(selected.Tag?.ToString(), ignoreCase: true, out var mode))
+                return;
+
+            settings.UpdateConnectionMode(mode);
+            PortStatusTextBlock.Text = $"接続モードを {selected.Content} に設定しました。";
+        }
+
+        private void ApplyHidFilter_OnClick(object sender, RoutedEventArgs e)
+        {
+            settings.UpdateHidFilter(
+                HidVendorIdTextBox.Text,
+                HidProductIdTextBox.Text,
+                HidProductNameFilterTextBox.Text,
+                HidManufacturerFilterTextBox.Text);
+            HidVendorIdTextBox.Text = settings.HidVendorIdHex;
+            HidProductIdTextBox.Text = settings.HidProductIdHex;
+            HidProductNameFilterTextBox.Text = settings.HidProductNameFilter;
+            HidManufacturerFilterTextBox.Text = settings.HidManufacturerFilter;
+            PortStatusTextBlock.Text = $"HIDフィルタを設定しました。VID={settings.HidVendorIdHex}, PID={settings.HidProductIdHex}, 製品名={settings.HidProductNameFilter}, メーカー={settings.HidManufacturerFilter}";
+        }
+
+        private void RotarySensitivityComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (RotarySensitivityComboBox.SelectedItem is not ComboBoxItem selected)
+                return;
+
+            if (!int.TryParse(selected.Tag?.ToString(), out var sensitivity))
+                return;
+
+            settings.UpdateRotarySensitivity(sensitivity);
+            PortStatusTextBlock.Text = $"ロータリー感度を {selected.Content} に設定しました。";
+        }
+
         private void Connect_OnClick(object sender, RoutedEventArgs e)
         {
+            if (settings.ConnectionMode == ConnectionMode.Hid)
+            {
+                PortStatusTextBlock.Text = "HIDモードではLegacy COM接続は不要です。実機入力は自動検出されます。";
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(settings.PortName))
             {
-                PortStatusTextBlock.Text = "先に接続するCOMポートを選択してください。";
+                PortStatusTextBlock.Text = "先に接続するLegacy COMポートを選択してください。";
                 return;
             }
 
             settings.RequestConnection();
-            PortStatusTextBlock.Text = $"{settings.PortName} への接続を開始しました。キー入力でUIDを自動登録します。";
+            PortStatusTextBlock.Text = $"{settings.PortName} へのLegacy COM診断接続を開始しました。キー入力でUIDを自動登録します。";
         }
 
         private void Disconnect_OnClick(object sender, RoutedEventArgs e)
         {
             settings.RequestDisconnection();
-            PortStatusTextBlock.Text = "シリアル接続の切断を要求しました。";
+            PortStatusTextBlock.Text = "Legacy serial 診断接続の切断を要求しました。";
         }
 
         private void AddStartupPort_OnClick(object sender, RoutedEventArgs e)
@@ -169,6 +255,52 @@ namespace YMMKeyboardPlugin.Views
                 window.Owner = owner;
 
             window.ShowDialog();
+        }
+
+        private void HidProbe_OnClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var devices = HidDeviceProbe.EnumerateAll();
+                var report = HidDeviceProbe.BuildReportText(devices);
+                var reportPath = Path.Combine(PluginLogger.LogDirectoryPath, $"hid_report_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+                Directory.CreateDirectory(PluginLogger.LogDirectoryPath);
+                File.WriteAllText(reportPath, report);
+
+                PluginLogger.Info("YMMKeyboardSettingsPanel", $"HID report generated. count={devices.Count}, path={reportPath}");
+                PortStatusTextBlock.Text = $"HID診断を出力しました: {reportPath}";
+                MessageBox.Show($"HID診断を出力しました。\n{reportPath}", "HID診断");
+            }
+            catch (Exception ex)
+            {
+                PluginLogger.Error("YMMKeyboardSettingsPanel", "Failed to generate HID report.", ex);
+                MessageBox.Show($"HID診断の出力に失敗しました。\n{ex.Message}", "HID診断");
+            }
+        }
+
+        private void RuntimeLoggingCheckBox_OnChanged(object sender, RoutedEventArgs e)
+        {
+            if (isInitializing)
+                return;
+
+            settings.UpdateRuntimeLoggingEnabled(RuntimeLoggingCheckBox.IsChecked == true);
+            PortStatusTextBlock.Text = RuntimeLoggingCheckBox.IsChecked == true
+                ? "ログを有効化しました。"
+                : "ログを無効化しました。";
+        }
+
+        private void OpenLogFolder_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (!YMMKeyboardLogger.OpenLogFolder())
+                MessageBox.Show("ログフォルダーを開けませんでした。", "ログ");
+        }
+
+        private void ClearLog_OnClick(object sender, RoutedEventArgs e)
+        {
+            var deleted = YMMKeyboardLogger.ClearRuntimeLogs();
+            PortStatusTextBlock.Text = deleted > 0
+                ? $"ログを {deleted} 件削除しました。"
+                : "削除できるログはありませんでした。";
         }
     }
 }
