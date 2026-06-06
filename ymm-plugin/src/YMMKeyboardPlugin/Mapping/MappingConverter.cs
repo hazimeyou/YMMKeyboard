@@ -162,6 +162,8 @@ namespace YMMKeyboardPlugin.Mapping
             catch (Exception ex)
             {
                 PluginLogger.Error("MappingConverter", $"Dispatch execution failed. target={target}; payload={payloadSummary}", ex);
+                if (input is null)
+                    YMMKeyboardLogger.Error("Exception", $"Dispatch execution failed. target={target}; payload={payloadSummary}", ex);
                 if (input is not null)
                     InputDiagnostics.RecordDispatchFailed(input, dispatchType, target, payloadSummary, "exception", ex);
             }
@@ -190,6 +192,8 @@ namespace YMMKeyboardPlugin.Mapping
             catch (Exception ex)
             {
                 PluginLogger.Error("MappingConverter", $"Dispatch execution failed. target={target}; payload={payloadSummary}", ex);
+                if (input is null)
+                    YMMKeyboardLogger.Error("Exception", $"Dispatch execution failed. target={target}; payload={payloadSummary}", ex);
                 if (input is not null)
                     InputDiagnostics.RecordDispatchFailed(input, dispatchType, target, payloadSummary, "exception", ex);
             }

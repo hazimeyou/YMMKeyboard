@@ -98,11 +98,8 @@ public static class PluginLogger
 
             lock (sync)
             {
-                Directory.CreateDirectory(LogDirectoryPath);
-                File.AppendAllText(CurrentLogFilePath, line + Environment.NewLine, Encoding.UTF8);
-
-                Directory.CreateDirectory(diagnosticsDirectoryPath);
-                File.AppendAllText(DiagnosticsLogFilePath, line + Environment.NewLine, Encoding.UTF8);
+                LogFileWriter.AppendLine(CurrentLogFilePath, line);
+                LogFileWriter.AppendLine(DiagnosticsLogFilePath, line);
             }
         }
         catch

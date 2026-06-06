@@ -1,5 +1,6 @@
 using System.Reflection;
 using YMMKeyboardPlugin.Key;
+using YMMKeyboardPlugin.Logging;
 
 namespace YMMKeyboardPlugin.Diagnostics;
 
@@ -34,6 +35,7 @@ public static class InputDiagnostics
                 RawInput = input.RawInput,
                 InputId = input.InputId,
             });
+            LogRuntime("InputReceived", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; raw={input.RawInput}");
             FlushLocked();
         }
     }
@@ -55,6 +57,7 @@ public static class InputDiagnostics
                 Accepted = accepted,
                 RejectReason = rejectReason,
             });
+            LogRuntime("InputFiltered", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; filter={filterName}; accepted={accepted}; reason={rejectReason}");
             FlushLocked();
         }
     }
@@ -75,6 +78,7 @@ public static class InputDiagnostics
                 MappedAction = mappedAction,
                 MappingSource = mappingSource,
             });
+            LogRuntime("InputMapped", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; action={mappedAction}; source={mappingSource}");
             FlushLocked();
         }
     }
@@ -96,6 +100,7 @@ public static class InputDiagnostics
                 StepCount = stepCount,
                 ResolutionResult = resolutionResult,
             });
+            LogRuntime("MacroResolved", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; macro={macroName}; steps={stepCount}; result={resolutionResult}");
             FlushLocked();
         }
     }
@@ -117,6 +122,7 @@ public static class InputDiagnostics
                 Target = target,
                 PayloadSummary = payloadSummary,
             });
+            LogRuntime("DispatchPrepared", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; dispatch={dispatchType}; target={target}; payload={payloadSummary}");
             FlushLocked();
         }
     }
@@ -139,6 +145,7 @@ public static class InputDiagnostics
                 PayloadSummary = payloadSummary,
                 Result = result,
             });
+            LogRuntime("DispatchSkipped", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; dispatch={dispatchType}; target={target}; payload={payloadSummary}; result={result}");
             FlushLocked();
         }
     }
@@ -162,6 +169,7 @@ public static class InputDiagnostics
                 Succeeded = true,
                 Result = result,
             });
+            LogRuntime("DispatchExecuted", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; dispatch={dispatchType}; target={target}; payload={payloadSummary}; result={result}");
             FlushLocked();
         }
     }
@@ -187,6 +195,7 @@ public static class InputDiagnostics
                 ExceptionType = ex.GetType().FullName ?? ex.GetType().Name,
                 ExceptionMessage = ex.Message,
             });
+            YMMKeyboardLogger.Error("DispatchFailed", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; dispatch={dispatchType}; target={target}; payload={payloadSummary}; result={result}", ex);
             FlushLocked();
         }
     }
@@ -207,6 +216,7 @@ public static class InputDiagnostics
                 FilterName = switchName,
                 MappingSource = $"direction={direction}; count={count}; threshold={threshold}",
             });
+            LogRuntime("RotaryAccumulated", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; switch={switchName}; direction={direction}; count={count}; threshold={threshold}");
             FlushLocked();
         }
     }
@@ -229,6 +239,7 @@ public static class InputDiagnostics
                 RejectReason = reason,
                 MappingSource = $"direction={direction}; count={count}; threshold={threshold}",
             });
+            LogRuntime("RotaryFiltered", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; switch={switchName}; direction={direction}; count={count}; threshold={threshold}; reason={reason}");
             FlushLocked();
         }
     }
@@ -251,6 +262,7 @@ public static class InputDiagnostics
                 PayloadSummary = payloadSummary,
                 Result = "dispatched",
             });
+            LogRuntime("RotaryDispatched", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; switch={switchName}; direction={direction}; count={count}; threshold={threshold}; payload={payloadSummary}");
             FlushLocked();
         }
     }
@@ -272,6 +284,7 @@ public static class InputDiagnostics
                 RejectReason = $"direction={direction}; release ignored",
                 Accepted = false,
             });
+            LogRuntime("RotaryIgnoredRelease", $"transport={input.TransportType}; source={input.SourceDevice}; inputId={input.InputId}; switch={switchName}; direction={direction}");
             FlushLocked();
         }
     }
@@ -296,6 +309,14 @@ public static class InputDiagnostics
             return;
 
         InputDiagnosticWriter.Write(session.ToReport());
+    }
+
+    private static void LogRuntime(string eventName, string message)
+    {
+        if (!YMMKeyboardLogger.IsEnabled)
+            return;
+
+        YMMKeyboardLogger.Info(eventName, message);
     }
 
     private sealed class InputDiagnosticSession

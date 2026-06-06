@@ -14,6 +14,7 @@ namespace YMMKeyboardPlugin.Views
     {
         private readonly YMMKeyboardSettings settings;
         private bool serialPortSupported = true;
+        private bool isInitializing;
 
         public YMMKeyboardSettingsPanel()
             : this(YMMKeyboardSettings.Current)
@@ -23,10 +24,18 @@ namespace YMMKeyboardPlugin.Views
         public YMMKeyboardSettingsPanel(YMMKeyboardSettings settings)
         {
             this.settings = settings;
+            isInitializing = true;
             InitializeComponent();
-            LoadConnectionSettings();
-            LoadPorts();
-            LoadStartupPorts();
+            try
+            {
+                LoadConnectionSettings();
+                LoadPorts();
+                LoadStartupPorts();
+            }
+            finally
+            {
+                isInitializing = false;
+            }
         }
 
         private void LoadConnectionSettings()
@@ -45,6 +54,7 @@ namespace YMMKeyboardPlugin.Views
             HidProductIdTextBox.Text = settings.HidProductIdHex;
             HidProductNameFilterTextBox.Text = settings.HidProductNameFilter;
             HidManufacturerFilterTextBox.Text = settings.HidManufacturerFilter;
+            RuntimeLoggingCheckBox.IsChecked = settings.RuntimeLoggingEnabled;
 
             var rotarySensitivityTag = Math.Clamp(settings.RotarySensitivity, 1, 4).ToString();
             foreach (var item in RotarySensitivityComboBox.Items.OfType<ComboBoxItem>())
@@ -266,6 +276,31 @@ namespace YMMKeyboardPlugin.Views
                 PluginLogger.Error("YMMKeyboardSettingsPanel", "Failed to generate HID report.", ex);
                 MessageBox.Show($"HID診断の出力に失敗しました。\n{ex.Message}", "HID診断");
             }
+        }
+
+        private void RuntimeLoggingCheckBox_OnChanged(object sender, RoutedEventArgs e)
+        {
+            if (isInitializing)
+                return;
+
+            settings.UpdateRuntimeLoggingEnabled(RuntimeLoggingCheckBox.IsChecked == true);
+            PortStatusTextBlock.Text = RuntimeLoggingCheckBox.IsChecked == true
+                ? "ログを有効化しました。"
+                : "ログを無効化しました。";
+        }
+
+        private void OpenLogFolder_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (!YMMKeyboardLogger.OpenLogFolder())
+                MessageBox.Show("ログフォルダーを開けませんでした。", "ログ");
+        }
+
+        private void ClearLog_OnClick(object sender, RoutedEventArgs e)
+        {
+            var deleted = YMMKeyboardLogger.ClearRuntimeLogs();
+            PortStatusTextBlock.Text = deleted > 0
+                ? $"ログを {deleted} 件削除しました。"
+                : "削除できるログはありませんでした。";
         }
     }
 }

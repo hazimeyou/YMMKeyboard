@@ -31,6 +31,8 @@ namespace YMMKeyboardPlugin
         {
             Debug.WriteLine("[Keymacro] Initialize START");
             InputDiagnostics.Initialize();
+            YMMKeyboardLogger.DeviceSearchStarted("transport=HID; phase=initialize");
+            YMMKeyboardLogger.DeviceSearchStarted("transport=Serial; phase=initialize");
             YMMKeyboardSettings.ConnectionRequested += OnConnectionRequested;
             YMMKeyboardSettings.DisconnectionRequested += OnDisconnectionRequested;
             YMMKeyboardSettings.SettingsLoaded += OnSettingsLoaded;
@@ -42,6 +44,8 @@ namespace YMMKeyboardPlugin
 
         private void OnSettingsLoaded()
         {
+            YMMKeyboardLogger.DeviceSearchStarted("transport=HID; phase=settings-loaded");
+            YMMKeyboardLogger.DeviceSearchStarted("transport=Serial; phase=settings-loaded");
             StartHidIfConfigured();
             ConnectStartupPorts();
             WriteConnectionDiagnostics("settings-loaded");
@@ -73,12 +77,14 @@ namespace YMMKeyboardPlugin
             catch (Exception ex)
             {
                 PluginLogger.Error("Keymacro", "Failed to start HID primary link.", ex);
+                YMMKeyboardLogger.Error("Exception", "Failed to start HID primary link.", ex);
                 WriteConnectionDiagnostics("hid-start-failed");
             }
         }
 
         private void ConnectStartupPorts()
         {
+            YMMKeyboardLogger.DeviceSearchStarted($"transport=Serial; phase=startup; ports={string.Join(',', YMMKeyboardSettings.Current.GetStartupPortNames())}");
             var ports = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var portName in YMMKeyboardSettings.Current.GetStartupPortNames())
                 ports.Add(portName);
@@ -92,6 +98,7 @@ namespace YMMKeyboardPlugin
 
         private void OnConnectionRequested(string portName)
         {
+            YMMKeyboardLogger.DeviceSearchStarted($"transport=Serial; phase=manual-request; port={portName}");
             WriteConnectionDiagnostics($"connection-request:{SanitizeScanModePort(portName)}");
             ConnectPort(portName);
         }
@@ -129,12 +136,14 @@ namespace YMMKeyboardPlugin
                 link.KeyEventReceived += OnKeyEventReceived;
                 link.Start();
                 links[portName] = link;
+                YMMKeyboardLogger.DeviceConnected($"transport=Serial; source=Keymacro; port={portName}");
                 Debug.WriteLine($"[Keymacro] Legacy serial diagnostic link connected: {portName}");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[Keymacro] Connection error: {ex}");
                 MessageBox.Show($"Legacy COMポート {portName} に接続できませんでした。\n{ex.Message}");
+                YMMKeyboardLogger.Error("Exception", $"Failed to connect legacy serial port. port={portName}", ex);
                 WriteConnectionDiagnostics($"connect-failed:{SanitizeScanModePort(portName)}");
             }
         }
@@ -299,6 +308,7 @@ namespace YMMKeyboardPlugin
             catch (Exception ex)
             {
                 PluginLogger.Warn("Keymacro", $"Connection diagnostics failed: {ex.Message}");
+                YMMKeyboardLogger.Error("Exception", $"Connection diagnostics failed. scanMode={scanMode}", ex);
             }
         }
 

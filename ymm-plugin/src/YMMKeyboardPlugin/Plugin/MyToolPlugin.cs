@@ -40,12 +40,14 @@ namespace YMMKeyboardPlugin.Plugin
                 Debug.WriteLine("[MyToolPlugin] Constructor START");
                 keymacro = new Keymacro();
                 keymacro.Initialize();
+                YMMKeyboardLogger.PluginLoaded();
                 PluginLogger.Info("MyToolPlugin", "Constructor END");
                 Debug.WriteLine("[MyToolPlugin] Constructor END");
             }
             catch (Exception ex)
             {
                 PluginLogger.Error("MyToolPlugin", "Constructor Exception", ex);
+                YMMKeyboardLogger.Error("Exception", "MyToolPlugin constructor failed.", ex);
                 Debug.WriteLine($"[MyToolPlugin] Constructor Exception: {ex}");
                 MessageBox.Show($"USB 接続または HID / Legacy COM 診断設定を確認してください。\n{ex}", "キーボードプラグイン");
             }

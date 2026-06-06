@@ -124,6 +124,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
             catch (Exception ex)
             {
                 PluginLogger.Error("HidKeyboardLink", "HID manager loop failed.", ex);
+                YMMKeyboardLogger.Error("Exception", "HID manager loop failed.", ex);
             }
 
             CleanupCompletedWorkers();
@@ -364,6 +365,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
 
     private async Task ReadDeviceLoop(HidDevice hidDevice, string path, CancellationToken token)
     {
+        var stableUid = string.Empty;
         try
         {
             lock (lockObj)
@@ -408,12 +410,13 @@ public sealed class HidKeyboardLink : IKeyboardLink
                 }
                 TryWriteSummary(force: true);
 
-                var stableUid = BuildStableSyntheticUid(hidDevice);
+                stableUid = BuildStableSyntheticUid(hidDevice);
                 var device = GetOrCreateDevice(stableUid, out var isNew);
                 if (isNew)
                 {
                     PluginLogger.Info("HidKeyboardLink",
                         $"HID device detected: {stableUid} ({hidDevice.VendorID:X4}:{hidDevice.ProductID:X4}, product={hidDevice.GetProductName()}, maker={hidDevice.GetManufacturer()}, in={hidDevice.GetMaxInputReportLength()}, out={hidDevice.GetMaxOutputReportLength()}, path={path})");
+                    YMMKeyboardLogger.DeviceConnected($"transport=HID; path={path}; uid={stableUid}; vid={hidDevice.VendorID:X4}; pid={hidDevice.ProductID:X4}");
                     DeviceDetected?.Invoke(device);
                 }
 
@@ -479,6 +482,7 @@ public sealed class HidKeyboardLink : IKeyboardLink
             }
             TryWriteSummary(force: true);
             RegisterPathFailure(path, ex);
+            YMMKeyboardLogger.Error("Exception", $"HID read loop failed. path={path}", ex);
         }
         finally
         {
@@ -486,6 +490,9 @@ public sealed class HidKeyboardLink : IKeyboardLink
             {
                 workers.Remove(path);
             }
+
+            if (!string.IsNullOrWhiteSpace(stableUid))
+                YMMKeyboardLogger.DeviceDisconnected($"transport=HID; path={path}; uid={stableUid}");
         }
     }
 

@@ -136,6 +136,7 @@ namespace YMMKeyboardPlugin
                     if (isNewDevice)
                     {
                         PluginLogger.Info("SerialKeyboardLink", $"Legacy serial diagnostic device detected on {_portName}: {uid}");
+                        YMMKeyboardLogger.DeviceConnected($"transport=Serial; port={_portName}; uid={uid}");
                         DeviceDetected?.Invoke(device);
                     }
 
@@ -164,6 +165,7 @@ namespace YMMKeyboardPlugin
                 {
                     Debug.WriteLine($"[SerialKeyboardLink] Error: {ex.Message}");
                     PluginLogger.Error("SerialKeyboardLink", $"Legacy serial read loop error on {_portName}", ex);
+                    YMMKeyboardLogger.Error("Exception", $"Legacy serial read loop error. port={_portName}", ex);
                 }
             }
 
@@ -194,6 +196,7 @@ namespace YMMKeyboardPlugin
                 _port.Dispose();
                 _port = null;
                 PluginLogger.Info("SerialKeyboardLink", $"Legacy serial diagnostic port closed: {_portName}");
+                YMMKeyboardLogger.DeviceDisconnected($"transport=Serial; port={_portName}");
             }
         }
 

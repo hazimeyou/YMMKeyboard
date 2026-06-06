@@ -89,6 +89,21 @@
                                Margin="0,6,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <CheckBox x:Name="RuntimeLoggingCheckBox"
+                                  Content="ログを有効化"
+                                  VerticalAlignment="Center"
+                                  Checked="RuntimeLoggingCheckBox_OnChanged"
+                                  Unchecked="RuntimeLoggingCheckBox_OnChanged"/>
+                        <Button Margin="12,0,0,0"
+                                Padding="8,2"
+                                Content="ログフォルダーを開く"
+                                Click="OpenLogFolder_OnClick"/>
+                        <Button Margin="8,0,0,0"
+                                Padding="8,2"
+                                Content="ログをクリア"
+                                Click="ClearLog_OnClick"/>
+                    </StackPanel>
                 </StackPanel>
 
                 <Button Grid.Column="1"
