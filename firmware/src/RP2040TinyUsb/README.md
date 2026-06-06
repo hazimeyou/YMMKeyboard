@@ -6,7 +6,7 @@ YMMキーボード向けの独自ファームです。
 ## 現在の実装
 
 - USB CDC（シリアル）出力
-- Vendor HID（Report ID=1, 64-byte payload）出力
+- Vendor HID（Report ID=1, 63-byte fixed payload）出力
 - 5秒ごとに診断イベント `SW_00` の `P/R` を送信
 - 3秒ごとに `HB:<uid>` を CDC に送信
 
