@@ -11,7 +11,6 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 project(ymm_keyboard_fw C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(PICO_NO_PICOTOOL 1)
 
 pico_sdk_init()
 
