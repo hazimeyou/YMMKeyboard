@@ -47,19 +47,20 @@ jobs:
           git clone --depth 1 --branch 2.2.0 https://github.com/raspberrypi/pico-sdk.git $picoSdkDir
           "PICO_SDK_PATH=$picoSdkDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Build Plugin
+      - name: Publish Plugin
         shell: pwsh
         run: >
-          dotnet build .\ymm-plugin\src\YMMKeyboardPlugin\YMMKeyboardPlugin.csproj
+          dotnet publish .\ymm-plugin\src\YMMKeyboardPlugin\YMMKeyboardPlugin.csproj
           -c Release
           -p:Platform=x64
           -p:Version=$env:VERSION
           -p:YMM4DirPath="${{ github.workspace }}\libs\YMM4"
+          -o "${{ github.workspace }}\publish\plugin"
 
       - name: Prepare Package Folder
         shell: pwsh
         run: |
-          $source = "ymm-plugin\src\YMMKeyboardPlugin\bin\Release\net10.0-windows"
+          $source = "publish\plugin"
           $packageDir = "package"
 
           if (Test-Path $packageDir) {
