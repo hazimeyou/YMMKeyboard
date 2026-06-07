@@ -212,6 +212,7 @@ namespace YMMKeyboardPlugin.Views
 
         private void RefreshKeyboardButtons()
         {
+            var filter = FilterTextBox.Text?.Trim();
             var itemsBySwitch = items.ToDictionary(item => item.SwitchName, StringComparer.OrdinalIgnoreCase);
             foreach (var button in FindKeyboardButtons(KeyboardSurfaceGrid))
             {
@@ -222,7 +223,11 @@ namespace YMMKeyboardPlugin.Views
                 var isSelected = IsComboMode
                     ? selectedCombination.Contains(switchName)
                     : selectedAssignment?.SwitchName == switchName;
+                var matchesFilter = string.IsNullOrWhiteSpace(filter)
+                    || switchName.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                    || GetActionDisplayName(assignment.SelectedActionName).Contains(filter, StringComparison.OrdinalIgnoreCase);
 
+                button.Visibility = isSelected || matchesFilter ? Visibility.Visible : Visibility.Collapsed;
                 if (isSelected)
                 {
                     button.Background = SystemColors.HighlightBrush;
@@ -483,6 +488,14 @@ namespace YMMKeyboardPlugin.Views
                 if (hasTemplateSelection && preferTemplateMode)
                     ParameterTextBox.Text = BuildTemplateParameter();
             }
+        }
+
+        private void FilterTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (isUpdatingSelection)
+                return;
+
+            RefreshKeyboardButtons();
         }
 
         private static bool IsTemplateModeAction(string? actionName)
