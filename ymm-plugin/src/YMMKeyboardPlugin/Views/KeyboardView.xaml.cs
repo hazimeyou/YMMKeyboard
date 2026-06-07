@@ -14,7 +14,6 @@ namespace YMMKeyboardPlugin.Views
         public KeyboardView()
         {
             InitializeComponent();
-            Debug.WriteLine("[KeyboardView] ctor");
             UpdateComboUiState();
         }
 

@@ -5,7 +5,6 @@ using System.Windows.Input;
 using YMMKeyboardPlugin.Logging;
 using YukkuriMovieMaker.Plugin;
 using YukkuriMovieMaker.Project;
-using YukkuriMovieMaker.UndoRedo;
 
 namespace YMMKeyboardPlugin.Actions
 {
@@ -20,10 +19,6 @@ namespace YMMKeyboardPlugin.Actions
         private static object? cachedSeekCommand;
         private static MethodInfo? cachedSeekInvokeMethod;
         private static ICommand? cachedWindowSeekCommand;
-#pragma warning disable CS0169
-        private UndoRedoManager? undoRedoManager;
-#pragma warning restore CS0169
-
         public Timeline Timeline { get; set; } = null!;
 
         public void SetTimelineToolInfo(TimelineToolInfo info)

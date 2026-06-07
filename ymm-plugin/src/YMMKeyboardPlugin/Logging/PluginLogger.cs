@@ -61,9 +61,9 @@ public static class PluginLogger
                 if (File.Exists(DiagnosticsLogFilePath))
                     File.Delete(DiagnosticsLogFilePath);
             }
-            catch
+            catch (Exception exception)
             {
-                // best effort
+                Debug.WriteLine($"[PluginLogger] ResetOnStartup failed: {exception.Message}");
             }
             finally
             {
@@ -102,20 +102,20 @@ public static class PluginLogger
                 LogFileWriter.AppendLine(DiagnosticsLogFilePath, line);
             }
         }
-        catch
+        catch (Exception exception)
         {
-            // logging should never break plugin execution
+            Debug.WriteLine($"[PluginLogger] Write failed: {exception.Message}");
         }
     }
 
     private static string ResolveDiagnosticsDirectoryPath()
     {
-        // 任意指定: 環境変数があれば最優先
+        // Use an explicit override when present so diagnostics can be redirected.
         var envPath = Environment.GetEnvironmentVariable("YMMK_DIAGNOSTICS_DIR");
         if (!string.IsNullOrWhiteSpace(envPath))
             return envPath;
 
-        // 既定: ユーザー環境依存しないローカルアプリデータ配下
+        // Fall back to a local app-data path so logging stays user-scoped.
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         return Path.Combine(localAppData, "YMMKeyboard", "_diagnostics");
     }
