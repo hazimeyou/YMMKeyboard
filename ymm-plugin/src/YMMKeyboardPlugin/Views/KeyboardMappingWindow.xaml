@@ -1,4 +1,4 @@
-﻿<Window x:Class="YMMKeyboardPlugin.Views.KeyboardMappingWindow"
+<Window x:Class="YMMKeyboardPlugin.Views.KeyboardMappingWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,287 +7,398 @@
         xmlns:theme="clr-namespace:YukkuriMovieMaker.Theme;assembly=YukkuriMovieMaker.Plugin"
         mc:Ignorable="d"
         Title="キー割り当て"
-        Height="620"
-        Width="860"
-        MinHeight="500"
-        MinWidth="740">
+        Height="720"
+        Width="1080"
+        MinHeight="620"
+        MinWidth="920"
+        Background="#F3F6FB">
     <Window.Resources>
-        <Style x:Key="KeyboardButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="68"/>
-            <Setter Property="Height" Value="48"/>
-            <Setter Property="Margin" Value="3"/>
-            <Setter Property="Padding" Value="4"/>
-            <Setter Property="FontFamily" Value="Consolas"/>
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#D7DDE8"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#1E293B"/>
+        </Style>
+
+        <Style x:Key="MutedTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="KeyboardButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="84"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#C9D1E1"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="Foreground" Value="#1E293B"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="PrimaryActionButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="MinWidth" Value="96"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#8AA2D6"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#1E293B"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="GhostActionButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryActionButtonStyle}">
+            <Setter Property="Background" Value="#EEF2FF"/>
+            <Setter Property="BorderBrush" Value="#C7D2FE"/>
         </Style>
     </Window.Resources>
 
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="6"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="6"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="6"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="14"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="14"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="14"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0">
-                       <TextBlock Text="キー割り当て"
-                       FontSize="16"
-                       FontWeight="Bold"/>
-            <TextBlock Margin="0,3,0,0"
-                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                       Text="左のキーボードからキーを選ぶと、右側でそのキーや複数キーの動作を編集できます。"/>
-        </StackPanel>
-
-        <Border Grid.Row="2"
-                Padding="8"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
-                BorderThickness="1"
-                CornerRadius="8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="対象" FontWeight="Bold"/>
-                    <ComboBox x:Name="ScopeComboBox"
-                              Margin="0,6,0,0"
-                              IsEditable="True"
-                              IsTextSearchEnabled="False"
-                              MinWidth="200"/>
-                    <CheckBox x:Name="ComboModeCheckBox"
-                              Margin="0,8,0,0"
-                              Content="複数キー編集モード"
-                              Checked="ComboModeCheckBox_OnChanged"
-                              Unchecked="ComboModeCheckBox_OnChanged"/>
-                    <TextBlock x:Name="StatusTextBlock"
-                               Margin="0,6,0,0"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                               TextWrapping="Wrap"/>
-                </StackPanel>
-                <Button Grid.Column="1"
-                        Margin="8,18,0,0"
-                        Padding="8,4"
-                        VerticalAlignment="Top"
-                        Content="対象を開く"
-                        Click="OpenScope_OnClick"/>
-            </Grid>
-        </Border>
-
-        <Grid Grid.Row="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2.1*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="1.15*"/>
-            </Grid.ColumnDefinitions>
-
-            <Border Grid.Column="0"
-                    Padding="10"
-                    Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
-                    BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+            <Border Grid.Row="0"
+                    Padding="20"
+                    CornerRadius="20"
                     BorderThickness="1"
-                    CornerRadius="12">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="12"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                    BorderBrush="#D6DEEA">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#FFFFFF" Offset="0"/>
+                        <GradientStop Color="#F4F8FF" Offset="0.55"/>
+                        <GradientStop Color="#EAF0FF" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
 
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="キーボード配置"
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="キー割り当て"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   Foreground="#0F172A"/>
+                        <TextBlock Margin="0,8,0,0"
+                                   Style="{StaticResource MutedTextStyle}"
                                    FontSize="13"
-                                   FontWeight="Bold"/>
-                        <TextBlock Margin="0,3,0,0"
-                                   Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                                   Text="単独キーはそのまま選択、複数キー編集モードでは押したい組み合わせを順に選んでください。"/>
+                                   Text="UIキーボードと実機 UID ごとの割り当てを、左のキーボード面から直接編集できます。複数キー編集モードにも対応しています。"/>
                     </StackPanel>
 
-                    <Grid Grid.Row="2" x:Name="KeyboardSurfaceGrid">
+                    <Border Grid.Column="2"
+                            Padding="12,10"
+                            Background="#FFFFFFB3"
+                            BorderBrush="#DCE3F1"
+                            BorderThickness="1"
+                            CornerRadius="14">
+                        <StackPanel>
+                            <TextBlock Text="現在の対象" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock x:Name="StatusTextBlock"
+                                       Margin="0,6,0,0"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       Width="260"
+                                       Text="UIキーボードの割り当てを編集中です。"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="対象と編集モード" Style="{StaticResource SectionTitleStyle}"/>
+                        <TextBlock Margin="0,4,0,0"
+                                   Style="{StaticResource MutedTextStyle}"
+                                   Text="編集対象を切り替えたあと、単独キーか複数キーかを選べます。"/>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Text="対象:"/>
+                            <ComboBox Grid.Column="2"
+                                      x:Name="ScopeComboBox"
+                                      MinWidth="280"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="False"/>
+                            <Button Grid.Column="4"
+                                    Style="{StaticResource PrimaryActionButtonStyle}"
+                                    Content="対象を開く"
+                                    Click="OpenScope_OnClick"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                        <TextBlock Text="編集モード" Style="{StaticResource SectionTitleStyle}"/>
+                        <CheckBox x:Name="ComboModeCheckBox"
+                                  Margin="0,8,0,0"
+                                  Content="複数キー編集モード"
+                                  Checked="ComboModeCheckBox_OnChanged"
+                                  Unchecked="ComboModeCheckBox_OnChanged"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2.05*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="1.15*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}">
+                    <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="10"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="16"/>
+                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <UniformGrid Grid.Row="0" Columns="6">
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW01" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW02" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW03" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW04" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW05" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW06" Click="SwitchButton_OnClick"/>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="キーボード面" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Margin="0,4,0,0"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       Text="キーをクリックして選択します。複数キー編集モードでは、組み合わせにしたいキーを順に押してください。"/>
+                        </StackPanel>
 
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW07" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW08" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW09" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW10" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW11" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW12" Click="SwitchButton_OnClick"/>
+                        <Grid Grid.Row="2"
+                              x:Name="KeyboardSurfaceGrid">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="12"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW13" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW14" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW15" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW16" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW17" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW18" Click="SwitchButton_OnClick"/>
+                            <Border Grid.Row="0"
+                                    Padding="16"
+                                    Background="#F8FAFC"
+                                    BorderBrush="#E2E8F0"
+                                    BorderThickness="1"
+                                    CornerRadius="14">
+                                <UniformGrid Columns="6">
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW01" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW02" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW03" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW04" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW05" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW06" Click="SwitchButton_OnClick"/>
 
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW19" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW20" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW21" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW22" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW23" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW24" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW07" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW08" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW09" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW10" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW11" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW12" Click="SwitchButton_OnClick"/>
 
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW25" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW26" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW27" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW28" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW29" Click="SwitchButton_OnClick"/>
-                            <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW30" Click="SwitchButton_OnClick"/>
-                        </UniformGrid>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW13" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW14" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW15" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW16" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW17" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW18" Click="SwitchButton_OnClick"/>
+
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW19" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW20" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW21" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW22" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW23" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW24" Click="SwitchButton_OnClick"/>
+
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW25" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW26" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW27" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW28" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW29" Click="SwitchButton_OnClick"/>
+                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW30" Click="SwitchButton_OnClick"/>
+                                </UniformGrid>
+                            </Border>
+
+                            <Border Grid.Row="2"
+                                    Padding="12"
+                                    Background="#F8FAFC"
+                                    BorderBrush="#E2E8F0"
+                                    BorderThickness="1"
+                                    CornerRadius="14">
+                                <StackPanel>
+                                    <TextBlock Text="ロータリー" Style="{StaticResource SectionTitleStyle}"/>
+                                    <TextBlock Margin="0,4,0,8"
+                                               Style="{StaticResource MutedTextStyle}"
+                                               Text="回転と押し込みも同じ画面で扱えます。"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW36" Click="SwitchButton_OnClick" Width="92"/>
+                                        <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW35" Click="SwitchButton_OnClick" Width="92"/>
+                                        <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW37" Click="SwitchButton_OnClick" Width="92"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="14"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="12"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="12"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="16"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="選択中のキー" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock x:Name="SelectedSwitchTextBlock"
+                                       Margin="0,6,0,0"
+                                       FontSize="24"
+                                       FontFamily="Consolas"
+                                       FontWeight="Bold"
+                                       Foreground="#0F172A"
+                                       Text="SW01"/>
+                        </StackPanel>
 
                         <Border Grid.Row="2"
-                                Padding="8"
-                                Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+                                Padding="12"
+                                Background="#F8FAFC"
+                                BorderBrush="#E2E8F0"
                                 BorderThickness="1"
-                                CornerRadius="10">
+                                CornerRadius="12">
                             <StackPanel>
-                                <TextBlock Text="ロータリー"
-                                           FontSize="13"
-                                           FontWeight="Bold"/>
-                                <TextBlock Margin="0,3,0,6"
-                                           Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                                           Text="回転と押し込みも横並びで設定できます。"/>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW36" Click="SwitchButton_OnClick" Width="84"/>
-                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW35" Click="SwitchButton_OnClick" Width="84"/>
-                                    <Button Style="{StaticResource KeyboardButtonStyle}" Tag="SW37" Click="SwitchButton_OnClick" Width="84"/>
+                                <TextBlock Text="動作" Style="{StaticResource SectionTitleStyle}"/>
+                                <ComboBox x:Name="ActionComboBox"
+                                          Margin="0,8,0,0"
+                                          SelectionChanged="ActionComboBox_OnSelectionChanged"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="4"
+                                Padding="12"
+                                Background="#F8FAFC"
+                                BorderBrush="#E2E8F0"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                            <StackPanel>
+                                <TextBlock Text="パラメータ" Style="{StaticResource SectionTitleStyle}"/>
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="ParameterTextBox"
+                                             Grid.Column="0"
+                                             TextChanged="ParameterTextBox_OnTextChanged"/>
+                                    <Button x:Name="YmmtBrowseButton"
+                                            Grid.Column="2"
+                                            Padding="8,4"
+                                            Visibility="Collapsed"
+                                            Content="参照..."
+                                            Click="BrowseYmmtButton_OnClick"/>
+                                </Grid>
+
+                                <StackPanel x:Name="TemplateParameterPanel"
+                                            Margin="0,8,0,0"
+                                            Visibility="Collapsed">
+                                    <TextBlock Text="テンプレート" Style="{StaticResource SectionTitleStyle}"/>
+                                    <ComboBox x:Name="TemplateComboBox"
+                                              Margin="0,6,0,0"
+                                              SelectionChanged="TemplateComboBox_OnSelectionChanged"/>
+                                    <CheckBox x:Name="TemplateApplyCheckBox"
+                                              Margin="0,6,0,0"
+                                              Content="タイムラインへ追加する"
+                                              IsChecked="True"
+                                              Checked="TemplateApplyCheckBox_OnChanged"
+                                              Unchecked="TemplateApplyCheckBox_OnChanged"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <TextBlock Text="配置レイヤー"
+                                                   Width="80"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBox x:Name="TemplateLayerTextBox"
+                                                 Width="80"
+                                                 Text="1"
+                                                 TextChanged="TemplateLayerTextBox_OnTextChanged"/>
+                                    </StackPanel>
+                                    <TextBlock Margin="0,6,0,0"
+                                               Style="{StaticResource MutedTextStyle}"
+                                               Text="FPSは実行時に現在のタイムライン設定から自動取得します。"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-                    </Grid>
-                </Grid>
-            </Border>
 
-            <Border Grid.Column="2"
-                    Padding="10"
-                    Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
-                    BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
-                    BorderThickness="1"
-                    CornerRadius="12">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="6"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="6"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="6"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="16"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="選択中のキー"
-                                   FontSize="13"
-                                   FontWeight="Bold"/>
-                        <TextBlock x:Name="SelectedSwitchTextBlock"
-                                   Margin="0,6,0,0"
-                                   FontSize="18"
-                                   FontWeight="Bold"
-                                   FontFamily="Consolas"
-                                   Text="SW01"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="2">
-                        <TextBlock Text="動作" FontWeight="Bold"/>
-                        <ComboBox x:Name="ActionComboBox"
-                                  Margin="0,6,0,0"
-                                  SelectionChanged="ActionComboBox_OnSelectionChanged"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Row="4">
-                        <TextBlock Text="パラメータ" FontWeight="Bold"/>
-                        <Grid Margin="0,6,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="ParameterTextBox"
-                                     Grid.Column="0"
-                                     TextChanged="ParameterTextBox_OnTextChanged"/>
-                            <Button x:Name="YmmtBrowseButton"
-                                    Grid.Column="2"
-                                    Padding="6,3"
-                                    Visibility="Collapsed"
-                                    Content="参照..."
-                                    Click="BrowseYmmtButton_OnClick"/>
-                        </Grid>
-                        <StackPanel x:Name="TemplateParameterPanel"
-                                    Margin="0,6,0,0"
-                                    Visibility="Collapsed">
-                            <TextBlock Text="テンプレート"/>
-                            <ComboBox x:Name="TemplateComboBox"
-                                      Margin="0,4,0,0"
-                                      SelectionChanged="TemplateComboBox_OnSelectionChanged"/>
-                            <CheckBox x:Name="TemplateApplyCheckBox"
-                                      Margin="0,6,0,0"
-                                      Content="タイムラインへ追加する"
-                                      IsChecked="True"
-                                      Checked="TemplateApplyCheckBox_OnChanged"
-                                      Unchecked="TemplateApplyCheckBox_OnChanged"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                <TextBlock Text="配置レイヤー"
-                                           Width="80"
-                                           VerticalAlignment="Center"/>
-                                <TextBox x:Name="TemplateLayerTextBox"
-                                         Width="80"
-                                         Text="1"
-                                         TextChanged="TemplateLayerTextBox_OnTextChanged"/>
+                        <Border Grid.Row="6"
+                                Padding="12"
+                                Background="#F8FAFC"
+                                BorderBrush="#E2E8F0"
+                                BorderThickness="1"
+                                CornerRadius="12">
+                            <StackPanel>
+                                <TextBlock Text="説明" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock x:Name="SelectionHintTextBlock"
+                                           Margin="0,6,0,0"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Text="キーを選ぶとここに設定内容が表示されます。"/>
                             </StackPanel>
-                            <TextBlock Margin="0,4,0,0"
-                                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                                       Text="FPSは実行時に現在のタイムライン設定から自動取得します。"/>
-                        </StackPanel>
-                    </StackPanel>
+                        </Border>
 
-                    <StackPanel Grid.Row="6">
-                        <TextBlock Text="説明" FontWeight="Bold"/>
-                        <TextBlock x:Name="SelectionHintTextBlock"
-                                   Margin="0,6,0,0"
-                                   Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                                   TextWrapping="Wrap"
-                                   Text="キーを選ぶとここに設定内容が表示されます。"/>
-                    </StackPanel>
+                        <Button Grid.Row="8"
+                                Style="{StaticResource GhostActionButtonStyle}"
+                                Content="この設定をテスト実行"
+                                Click="TestSelectedButton_OnClick"/>
+                    </Grid>
+                </Border>
+            </Grid>
 
-                    <Button Grid.Row="8"
-                            Padding="8,5"
-                            Content="この設定をテスト実行"
-                            Click="TestSelectedButton_OnClick"/>
-                </Grid>
-            </Border>
+            <StackPanel Grid.Row="6"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Width="96"
+                        Style="{StaticResource PrimaryActionButtonStyle}"
+                        Content="閉じる"
+                        Click="CloseButton_OnClick"/>
+            </StackPanel>
         </Grid>
-
-        <StackPanel Grid.Row="6"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right">
-            <Button Width="96"
-                    Padding="8,4"
-                    Content="閉じる"
-                    Click="CloseButton_OnClick"/>
-        </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </Window>
-

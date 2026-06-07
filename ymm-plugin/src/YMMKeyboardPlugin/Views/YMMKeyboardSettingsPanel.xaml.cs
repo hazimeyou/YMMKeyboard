@@ -1,11 +1,8 @@
-﻿using System.IO.Ports;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Win32;
 using YMMKeyboardPlugin.Hid;
-using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Key;
+using YMMKeyboardPlugin.Logging;
 using YMMKeyboardPlugin.Settings;
 
 namespace YMMKeyboardPlugin.Views
@@ -13,7 +10,6 @@ namespace YMMKeyboardPlugin.Views
     public partial class YMMKeyboardSettingsPanel : UserControl
     {
         private readonly YMMKeyboardSettings settings;
-        private bool serialPortSupported = true;
         private bool isInitializing;
 
         public YMMKeyboardSettingsPanel()
@@ -29,8 +25,6 @@ namespace YMMKeyboardPlugin.Views
             try
             {
                 LoadConnectionSettings();
-                LoadPorts();
-                LoadStartupPorts();
             }
             finally
             {
@@ -40,16 +34,6 @@ namespace YMMKeyboardPlugin.Views
 
         private void LoadConnectionSettings()
         {
-            var targetTag = settings.ConnectionMode.ToString();
-            foreach (var item in ConnectionModeComboBox.Items.OfType<ComboBoxItem>())
-            {
-                if (string.Equals(item.Tag?.ToString(), targetTag, StringComparison.OrdinalIgnoreCase))
-                {
-                    ConnectionModeComboBox.SelectedItem = item;
-                    break;
-                }
-            }
-
             HidVendorIdTextBox.Text = settings.HidVendorIdHex;
             HidProductIdTextBox.Text = settings.HidProductIdHex;
             HidProductNameFilterTextBox.Text = settings.HidProductNameFilter;
@@ -65,109 +49,8 @@ namespace YMMKeyboardPlugin.Views
                     break;
                 }
             }
-        }
 
-        private void LoadPorts()
-        {
-            var ports = GetPortNamesSafe()
-                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (!string.IsNullOrWhiteSpace(settings.PortName) && !ports.Contains(settings.PortName, StringComparer.OrdinalIgnoreCase))
-                ports.Insert(0, settings.PortName);
-
-            PortComboBox.ItemsSource = ports;
-            PortComboBox.SelectedItem = string.IsNullOrWhiteSpace(settings.PortName)
-                ? null
-                : ports.FirstOrDefault(name => string.Equals(name, settings.PortName, StringComparison.OrdinalIgnoreCase));
-
-            PortStatusTextBlock.Text = (!serialPortSupported && ports.Count == 0)
-                ? "この環境ではシリアルポート列挙APIが利用できません。"
-                : ports.Count == 0
-                    ? "利用可能なLegacy COMポートが見つかりません。接続後に再読み込みしてください。"
-                    : string.IsNullOrWhiteSpace(settings.PortName)
-                        ? "接続するLegacy COMポートを選択してください。"
-                        : $"現在の設定: {settings.PortName}";
-        }
-
-        private IEnumerable<string> GetPortNamesSafe()
-        {
-            try
-            {
-                serialPortSupported = true;
-                var ports = SerialPort.GetPortNames();
-                if (ports.Length > 0)
-                    return ports;
-
-                // 一部環境では System.IO.Ports が空を返すことがあるため、
-                // Windows のシリアルポート情報をレジストリから補完する。
-                return GetPortNamesFromRegistry();
-            }
-            catch (PlatformNotSupportedException)
-            {
-                serialPortSupported = false;
-                return GetPortNamesFromRegistry();
-            }
-            catch
-            {
-                return GetPortNamesFromRegistry();
-            }
-        }
-
-        private static IEnumerable<string> GetPortNamesFromRegistry()
-        {
-            try
-            {
-                using var key = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM");
-                if (key is null)
-                    return Array.Empty<string>();
-
-                var ports = key.GetValueNames()
-                    .Select(name => key.GetValue(name)?.ToString())
-                    .Where(value => !string.IsNullOrWhiteSpace(value))
-                    .Select(value => value!)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-
-                return ports;
-            }
-            catch
-            {
-                return Array.Empty<string>();
-            }
-        }
-
-        private void LoadStartupPorts()
-        {
-            StartupPortsListBox.ItemsSource = null;
-            StartupPortsListBox.ItemsSource = settings.GetStartupPortNames().ToList();
-        }
-
-        private void ReloadPorts_OnClick(object sender, RoutedEventArgs e)
-        {
-            LoadPorts();
-        }
-
-        private void PortComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (PortComboBox.SelectedItem is not string selectedPort)
-                return;
-
-            settings.UpdatePortName(selectedPort);
-            PortStatusTextBlock.Text = $"現在の設定: {selectedPort}";
-        }
-
-        private void ConnectionModeComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ConnectionModeComboBox.SelectedItem is not ComboBoxItem selected)
-                return;
-
-            if (!Enum.TryParse<ConnectionMode>(selected.Tag?.ToString(), ignoreCase: true, out var mode))
-                return;
-
-            settings.UpdateConnectionMode(mode);
-            PortStatusTextBlock.Text = $"接続モードを {selected.Content} に設定しました。";
+            PortStatusTextBlock.Text = "USB HID を正式経路として使います。HID フィルタやロータリー感度を調整してください。";
         }
 
         private void ApplyHidFilter_OnClick(object sender, RoutedEventArgs e)
@@ -194,67 +77,6 @@ namespace YMMKeyboardPlugin.Views
 
             settings.UpdateRotarySensitivity(sensitivity);
             PortStatusTextBlock.Text = $"ロータリー感度を {selected.Content} に設定しました。";
-        }
-
-        private void Connect_OnClick(object sender, RoutedEventArgs e)
-        {
-            if (settings.ConnectionMode == ConnectionMode.Hid)
-            {
-                PortStatusTextBlock.Text = "HIDモードではLegacy COM接続は不要です。実機入力は自動検出されます。";
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(settings.PortName))
-            {
-                PortStatusTextBlock.Text = "先に接続するLegacy COMポートを選択してください。";
-                return;
-            }
-
-            settings.RequestConnection();
-            PortStatusTextBlock.Text = $"{settings.PortName} へのLegacy COM診断接続を開始しました。キー入力でUIDを自動登録します。";
-        }
-
-        private void Disconnect_OnClick(object sender, RoutedEventArgs e)
-        {
-            settings.RequestDisconnection();
-            PortStatusTextBlock.Text = "Legacy serial 診断接続の切断を要求しました。";
-        }
-
-        private void AddStartupPort_OnClick(object sender, RoutedEventArgs e)
-        {
-            if (PortComboBox.SelectedItem is not string selectedPort)
-            {
-                PortStatusTextBlock.Text = "追加する起動時接続ポートを選択してください。";
-                return;
-            }
-
-            settings.AddStartupPort(selectedPort);
-            LoadStartupPorts();
-            PortStatusTextBlock.Text = $"{selectedPort} を起動時接続ポートに追加しました。";
-        }
-
-        private void RemoveStartupPort_OnClick(object sender, RoutedEventArgs e)
-        {
-            if (StartupPortsListBox.SelectedItem is not string selectedPort)
-            {
-                PortStatusTextBlock.Text = "削除する起動時接続ポートを選択してください。";
-                return;
-            }
-
-            settings.RemoveStartupPort(selectedPort);
-            LoadStartupPorts();
-            PortStatusTextBlock.Text = $"{selectedPort} を起動時接続ポートから削除しました。";
-        }
-
-        private void OpenMappingWindow_OnClick(object sender, RoutedEventArgs e)
-        {
-            var owner = Window.GetWindow(this);
-            var window = new KeyboardMappingWindow();
-
-            if (owner is not null)
-                window.Owner = owner;
-
-            window.ShowDialog();
         }
 
         private void HidProbe_OnClick(object sender, RoutedEventArgs e)
@@ -301,6 +123,17 @@ namespace YMMKeyboardPlugin.Views
             PortStatusTextBlock.Text = deleted > 0
                 ? $"ログを {deleted} 件削除しました。"
                 : "削除できるログはありませんでした。";
+        }
+
+        private void OpenMappingWindow_OnClick(object sender, RoutedEventArgs e)
+        {
+            var owner = Window.GetWindow(this);
+            var window = new KeyboardMappingWindow();
+
+            if (owner is not null)
+                window.Owner = owner;
+
+            window.ShowDialog();
         }
     }
 }

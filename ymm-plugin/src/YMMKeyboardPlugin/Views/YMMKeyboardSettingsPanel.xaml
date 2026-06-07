@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="YMMKeyboardPlugin.Views.YMMKeyboardSettingsPanel"
+<UserControl x:Class="YMMKeyboardPlugin.Views.YMMKeyboardSettingsPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -14,7 +14,6 @@
             <RowDefinition Height="8"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="8"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -24,7 +23,7 @@
                        FontWeight="Bold"/>
             <TextBlock Margin="0,4,0,0"
                        Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                       Text="HID を正式経路として使い、Legacy COM 診断ポートとキー割り当て設定を管理します。"/>
+                       Text="USB HID を正式経路として使います。HID フィルタ、ロータリー感度、ログ設定を調整できます。"/>
         </StackPanel>
 
         <Border Grid.Row="2"
@@ -35,41 +34,35 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="12"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="Legacy COM / Serial" FontWeight="Bold"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <TextBlock VerticalAlignment="Center" Text="接続モード:"/>
-                        <ComboBox x:Name="ConnectionModeComboBox"
-                                  Margin="8,0,0,0"
-                                  Width="120"
-                                  SelectionChanged="ConnectionModeComboBox_OnSelectionChanged">
-                            <ComboBoxItem Content="HID優先" Tag="Auto"/>
-                            <ComboBoxItem Content="Legacy COM" Tag="Com"/>
-                            <ComboBoxItem Content="HID" Tag="Hid"/>
-                        </ComboBox>
-                    </StackPanel>
-                    <ComboBox x:Name="PortComboBox"
-                              Margin="0,6,0,0"
-                              MinWidth="160"
-                              SelectionChanged="PortComboBox_OnSelectionChanged"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Text="USB HID / 診断" FontWeight="Bold"/>
+                    <TextBlock Margin="0,6,0,0"
+                               Text="VID / PID と製品名・メーカーのフィルタを調整します。"
+                               TextWrapping="Wrap"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <TextBlock VerticalAlignment="Center" Text="VID(16進):"/>
                         <TextBox x:Name="HidVendorIdTextBox" Width="72" Margin="6,0,0,0"/>
                         <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Text="PID(16進):"/>
                         <TextBox x:Name="HidProductIdTextBox" Width="72" Margin="6,0,0,0"/>
+                        <Button Margin="8,0,0,0"
+                                Padding="8,2"
+                                Content="適用"
+                                Click="ApplyHidFilter_OnClick"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <TextBlock VerticalAlignment="Center" Text="製品名:"/>
                         <TextBox x:Name="HidProductNameFilterTextBox" Width="130" Margin="6,0,0,0"/>
                         <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Text="メーカー:"/>
                         <TextBox x:Name="HidManufacturerFilterTextBox" Width="130" Margin="6,0,0,0"/>
-                        <Button Margin="8,0,0,0" Padding="8,2" Content="適用" Click="ApplyHidFilter_OnClick"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <TextBlock VerticalAlignment="Center" Text="ロータリー感度:"/>
                         <ComboBox x:Name="RotarySensitivityComboBox"
                                   Margin="6,0,0,0"
@@ -81,15 +74,20 @@
                             <ComboBoxItem Content="かなり低: 4" Tag="4"/>
                         </ComboBox>
                     </StackPanel>
+
                     <TextBlock Margin="0,4,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                Text="ロータリー入力を何回受け取ったら1回の操作として扱うかを指定します。値を大きくすると反応が鈍くなり、誤入力が減ります。"
                                TextWrapping="Wrap"/>
+
                     <TextBlock x:Name="PortStatusTextBlock"
-                               Margin="0,6,0,0"
+                               Margin="0,8,0,0"
                                Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                                TextWrapping="Wrap"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <StackPanel Orientation="Horizontal">
                         <CheckBox x:Name="RuntimeLoggingCheckBox"
                                   Content="ログを有効化"
                                   VerticalAlignment="Center"
@@ -104,67 +102,16 @@
                                 Content="ログをクリア"
                                 Click="ClearLog_OnClick"/>
                     </StackPanel>
+                    <Button Margin="0,10,0,0"
+                            Padding="8,4"
+                            HorizontalAlignment="Left"
+                            Content="HID診断"
+                            Click="HidProbe_OnClick"/>
                 </StackPanel>
-
-                <Button Grid.Column="1"
-                        Margin="8,18,0,0"
-                        Padding="8,4"
-                        VerticalAlignment="Top"
-                        Content="読み込み"
-                        Click="ReloadPorts_OnClick"/>
-
-                <Button Grid.Column="2"
-                        Margin="8,18,0,0"
-                        Padding="8,4"
-                        VerticalAlignment="Top"
-                        Content="接続"
-                        Click="Connect_OnClick"/>
-
-                <Button Grid.Column="3"
-                        Margin="8,18,0,0"
-                        Padding="8,4"
-                        VerticalAlignment="Top"
-                        Content="切断"
-                        Click="Disconnect_OnClick"/>
-
-                <Button Grid.Column="3"
-                        Margin="8,52,0,0"
-                        Padding="8,4"
-                        VerticalAlignment="Top"
-                        Content="HID診断"
-                        Click="HidProbe_OnClick"/>
             </Grid>
         </Border>
 
         <Border Grid.Row="4"
-                Padding="8"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
-                BorderThickness="1"
-                CornerRadius="8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="起動時に接続するLegacy COMポート" FontWeight="Bold"/>
-                    <ListBox x:Name="StartupPortsListBox"
-                             Margin="0,6,0,0"
-                             MinHeight="68"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Margin="8,18,0,0">
-                    <Button Padding="8,4"
-                            Content="追加"
-                            Click="AddStartupPort_OnClick"/>
-                    <Button Margin="0,8,0,0"
-                            Padding="8,4"
-                            Content="削除"
-                            Click="RemoveStartupPort_OnClick"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <Border Grid.Row="5"
                 Margin="0,10,0,0"
                 Padding="8"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
